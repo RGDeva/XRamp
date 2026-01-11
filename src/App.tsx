@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "@/contexts/AppContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Index from "./pages/Index";
-import Buy from "./pages/Buy";
 import BuyConfirm from "./pages/BuyConfirm";
 import Sell from "./pages/Sell";
 import SellTransfer from "./pages/SellTransfer";
@@ -26,7 +25,7 @@ const App = () => (
           <AppLayout>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/buy" element={<Buy />} />
+              <Route path="/buy" element={<Index />} />
               <Route path="/buy/confirm" element={<BuyConfirm />} />
               <Route path="/sell" element={<Sell />} />
               <Route path="/sell/transfer" element={<SellTransfer />} />
