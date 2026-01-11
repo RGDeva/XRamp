@@ -18,8 +18,8 @@ export default function Settings() {
       items: [
         {
           icon: privacyMode ? EyeOff : Eye,
-          label: 'Privacy mode default',
-          description: 'Hide balances and amounts by default',
+          label: 'Privacy mode',
+          description: 'Hide balances on screen',
           action: (
             <Switch
               checked={privacyMode}
@@ -29,11 +29,11 @@ export default function Settings() {
         },
         {
           icon: DollarSign,
-          label: 'Default currency',
-          description: 'Your preferred fiat currency',
+          label: 'Currency',
+          description: 'Default fiat currency',
           action: (
             <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-              <SelectTrigger className="w-24">
+              <SelectTrigger className="w-20 h-8 text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -47,16 +47,16 @@ export default function Settings() {
         {
           icon: Globe,
           label: 'Region',
-          description: 'Affects available payment rails',
+          description: 'Affects payment options',
           action: (
             <Select defaultValue="us">
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-28 h-8 text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="us">United States</SelectItem>
                 <SelectItem value="eu">Europe</SelectItem>
-                <SelectItem value="uk">United Kingdom</SelectItem>
+                <SelectItem value="uk">UK</SelectItem>
               </SelectContent>
             </Select>
           ),
@@ -64,32 +64,24 @@ export default function Settings() {
       ],
     },
     {
-      title: 'Support',
+      title: 'Support & Legal',
       items: [
         {
           icon: LifeBuoy,
           label: 'Help Center',
-          description: 'Get help with your orders',
-          action: <ChevronRight className="h-5 w-5 text-muted-foreground" />,
+          action: <ChevronRight className="h-4 w-4 text-muted-foreground" />,
           onClick: () => {},
         },
-      ],
-    },
-    {
-      title: 'Legal',
-      items: [
         {
           icon: FileText,
           label: 'Terms of Service',
-          description: 'Read our terms and conditions',
-          action: <ChevronRight className="h-5 w-5 text-muted-foreground" />,
+          action: <ChevronRight className="h-4 w-4 text-muted-foreground" />,
           onClick: () => {},
         },
         {
           icon: Shield,
           label: 'Privacy Policy',
-          description: 'How we handle your data',
-          action: <ChevronRight className="h-5 w-5 text-muted-foreground" />,
+          action: <ChevronRight className="h-4 w-4 text-muted-foreground" />,
           onClick: () => {},
         },
       ],
@@ -97,29 +89,29 @@ export default function Settings() {
   ];
 
   return (
-    <div className="container max-w-2xl mx-auto px-4 py-8 pb-24 lg:pb-8">
+    <div className="max-w-md mx-auto px-4 py-8 pb-24 md:pb-8">
       <h1 className="text-2xl font-semibold mb-6">Settings</h1>
 
-      <div className="space-y-8">
+      <div className="space-y-6">
         {settingGroups.map((group, groupIndex) => (
           <div key={group.title} className="animate-fade-in" style={{ animationDelay: `${groupIndex * 100}ms` }}>
-            <h2 className="text-sm font-medium text-muted-foreground mb-3 px-1">
+            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
               {group.title}
             </h2>
-            <div className="xramp-card divide-y divide-border">
+            <div className="bg-card border border-border rounded-xl divide-y divide-border">
               {group.items.map((item) => (
                 <div
                   key={item.label}
-                  className="flex items-center justify-between p-4 first:pt-4 last:pb-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/30 transition-colors"
                   onClick={item.onClick}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
-                      <item.icon className="h-5 w-5 text-muted-foreground" />
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <item.icon className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="font-medium">{item.label}</p>
-                      <p className="text-sm text-muted-foreground">{item.description}</p>
+                      <p className="font-medium text-sm">{item.label}</p>
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground">{item.description}</p>
+                      )}
                     </div>
                   </div>
                   {item.action}
@@ -131,10 +123,10 @@ export default function Settings() {
       </div>
 
       {/* App Info */}
-      <div className="mt-12 text-center text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '300ms' }}>
-        <p className="font-medium text-foreground mb-1">XRamp</p>
+      <div className="mt-12 text-center text-xs text-muted-foreground animate-fade-in" style={{ animationDelay: '200ms' }}>
+        <p className="font-medium text-foreground text-sm mb-1">XRamp</p>
         <p>Private. Fast. Simple.</p>
-        <p className="mt-2">Version 1.0.0</p>
+        <p className="mt-1">v1.0.0</p>
       </div>
     </div>
   );

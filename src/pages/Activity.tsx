@@ -31,7 +31,7 @@ const mockActivities: ActivityItem[] = [
     crypto: 'USDC',
     fiatAmount: '502.50',
     fiat: 'USD',
-    method: 'Apple Pay',
+    method: 'Venmo',
     status: 'completed',
     timestamp: '2 hours ago',
     txHash: '0xabc...def',
@@ -43,7 +43,7 @@ const mockActivities: ActivityItem[] = [
     crypto: 'ETH',
     fiatAmount: '450.00',
     fiat: 'USD',
-    method: 'Bank Transfer',
+    method: 'Cash App',
     status: 'pending',
     timestamp: '5 hours ago',
   },
@@ -58,29 +58,6 @@ const mockActivities: ActivityItem[] = [
     status: 'completed',
     timestamp: 'Yesterday',
     txHash: '0x123...789',
-  },
-  {
-    id: '4',
-    type: 'sell',
-    cryptoAmount: '0.5',
-    crypto: 'BTC',
-    fiatAmount: '21,500.00',
-    fiat: 'USD',
-    method: 'Wise',
-    status: 'completed',
-    timestamp: '3 days ago',
-    txHash: '0xdef...abc',
-  },
-  {
-    id: '5',
-    type: 'buy',
-    cryptoAmount: '250',
-    crypto: 'USDC',
-    fiatAmount: '251.25',
-    fiat: 'USD',
-    method: 'Card',
-    status: 'failed',
-    timestamp: '1 week ago',
   },
 ];
 
@@ -105,7 +82,7 @@ export default function Activity() {
   ];
 
   return (
-    <div className="container max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-6">Activity</h1>
 
       {/* Filters */}
@@ -115,10 +92,10 @@ export default function Activity() {
             key={f.value}
             onClick={() => setFilter(f.value)}
             className={cn(
-              'px-4 py-2 rounded-xl text-sm font-medium transition-all',
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all',
               filter === f.value
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:text-foreground'
+                ? 'bg-card text-foreground border border-border'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
             {f.label}
@@ -128,44 +105,44 @@ export default function Activity() {
 
       {/* Activity List */}
       {!wallet.isConnected ? (
-        <div className="xramp-card text-center py-12">
-          <p className="text-muted-foreground">Connect your wallet to see activity</p>
+        <div className="bg-card border border-border rounded-2xl text-center py-16">
+          <p className="text-muted-foreground">Connect wallet to see activity</p>
         </div>
       ) : filteredActivities.length === 0 ? (
-        <div className="xramp-card text-center py-12">
+        <div className="bg-card border border-border rounded-2xl text-center py-16">
           <p className="text-muted-foreground">No activity found</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filteredActivities.map((activity, index) => (
             <div
               key={activity.id}
               onClick={() => setSelectedActivity(activity)}
-              className="xramp-card p-4 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors animate-fade-in"
+              className="bg-card border border-border rounded-xl p-4 flex items-center justify-between cursor-pointer hover:bg-secondary/30 transition-colors animate-fade-in"
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <div
                   className={cn(
-                    'flex h-12 w-12 items-center justify-center rounded-xl',
+                    'flex h-10 w-10 items-center justify-center rounded-lg',
                     activity.type === 'buy' ? 'bg-success/10' : 'bg-primary/10'
                   )}
                 >
                   {activity.type === 'buy' ? (
-                    <ArrowDownToLine className="h-5 w-5 text-success" />
+                    <ArrowDownToLine className="h-4 w-4 text-success" />
                   ) : (
-                    <ArrowUpFromLine className="h-5 w-5 text-primary" />
+                    <ArrowUpFromLine className="h-4 w-4 text-primary" />
                   )}
                 </div>
                 <div>
-                  <p className="font-medium capitalize">{activity.type}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="font-medium text-sm capitalize">{activity.type}</p>
+                  <p className="text-xs text-muted-foreground">
                     {activity.method} • {activity.timestamp}
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className={cn('font-medium numeral-display', privacyMode && 'privacy-blur')}>
+                <p className={cn('font-medium text-sm numeral-display', privacyMode && 'privacy-blur')}>
                   {activity.type === 'buy' ? '+' : '-'}
                   {activity.cryptoAmount} {activity.crypto}
                 </p>
@@ -187,27 +164,27 @@ export default function Activity() {
 
       {/* Activity Details Sheet */}
       <Sheet open={!!selectedActivity} onOpenChange={() => setSelectedActivity(null)}>
-        <SheetContent className="bg-card border-border">
+        <SheetContent className="bg-background border-border">
           <SheetHeader>
             <SheetTitle>Order Details</SheetTitle>
           </SheetHeader>
           {selectedActivity && (
             <div className="mt-6 space-y-6">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <div
                   className={cn(
-                    'flex h-14 w-14 items-center justify-center rounded-xl',
+                    'flex h-12 w-12 items-center justify-center rounded-xl',
                     selectedActivity.type === 'buy' ? 'bg-success/10' : 'bg-primary/10'
                   )}
                 >
                   {selectedActivity.type === 'buy' ? (
-                    <ArrowDownToLine className="h-6 w-6 text-success" />
+                    <ArrowDownToLine className="h-5 w-5 text-success" />
                   ) : (
-                    <ArrowUpFromLine className="h-6 w-6 text-primary" />
+                    <ArrowUpFromLine className="h-5 w-5 text-primary" />
                   )}
                 </div>
                 <div>
-                  <p className="text-xl font-semibold capitalize">{selectedActivity.type}</p>
+                  <p className="text-lg font-semibold capitalize">{selectedActivity.type}</p>
                   <span
                     className={cn(
                       'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
@@ -221,35 +198,31 @@ export default function Activity() {
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex justify-between py-3 border-b border-border">
-                  <span className="text-muted-foreground">Amount</span>
+                  <span className="text-muted-foreground text-sm">Amount</span>
                   <span className={cn('font-medium numeral-display', privacyMode && 'privacy-blur')}>
                     {selectedActivity.cryptoAmount} {selectedActivity.crypto}
                   </span>
                 </div>
                 <div className="flex justify-between py-3 border-b border-border">
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     {selectedActivity.type === 'buy' ? 'Paid' : 'Received'}
                   </span>
                   <span className={cn('font-medium numeral-display', privacyMode && 'privacy-blur')}>
-                    ${selectedActivity.fiatAmount} {selectedActivity.fiat}
+                    ${selectedActivity.fiatAmount}
                   </span>
                 </div>
                 <div className="flex justify-between py-3 border-b border-border">
-                  <span className="text-muted-foreground">Method</span>
+                  <span className="text-muted-foreground text-sm">Method</span>
                   <span className="font-medium">{selectedActivity.method}</span>
                 </div>
-                <div className="flex justify-between py-3 border-b border-border">
-                  <span className="text-muted-foreground">Time</span>
-                  <span className="font-medium">{selectedActivity.timestamp}</span>
-                </div>
                 {selectedActivity.txHash && (
-                  <div className="flex justify-between py-3 border-b border-border">
-                    <span className="text-muted-foreground">Transaction</span>
+                  <div className="flex justify-between py-3">
+                    <span className="text-muted-foreground text-sm">Transaction</span>
                     <a
                       href="#"
-                      className="font-medium font-mono text-primary flex items-center gap-1 hover:underline"
+                      className="font-medium font-mono text-sm text-primary flex items-center gap-1 hover:underline"
                     >
                       {selectedActivity.txHash}
                       <ExternalLink className="h-3 w-3" />
