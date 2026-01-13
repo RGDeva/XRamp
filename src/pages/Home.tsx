@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowDownToLine, ArrowUpFromLine, ArrowRight, Eye, EyeOff, Wallet } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, ArrowRight, Eye, EyeOff, Zap, DollarSign, Shield, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
@@ -9,6 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import xrampLogo from '@/assets/xramp-logo-full.png';
 
 // Mock recent activity data
 const recentItems = [
@@ -43,56 +44,148 @@ const recentItems = [
 
 export default function Home() {
   const navigate = useNavigate();
-  const { isAuthenticated, user, login } = useAuth();
+  const { isAuthenticated, isLoading, user, login } = useAuth();
   const { privacyMode, togglePrivacyMode } = useApp();
 
   const deliveryAddress = getDeliveryAddress(user);
 
-  // Not logged in state
+  // Not logged in state - ZKP2P style landing
   if (!isAuthenticated) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md">
-          {/* Hero text */}
-          <div className="text-center mb-8 animate-fade-in">
-            <h1 className="text-4xl sm:text-5xl font-bold text-foreground leading-tight mb-3">
-              XRamp
+      <div className="min-h-[calc(100vh-4rem)] flex flex-col">
+        {/* Hero Section */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 text-center relative">
+          {/* Background subtle grid */}
+          <div className="absolute inset-0 proof-grid" />
+          
+          <div className="relative z-10 w-full max-w-4xl mx-auto">
+            {/* Quick Buy Widget Preview */}
+            <div className="mb-8 animate-fade-in">
+              <div className="inline-block bg-card border border-border rounded-2xl p-6 max-w-xs w-full shadow-elevated">
+                <h3 className="text-left font-semibold mb-4">Buy</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between bg-input border border-border rounded-xl px-4 py-3">
+                    <div className="text-left">
+                      <p className="text-xs text-muted-foreground">You send</p>
+                      <p className="text-lg font-mono text-muted-foreground">0.00</p>
+                    </div>
+                    <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-1.5">
+                      <DollarSign className="h-4 w-4 text-success" />
+                      <span className="text-sm font-medium">USD</span>
+                      <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between bg-input border border-border rounded-xl px-4 py-3">
+                    <div className="text-left">
+                      <p className="text-xs text-muted-foreground">Paying using</p>
+                    </div>
+                    <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-1.5">
+                      <span className="text-sm font-medium">Venmo</span>
+                      <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Headline */}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground leading-tight mb-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
+              Buy or Sell Crypto<br />
+              <span className="text-gradient-cyan">in 60 seconds</span>
             </h1>
-            <p className="text-lg text-muted-foreground">
-              Buy or sell crypto in a few taps.
-            </p>
-          </div>
-
-          {/* Login card */}
-          <div className="bg-card border border-border rounded-2xl p-8 text-center space-y-6 shadow-elevated animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <div className="h-16 w-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Wallet className="h-8 w-8 text-primary" />
-            </div>
             
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Log in to start</h2>
-              <p className="text-muted-foreground text-sm">
-                Connect once, then use Buy or Sell anytime.
-              </p>
-            </div>
-
-            <Button 
-              variant="hero" 
-              size="lg" 
-              onClick={login}
-              className="w-full"
-            >
-              Log in
-            </Button>
-
-            <p className="text-xs text-muted-foreground">
-              We only use what's needed to complete your order.
+            <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto animate-fade-in" style={{ animationDelay: '150ms' }}>
+              Buy crypto directly using any payment network
             </p>
-          </div>
 
-          {/* Tagline */}
-          <p className="text-center text-sm text-muted-foreground mt-6 animate-fade-in" style={{ animationDelay: '200ms' }}>
-            Private. Fast. Simple.
+            {/* CTA */}
+            <div className="flex flex-col items-center gap-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
+              <Button 
+                variant="hero" 
+                size="lg" 
+                onClick={login}
+                disabled={isLoading}
+                className="px-8"
+              >
+                {isLoading ? 'Loading...' : 'Get Started'}
+              </Button>
+              <button 
+                onClick={() => document.getElementById('learn-more')?.scrollIntoView({ behavior: 'smooth' })}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+              >
+                Learn more
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* What is XRamp Section */}
+        <div id="learn-more" className="px-4 py-16 bg-card/50">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-start">
+              {/* Left - Text */}
+              <div className="space-y-6">
+                <h2 className="text-3xl font-bold">What is XRamp?</h2>
+                <div className="space-y-4 text-muted-foreground leading-relaxed">
+                  <p>
+                    XRamp lets you buy or cash out crypto using everyday payment rails like Venmo, Cash App, Zelle, Revolut, or a bank transfer—without relying on a traditional exchange to hold your funds.
+                  </p>
+                  <p>
+                    Most places make you go through a centralized platform that adds friction, higher fees, and often asks for a lot of personal info. XRamp is built to keep the flow simple and collect as little data as possible.
+                  </p>
+                  <p>
+                    Behind the scenes, XRamp verifies that the payment was actually sent using "proof-based" checks, then completes the crypto transfer through smart contracts. So the trade can finish safely without XRamp needing to custody your money.
+                  </p>
+                </div>
+              </div>
+
+              {/* Right - Feature Cards */}
+              <div className="space-y-4">
+                <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-4">
+                  <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Zap className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">Fast</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Generate a proof in seconds, no waiting for seller to release funds.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-4">
+                  <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">Cheap</h3>
+                    <p className="text-sm text-muted-foreground">
+                      No intermediaries, every transaction is directly with a seller.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-4">
+                  <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">Zero fraud</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Cryptographic proofs ensure all transactions are authentic.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Note */}
+        <div className="px-4 py-8 text-center">
+          <p className="text-xs text-muted-foreground">
+            Minimal data. Proof-based settlement. Verification may be required depending on payment method, region, or limits.
           </p>
         </div>
       </div>

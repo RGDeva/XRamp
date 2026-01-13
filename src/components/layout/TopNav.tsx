@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Activity, Eye, EyeOff, ChevronDown, User, Shield, LogOut } from 'lucide-react';
+import { Eye, EyeOff, ChevronDown, User, Shield, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import xrampLogoIcon from '@/assets/xramp-logo-icon.png';
 
 export function TopNav() {
   const location = useLocation();
@@ -44,10 +45,12 @@ export function TopNav() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <NavLink to="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary transition-transform group-hover:scale-105">
-              <span className="text-base font-bold text-primary-foreground">X</span>
-            </div>
+          <NavLink to="/" className="flex items-center gap-2 group">
+            <img 
+              src={xrampLogoIcon} 
+              alt="XRamp" 
+              className="h-8 w-8 object-contain transition-transform group-hover:scale-105"
+            />
             <span className="text-lg font-semibold text-foreground hidden sm:block">XRamp</span>
           </NavLink>
 
