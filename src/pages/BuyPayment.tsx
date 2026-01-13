@@ -5,20 +5,18 @@ import { ArrowLeft, Copy, Check, AlertTriangle, Clock, HelpCircle } from 'lucide
 import { cn } from '@/lib/utils';
 import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 
-export default function SellTransfer() {
+export default function BuyPayment() {
   const navigate = useNavigate();
   const location = useLocation();
   const [timeLeft, setTimeLeft] = useState(14 * 60 + 59);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const state = location.state || {};
-  const sellAmount = state.sellAmount || '100';
-  const receiveAmount = state.receiveAmount || '99.00';
-  const payoutMethodId = state.payoutMethod || 'venmo';
-  const crypto = state.crypto || 'USDC';
+  const payAmount = state.payAmount || '100.00';
+  const paymentMethodId = state.paymentMethod || 'venmo';
   const currency = state.currency || 'USD';
-
-  const payoutMethod = getPaymentMethodById(payoutMethodId);
+  
+  const paymentMethod = getPaymentMethodById(paymentMethodId);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -39,12 +37,26 @@ export default function SellTransfer() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const transferDetails = {
-    amount: `${sellAmount} ${crypto}`,
-    recipient: 'XRamp Settlement',
-    account: 'xramp.base.eth',
-    reference: 'XR-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+  // Generate payment details based on method
+  const getPaymentDetails = () => {
+    switch (paymentMethodId) {
+      case 'venmo':
+        return { handle: '@XRamp-Settlement', type: 'Venmo handle' };
+      case 'cashapp':
+        return { handle: '$XRampSettlement', type: 'Cash App tag' };
+      case 'zelle':
+        return { handle: 'payments@xramp.app', type: 'Zelle email' };
+      case 'revolut':
+        return { handle: '@xramp', type: 'Revolut tag' };
+      case 'wise':
+        return { handle: 'payments@xramp.app', type: 'Wise email' };
+      default:
+        return { handle: 'XRamp Settlement', type: 'Recipient' };
+    }
   };
+
+  const paymentDetails = getPaymentDetails();
+  const referenceCode = 'XR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
   const CopyButton = ({ field, value, primary = false }: { field: string; value: string; primary?: boolean }) => (
     <button
@@ -67,7 +79,7 @@ export default function SellTransfer() {
   return (
     <div className="max-w-md mx-auto px-4 py-8 pb-32 md:pb-8">
       <button
-        onClick={() => navigate('/sell')}
+        onClick={() => navigate('/buy/confirm')}
         className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors text-sm"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -77,73 +89,53 @@ export default function SellTransfer() {
       <div className="bg-card border border-border rounded-2xl p-5 space-y-5 animate-fade-in">
         {/* Header */}
         <div>
-          <h1 className="text-xl font-semibold mb-2">Transfer to complete</h1>
+          <h1 className="text-xl font-semibold mb-2">Complete your payment</h1>
           <div className="flex items-center gap-2 text-primary text-sm">
             <Clock className="h-4 w-4" />
-            <span className="font-medium">Window active</span>
+            <span className="font-medium">Transfer window</span>
             <span className="font-mono font-semibold">{formatTime(timeLeft)}</span>
           </div>
         </div>
 
-        {/* Payout summary */}
+        {/* Payment Method */}
         <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
           <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-sm font-medium">
-            {payoutMethod?.icon}
+            {paymentMethod?.icon}
           </div>
           <div>
-            <p className="font-medium text-sm">Receive ${receiveAmount} {currency}</p>
-            <p className="text-xs text-muted-foreground">via {payoutMethod?.name} • {payoutMethod?.eta}</p>
+            <p className="font-medium text-sm">Pay via {paymentMethod?.name}</p>
+            <p className="text-xs text-muted-foreground">Follow the steps below</p>
           </div>
         </div>
 
-        {/* Transfer Details */}
+        {/* Payment Details */}
         <div className="space-y-3">
           <div className="bg-secondary/50 rounded-xl p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground mb-1">Send amount</p>
-              <p className="text-xl font-semibold numeral-display">{transferDetails.amount}</p>
+              <p className="text-xs text-muted-foreground mb-1">Amount</p>
+              <p className="text-xl font-semibold numeral-display">${payAmount} {currency}</p>
             </div>
-            <CopyButton field="amount" value={sellAmount} />
+            <CopyButton field="amount" value={`${payAmount}`} />
           </div>
 
           <div className="bg-secondary/50 rounded-xl p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground mb-1">Recipient</p>
-              <p className="font-medium">{transferDetails.recipient}</p>
+              <p className="text-xs text-muted-foreground mb-1">{paymentDetails.type}</p>
+              <p className="font-medium font-mono text-sm">{paymentDetails.handle}</p>
             </div>
-            <CopyButton field="recipient" value={transferDetails.recipient} />
-          </div>
-
-          <div className="bg-secondary/50 rounded-xl p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Account</p>
-              <p className="font-medium font-mono text-sm">{transferDetails.account}</p>
-            </div>
-            <CopyButton field="account" value={transferDetails.account} />
+            <CopyButton field="handle" value={paymentDetails.handle} />
           </div>
 
           {/* Reference Code - Prominent */}
           <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-primary font-medium mb-1">Reference (required)</p>
+                <p className="text-xs text-primary font-medium mb-1">Reference code (required)</p>
                 <p className="text-2xl font-bold font-mono tracking-wider text-primary">
-                  {transferDetails.reference}
+                  {referenceCode}
                 </p>
               </div>
-              <button
-                onClick={() => handleCopy('reference', transferDetails.reference)}
-                className={cn(
-                  'p-3 rounded-lg transition-colors',
-                  copiedField === 'reference' ? 'bg-success/20' : 'bg-primary/20 hover:bg-primary/30'
-                )}
-              >
-                {copiedField === 'reference' ? (
-                  <Check className="h-5 w-5 text-success" />
-                ) : (
-                  <Copy className="h-5 w-5 text-primary" />
-                )}
-              </button>
+              <CopyButton field="reference" value={referenceCode} primary />
             </div>
           </div>
         </div>
@@ -152,7 +144,7 @@ export default function SellTransfer() {
         <div className="flex items-start gap-3 p-3 bg-warning/10 border border-warning/20 rounded-xl">
           <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
           <p className="text-xs text-warning">
-            Include the reference code or your payout may be delayed.
+            Include the reference code in your payment note or your order may be delayed.
           </p>
         </div>
       </div>
@@ -163,7 +155,7 @@ export default function SellTransfer() {
           <Button
             variant="hero"
             className="w-full"
-            onClick={() => navigate('/activity')}
+            onClick={() => navigate('/buy/verify', { state: location.state })}
           >
             I've sent it
           </Button>

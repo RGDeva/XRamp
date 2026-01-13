@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowDownToLine, ArrowUpFromLine, ExternalLink } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, ExternalLink, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/contexts/AppContext';
 import {
@@ -21,6 +21,9 @@ interface ActivityItem {
   status: 'pending' | 'completed' | 'failed';
   timestamp: string;
   txHash?: string;
+  rate: string;
+  fee: string;
+  referenceCode?: string;
 }
 
 const mockActivities: ActivityItem[] = [
@@ -35,6 +38,9 @@ const mockActivities: ActivityItem[] = [
     status: 'completed',
     timestamp: '2 hours ago',
     txHash: '0xabc...def',
+    rate: '1.00',
+    fee: '2.50',
+    referenceCode: 'XR-8A7F3B',
   },
   {
     id: '2',
@@ -46,6 +52,9 @@ const mockActivities: ActivityItem[] = [
     method: 'Cash App',
     status: 'pending',
     timestamp: '5 hours ago',
+    rate: '3000.00',
+    fee: '4.50',
+    referenceCode: 'XR-C2D4E6',
   },
   {
     id: '3',
@@ -54,10 +63,13 @@ const mockActivities: ActivityItem[] = [
     crypto: 'USDC',
     fiatAmount: '1,206.00',
     fiat: 'USD',
-    method: 'Venmo',
+    method: 'Zelle',
     status: 'completed',
     timestamp: 'Yesterday',
     txHash: '0x123...789',
+    rate: '1.00',
+    fee: '6.00',
+    referenceCode: 'XR-9B8C7D',
   },
 ];
 
@@ -67,6 +79,7 @@ export default function Activity() {
   const { privacyMode, wallet } = useApp();
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const filteredActivities = mockActivities.filter((activity) => {
     if (filter === 'all') return true;
@@ -81,8 +94,14 @@ export default function Activity() {
     { value: 'completed', label: 'Completed' },
   ];
 
+  const handleCopy = (field: string, value: string) => {
+    navigator.clipboard.writeText(value);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
   return (
-    <div className="max-w-xl mx-auto px-4 py-8">
+    <div className="max-w-xl mx-auto px-4 py-8 pb-24 md:pb-8">
       <h1 className="text-2xl font-semibold mb-6">Activity</h1>
 
       {/* Filters */}
@@ -198,7 +217,7 @@ export default function Activity() {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-0">
                 <div className="flex justify-between py-3 border-b border-border">
                   <span className="text-muted-foreground text-sm">Amount</span>
                   <span className={cn('font-medium numeral-display', privacyMode && 'privacy-blur')}>
@@ -214,8 +233,38 @@ export default function Activity() {
                   </span>
                 </div>
                 <div className="flex justify-between py-3 border-b border-border">
+                  <span className="text-muted-foreground text-sm">Rate</span>
+                  <span className="font-medium">1 {selectedActivity.crypto} = ${selectedActivity.rate}</span>
+                </div>
+                <div className="flex justify-between py-3 border-b border-border">
+                  <span className="text-muted-foreground text-sm">Fee</span>
+                  <span className="font-medium">${selectedActivity.fee}</span>
+                </div>
+                <div className="flex justify-between py-3 border-b border-border">
                   <span className="text-muted-foreground text-sm">Method</span>
                   <span className="font-medium">{selectedActivity.method}</span>
+                </div>
+                {selectedActivity.referenceCode && (
+                  <div className="flex justify-between items-center py-3 border-b border-border">
+                    <span className="text-muted-foreground text-sm">Reference</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm">{selectedActivity.referenceCode}</span>
+                      <button 
+                        onClick={() => handleCopy('ref', selectedActivity.referenceCode!)}
+                        className="p-1 hover:bg-muted rounded"
+                      >
+                        {copiedField === 'ref' ? (
+                          <Check className="h-3.5 w-3.5 text-success" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-between py-3 border-b border-border">
+                  <span className="text-muted-foreground text-sm">Time</span>
+                  <span className="font-medium">{selectedActivity.timestamp}</span>
                 </div>
                 {selectedActivity.txHash && (
                   <div className="flex justify-between py-3">
