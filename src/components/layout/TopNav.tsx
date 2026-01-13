@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Activity, Settings, Wallet, Eye, EyeOff, Home } from 'lucide-react';
+import { Activity, Eye, EyeOff, ChevronDown, User, Shield, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
 import { cn } from '@/lib/utils';
 import {
@@ -8,20 +9,24 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function TopNav() {
   const location = useLocation();
-  const { wallet, connectWallet, disconnectWallet, privacyMode, togglePrivacyMode } = useApp();
+  const { isAuthenticated, isLoading, user, login, logout } = useAuth();
+  const { privacyMode, togglePrivacyMode } = useApp();
 
   const navLinks = [
     { path: '/', label: 'Home', exact: true },
     { path: '/buy', label: 'Buy' },
     { path: '/sell', label: 'Sell' },
-  ];
-
-  const secondaryLinks = [
-    { path: '/activity', label: 'Activity', icon: Activity },
-    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/activity', label: 'Activity' },
   ];
 
   const isActiveLink = (link: typeof navLinks[0]) => {
@@ -30,6 +35,9 @@ export function TopNav() {
     }
     return location.pathname.startsWith(link.path);
   };
+
+  const deliveryAddress = getDeliveryAddress(user);
+  const displayIdentifier = user?.email || (deliveryAddress ? truncateAddress(deliveryAddress) : null);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/90 backdrop-blur-lg">
@@ -43,8 +51,8 @@ export function TopNav() {
             <span className="text-lg font-semibold text-foreground hidden sm:block">XRamp</span>
           </NavLink>
 
-          {/* Center nav - Home/Buy/Sell */}
-          <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 bg-secondary/50 p-1 rounded-xl">
+          {/* Center nav */}
+          <nav className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl">
             {navLinks.map((link) => {
               const isActive = isActiveLink(link);
               return (
@@ -66,27 +74,6 @@ export function TopNav() {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
-            {/* Secondary nav links - desktop only */}
-            <div className="hidden md:flex items-center gap-1 mr-2">
-              {secondaryLinks.map((link) => {
-                const isActive = location.pathname === link.path;
-                return (
-                  <NavLink
-                    key={link.path}
-                    to={link.path}
-                    className={cn(
-                      'p-2 rounded-lg transition-colors',
-                      isActive
-                        ? 'text-primary bg-primary/10'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                    )}
-                  >
-                    <link.icon className="h-5 w-5" />
-                  </NavLink>
-                );
-              })}
-            </div>
-
             {/* Privacy Mode */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -101,26 +88,50 @@ export function TopNav() {
               </TooltipTrigger>
               <TooltipContent>
                 <p className="text-sm">
-                  {privacyMode ? 'Privacy mode on – amounts hidden' : 'Hide amounts on screen'}
+                  {privacyMode ? 'Privacy mode on' : 'Hides amounts on screen only.'}
                 </p>
               </TooltipContent>
             </Tooltip>
 
-            {/* Wallet */}
-            {wallet.isConnected ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={disconnectWallet}
-                className="font-mono text-xs h-9 gap-2"
-              >
-                <div className="h-2 w-2 rounded-full bg-success" />
-                {wallet.address}
+            {/* Auth */}
+            {isLoading ? (
+              <Button size="sm" variant="outline" disabled className="h-9">
+                <div className="h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
               </Button>
+            ) : isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 gap-2"
+                  >
+                    <div className="h-2 w-2 rounded-full bg-success" />
+                    <span className="hidden sm:inline max-w-[120px] truncate">
+                      {displayIdentifier || 'Account'}
+                    </span>
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem className="gap-2">
+                    <User className="h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2">
+                    <Shield className="h-4 w-4" />
+                    Security
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="gap-2 text-destructive" onClick={logout}>
+                    <LogOut className="h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
-              <Button size="sm" onClick={connectWallet} className="h-9 gap-2">
-                <Wallet className="h-4 w-4" />
-                <span className="hidden sm:inline">Connect</span>
+              <Button size="sm" onClick={login} className="h-9">
+                Log in
               </Button>
             )}
           </div>

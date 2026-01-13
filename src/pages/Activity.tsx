@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ArrowDownToLine, ArrowUpFromLine, ExternalLink, Copy, Check } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, ExternalLink, Copy, Check, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
 import {
   Sheet,
@@ -18,8 +19,9 @@ interface ActivityItem {
   fiatAmount: string;
   fiat: string;
   method: string;
-  status: 'pending' | 'completed' | 'failed';
+  status: 'pending' | 'processing' | 'completed' | 'action_needed';
   timestamp: string;
+  createdAt: string;
   txHash?: string;
   rate: string;
   fee: string;
@@ -36,7 +38,8 @@ const mockActivities: ActivityItem[] = [
     fiat: 'USD',
     method: 'Venmo',
     status: 'completed',
-    timestamp: '2 hours ago',
+    timestamp: '2h ago',
+    createdAt: '2024-01-15 14:30',
     txHash: '0xabc...def',
     rate: '1.00',
     fee: '2.50',
@@ -51,7 +54,8 @@ const mockActivities: ActivityItem[] = [
     fiat: 'USD',
     method: 'Cash App',
     status: 'pending',
-    timestamp: '5 hours ago',
+    timestamp: '5h ago',
+    createdAt: '2024-01-15 11:00',
     rate: '3000.00',
     fee: '4.50',
     referenceCode: 'XR-C2D4E6',
@@ -66,6 +70,7 @@ const mockActivities: ActivityItem[] = [
     method: 'Zelle',
     status: 'completed',
     timestamp: 'Yesterday',
+    createdAt: '2024-01-14 09:15',
     txHash: '0x123...789',
     rate: '1.00',
     fee: '6.00',
@@ -75,15 +80,30 @@ const mockActivities: ActivityItem[] = [
 
 type FilterType = 'all' | 'pending' | 'completed';
 
+const statusLabels: Record<string, string> = {
+  pending: 'Pending',
+  processing: 'Processing',
+  completed: 'Completed',
+  action_needed: 'Action needed',
+};
+
+const timelineSteps = [
+  { key: 'created', label: 'Created' },
+  { key: 'waiting', label: 'Waiting for transfer' },
+  { key: 'processing', label: 'Processing' },
+  { key: 'completed', label: 'Completed' },
+];
+
 export default function Activity() {
-  const { privacyMode, wallet } = useApp();
+  const { isAuthenticated, login } = useAuth();
+  const { privacyMode } = useApp();
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const filteredActivities = mockActivities.filter((activity) => {
     if (filter === 'all') return true;
-    if (filter === 'pending') return activity.status === 'pending';
+    if (filter === 'pending') return activity.status === 'pending' || activity.status === 'processing';
     if (filter === 'completed') return activity.status === 'completed';
     return true;
   });
@@ -99,6 +119,31 @@ export default function Activity() {
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
   };
+
+  const getTimelineStatus = (activity: ActivityItem) => {
+    switch (activity.status) {
+      case 'completed':
+        return 4;
+      case 'processing':
+        return 3;
+      case 'pending':
+        return 2;
+      default:
+        return 1;
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-8 pb-24 md:pb-8">
+        <h1 className="text-2xl font-semibold mb-6">Activity</h1>
+        <div className="bg-card border border-border rounded-2xl text-center py-16">
+          <p className="text-muted-foreground mb-4">Log in to see your activity</p>
+          <Button onClick={login}>Log in</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-xl mx-auto px-4 py-8 pb-24 md:pb-8">
@@ -123,13 +168,10 @@ export default function Activity() {
       </div>
 
       {/* Activity List */}
-      {!wallet.isConnected ? (
+      {filteredActivities.length === 0 ? (
         <div className="bg-card border border-border rounded-2xl text-center py-16">
-          <p className="text-muted-foreground">Connect wallet to see activity</p>
-        </div>
-      ) : filteredActivities.length === 0 ? (
-        <div className="bg-card border border-border rounded-2xl text-center py-16">
-          <p className="text-muted-foreground">No activity found</p>
+          <p className="text-muted-foreground font-medium mb-1">No activity yet</p>
+          <p className="text-muted-foreground text-sm">Your buys and sells will show up here.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -154,28 +196,26 @@ export default function Activity() {
                   )}
                 </div>
                 <div>
-                  <p className="font-medium text-sm capitalize">{activity.type}</p>
+                  <p className="font-medium text-sm">
+                    {activity.type === 'buy' ? 'Buy' : 'Sell'} • {activity.type === 'buy' ? '+' : '-'}
+                    {activity.cryptoAmount} {activity.crypto}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {activity.method} • {activity.timestamp}
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className={cn('font-medium text-sm numeral-display', privacyMode && 'privacy-blur')}>
-                  {activity.type === 'buy' ? '+' : '-'}
-                  {activity.cryptoAmount} {activity.crypto}
-                </p>
-                <span
-                  className={cn(
-                    'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
-                    activity.status === 'completed' && 'status-completed',
-                    activity.status === 'pending' && 'status-pending',
-                    activity.status === 'failed' && 'status-failed'
-                  )}
-                >
-                  {activity.status.charAt(0).toUpperCase() + activity.status.slice(1)}
-                </span>
-              </div>
+              <span
+                className={cn(
+                  'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                  activity.status === 'completed' && 'status-completed',
+                  activity.status === 'pending' && 'status-pending',
+                  activity.status === 'processing' && 'status-pending',
+                  activity.status === 'action_needed' && 'bg-primary/10 text-primary border border-primary/20'
+                )}
+              >
+                {statusLabels[activity.status]}
+              </span>
             </div>
           ))}
         </div>
@@ -183,12 +223,13 @@ export default function Activity() {
 
       {/* Activity Details Sheet */}
       <Sheet open={!!selectedActivity} onOpenChange={() => setSelectedActivity(null)}>
-        <SheetContent className="bg-background border-border">
+        <SheetContent className="bg-background border-border overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Order Details</SheetTitle>
+            <SheetTitle>Order details</SheetTitle>
           </SheetHeader>
           {selectedActivity && (
             <div className="mt-6 space-y-6">
+              {/* Summary */}
               <div className="flex items-center gap-3">
                 <div
                   className={cn(
@@ -208,15 +249,15 @@ export default function Activity() {
                     className={cn(
                       'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
                       selectedActivity.status === 'completed' && 'status-completed',
-                      selectedActivity.status === 'pending' && 'status-pending',
-                      selectedActivity.status === 'failed' && 'status-failed'
+                      selectedActivity.status === 'pending' && 'status-pending'
                     )}
                   >
-                    {selectedActivity.status.charAt(0).toUpperCase() + selectedActivity.status.slice(1)}
+                    {statusLabels[selectedActivity.status]}
                   </span>
                 </div>
               </div>
 
+              {/* Details */}
               <div className="space-y-0">
                 <div className="flex justify-between py-3 border-b border-border">
                   <span className="text-muted-foreground text-sm">Amount</span>
@@ -262,12 +303,8 @@ export default function Activity() {
                     </div>
                   </div>
                 )}
-                <div className="flex justify-between py-3 border-b border-border">
-                  <span className="text-muted-foreground text-sm">Time</span>
-                  <span className="font-medium">{selectedActivity.timestamp}</span>
-                </div>
                 {selectedActivity.txHash && (
-                  <div className="flex justify-between py-3">
+                  <div className="flex justify-between py-3 border-b border-border">
                     <span className="text-muted-foreground text-sm">Transaction</span>
                     <a
                       href="#"
@@ -280,8 +317,45 @@ export default function Activity() {
                 )}
               </div>
 
-              <Button variant="outline" className="w-full">
-                Contact Support
+              {/* Timeline */}
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-muted-foreground">Timeline</p>
+                <div className="space-y-2">
+                  {timelineSteps.map((step, index) => {
+                    const currentStep = getTimelineStatus(selectedActivity);
+                    const isCompleted = index < currentStep;
+                    const isCurrent = index === currentStep - 1;
+                    
+                    return (
+                      <div key={step.key} className="flex items-center gap-3">
+                        <div className={cn(
+                          'h-6 w-6 rounded-full flex items-center justify-center',
+                          isCompleted ? 'bg-success/10' : 'bg-muted'
+                        )}>
+                          {isCompleted ? (
+                            <Check className="h-3 w-3 text-success" />
+                          ) : (
+                            <div className={cn(
+                              'h-2 w-2 rounded-full',
+                              isCurrent ? 'bg-primary' : 'bg-muted-foreground'
+                            )} />
+                          )}
+                        </div>
+                        <span className={cn(
+                          'text-sm',
+                          isCompleted || isCurrent ? 'text-foreground' : 'text-muted-foreground'
+                        )}>
+                          {step.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <Button variant="outline" className="w-full gap-2">
+                <HelpCircle className="h-4 w-4" />
+                Need help?
               </Button>
             </div>
           )}

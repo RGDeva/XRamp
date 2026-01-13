@@ -1,15 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-interface WalletState {
-  isConnected: boolean;
-  address: string | null;
-  balance: string;
-}
-
 interface AppContextType {
-  wallet: WalletState;
-  connectWallet: () => void;
-  disconnectWallet: () => void;
   privacyMode: boolean;
   togglePrivacyMode: () => void;
   selectedCurrency: string;
@@ -21,31 +12,9 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [wallet, setWallet] = useState<WalletState>({
-    isConnected: false,
-    address: null,
-    balance: '0.00',
-  });
   const [privacyMode, setPrivacyMode] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [selectedCrypto, setSelectedCrypto] = useState('USDC');
-
-  const connectWallet = () => {
-    // Simulated wallet connection
-    setWallet({
-      isConnected: true,
-      address: '0x1234...5678',
-      balance: '2,450.00',
-    });
-  };
-
-  const disconnectWallet = () => {
-    setWallet({
-      isConnected: false,
-      address: null,
-      balance: '0.00',
-    });
-  };
 
   const togglePrivacyMode = () => {
     setPrivacyMode(prev => !prev);
@@ -54,9 +23,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider
       value={{
-        wallet,
-        connectWallet,
-        disconnectWallet,
         privacyMode,
         togglePrivacyMode,
         selectedCurrency,

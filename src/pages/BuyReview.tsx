@@ -1,11 +1,13 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Wallet, Check } from 'lucide-react';
+import { ArrowLeft, Clock } from 'lucide-react';
 import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
+import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
 
-export default function BuyConfirm() {
+export default function BuyReview() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   
   const state = location.state || {};
   const payAmount = state.payAmount || '100.00';
@@ -15,10 +17,10 @@ export default function BuyConfirm() {
   const crypto = state.crypto || 'USDC';
   
   const paymentMethod = getPaymentMethodById(paymentMethodId);
+  const deliveryAddress = getDeliveryAddress(user);
 
-  const handleComplete = () => {
-    // For payment methods that require off-platform transfer
-    navigate('/buy/payment', {
+  const handleConfirm = () => {
+    navigate('/buy/complete', {
       state: {
         ...state,
         paymentMethod: paymentMethodId,
@@ -37,7 +39,7 @@ export default function BuyConfirm() {
       </button>
 
       <div className="bg-card border border-border rounded-2xl p-5 space-y-5 animate-fade-in">
-        <h1 className="text-xl font-semibold">Review & Pay</h1>
+        <h1 className="text-xl font-semibold">Review buy</h1>
 
         {/* Summary */}
         <div className="bg-secondary/50 rounded-xl p-4 space-y-3">
@@ -51,50 +53,56 @@ export default function BuyConfirm() {
           </div>
         </div>
 
-        {/* Payment Method */}
-        <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-xl">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-sm font-medium">
-              {paymentMethod?.icon}
+        {/* Quote details */}
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">Quote details</p>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Rate</span>
+              <span>1 {crypto} = $1.00 {currency}</span>
             </div>
-            <div>
-              <p className="font-medium text-sm">{paymentMethod?.name}</p>
-              <p className="text-xs text-muted-foreground">Payment method</p>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Network fee</span>
+              <span>$0.12</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">XRamp fee</span>
+              <span>${(parseFloat(payAmount) * 0.005).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between pt-2 border-t border-border font-medium">
+              <span>Total</span>
+              <span>${payAmount}</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              <span>Rate lock</span>
+              <span className="font-mono">00:28</span>
             </div>
           </div>
-          <button
-            onClick={() => navigate('/buy')}
-            className="text-xs text-primary hover:underline"
-          >
-            Change
-          </button>
+        </div>
+
+        {/* Payment method */}
+        <div className="flex items-center gap-3 p-4 bg-secondary/30 rounded-xl">
+          <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-sm font-medium">
+            {paymentMethod?.icon}
+          </div>
+          <div className="flex-1">
+            <p className="font-medium text-sm">{paymentMethod?.name}</p>
+            <p className="text-xs text-muted-foreground">Payment method</p>
+          </div>
         </div>
 
         {/* Destination */}
-        <div className="flex items-center gap-3 p-4 bg-secondary/30 rounded-xl">
-          <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
-            <Wallet className="h-4 w-4 text-muted-foreground" />
+        {deliveryAddress && (
+          <div className="p-4 bg-secondary/30 rounded-xl">
+            <p className="text-xs text-muted-foreground mb-1">Delivery address</p>
+            <p className="font-mono text-sm">{truncateAddress(deliveryAddress)}</p>
           </div>
-          <div>
-            <p className="font-mono text-xs">0x1234...5678</p>
-            <p className="text-xs text-muted-foreground">Destination wallet</p>
-          </div>
-        </div>
+        )}
 
-        {/* Features */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Check className="h-3.5 w-3.5 text-success" />
-            <span>Proof-based settlement. Minimal data.</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Check className="h-3.5 w-3.5 text-success" />
-            <span>Estimated arrival: {paymentMethod?.eta}</span>
-          </div>
-        </div>
-
+        {/* Compliance note */}
         <p className="text-xs text-muted-foreground text-center">
-          Verification may be required depending on payment method, limits, or region.
+          Minimal data. Proof-based settlement. Verification may be required depending on method, region, or limits.
         </p>
       </div>
 
@@ -104,9 +112,9 @@ export default function BuyConfirm() {
           <Button
             variant="hero"
             className="w-full"
-            onClick={handleComplete}
+            onClick={handleConfirm}
           >
-            Complete Purchase
+            Confirm buy
           </Button>
           <Button
             variant="ghost"
@@ -114,7 +122,7 @@ export default function BuyConfirm() {
             size="sm"
             onClick={() => navigate('/buy')}
           >
-            Change payment method
+            Change method
           </Button>
         </div>
       </div>
