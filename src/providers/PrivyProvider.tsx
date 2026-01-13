@@ -18,6 +18,11 @@ export function PrivyWrapper({ children }: PrivyWrapperProps) {
           showWalletLoginFirst: false,
         },
         loginMethods: ['email', 'wallet'],
+        embeddedWallets: {
+          ethereum: {
+            createOnLogin: 'users-without-wallets',
+          },
+        },
       }}
     >
       {children}
