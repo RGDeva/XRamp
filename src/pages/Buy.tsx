@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SwapInput } from '@/components/shared/SwapInput';
-import { PaymentMethodSelect } from '@/components/shared/PaymentMethodSelect';
+import { PaymentMethodPicker, getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 import { useApp } from '@/contexts/AppContext';
-import { ArrowRight, ChevronDown, Clock } from 'lucide-react';
+import { ArrowRight, ChevronDown, Clock, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Collapsible,
@@ -12,14 +12,18 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 
-const Index = () => {
+export default function Buy() {
   const navigate = useNavigate();
-  const { wallet, selectedCurrency, setSelectedCurrency, selectedCrypto, setSelectedCrypto } = useApp();
+  const { wallet, connectWallet, selectedCurrency, setSelectedCurrency, selectedCrypto, setSelectedCrypto } = useApp();
   
   const [payAmount, setPayAmount] = useState('');
   const [receiveAmount, setReceiveAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('venmo');
+  const [showMethodPicker, setShowMethodPicker] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+
+  const selectedMethod = getPaymentMethodById(paymentMethod);
+  const numericAmount = parseFloat(payAmount) || 0;
 
   // Simulate quote calculation
   const calculateReceive = (amount: string) => {
@@ -32,11 +36,26 @@ const Index = () => {
     }
   };
 
-  const hasValidAmount = parseFloat(payAmount) > 0;
+  const hasValidAmount = numericAmount > 0;
+
+  const handleContinue = () => {
+    if (!wallet.isConnected) {
+      connectWallet();
+      return;
+    }
+    navigate('/buy/confirm', {
+      state: {
+        payAmount,
+        receiveAmount,
+        paymentMethod,
+        currency: selectedCurrency,
+        crypto: selectedCrypto,
+      }
+    });
+  };
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-8">
-      {/* Swap Card */}
       <div className="w-full max-w-md">
         <div className="bg-card border border-border rounded-2xl p-5 space-y-3 shadow-elevated animate-fade-in">
           {/* Header */}
@@ -58,11 +77,21 @@ const Index = () => {
           />
 
           {/* Payment method */}
-          <PaymentMethodSelect
-            value={paymentMethod}
-            onValueChange={setPaymentMethod}
-            type="payment"
-          />
+          <button
+            onClick={() => setShowMethodPicker(true)}
+            className="w-full rounded-xl p-4 bg-secondary/50 hover:bg-secondary transition-colors"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Paying using</span>
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 rounded-md bg-muted flex items-center justify-center text-sm font-medium">
+                  {selectedMethod?.icon}
+                </div>
+                <span className="font-medium">{selectedMethod?.name}</span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+          </button>
 
           {/* You receive */}
           <SwapInput
@@ -82,7 +111,7 @@ const Index = () => {
               <CollapsibleTrigger className="w-full flex items-center justify-between py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <div className="flex items-center gap-2">
                   <Clock className="h-3.5 w-3.5" />
-                  <span>~10 min delivery</span>
+                  <span>{selectedMethod?.eta} delivery</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span>1 {selectedCrypto} = $1.00</span>
@@ -92,16 +121,24 @@ const Index = () => {
               <CollapsibleContent>
                 <div className="space-y-2 pt-2 pb-1 text-sm">
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Network fee</span>
-                    <span>$0.12</span>
+                    <span>Rate</span>
+                    <span>1 {selectedCrypto} = $1.00 {selectedCurrency}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>XRamp fee (0.5%)</span>
-                    <span>${(parseFloat(payAmount) * 0.005).toFixed(2)}</span>
+                    <span>${(numericAmount * 0.005).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Network fee</span>
+                    <span>$0.12</span>
                   </div>
                   <div className="flex justify-between text-foreground font-medium pt-2 border-t border-border">
                     <span>Total</span>
                     <span>${payAmount}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground pt-1">
+                    <Clock className="h-3 w-3" />
+                    <span>Rate locks for 2:00</span>
                   </div>
                 </div>
               </CollapsibleContent>
@@ -113,7 +150,7 @@ const Index = () => {
             variant="hero"
             className="w-full mt-2"
             disabled={!hasValidAmount}
-            onClick={() => navigate('/buy/confirm')}
+            onClick={handleContinue}
           >
             {wallet.isConnected ? 'Continue' : 'Connect Wallet'}
             <ArrowRight className="h-4 w-4 ml-1" />
@@ -133,13 +170,16 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Learn more link */}
-      <button className="mt-8 text-muted-foreground hover:text-foreground text-sm flex items-center gap-1 transition-colors animate-fade-in" style={{ animationDelay: '300ms' }}>
-        Learn more
-        <ChevronDown className="h-4 w-4" />
-      </button>
+      {/* Payment Method Picker */}
+      <PaymentMethodPicker
+        open={showMethodPicker}
+        onOpenChange={setShowMethodPicker}
+        value={paymentMethod}
+        onValueChange={setPaymentMethod}
+        type="payment"
+        amount={numericAmount}
+        currency={selectedCurrency}
+      />
     </div>
   );
-};
-
-export default Index;
+}

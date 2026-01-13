@@ -1,14 +1,35 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Wallet, Check } from 'lucide-react';
+import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 
 export default function BuyConfirm() {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  const state = location.state || {};
+  const payAmount = state.payAmount || '100.00';
+  const receiveAmount = state.receiveAmount || '99.50';
+  const paymentMethodId = state.paymentMethod || 'venmo';
+  const currency = state.currency || 'USD';
+  const crypto = state.crypto || 'USDC';
+  
+  const paymentMethod = getPaymentMethodById(paymentMethodId);
+
+  const handleComplete = () => {
+    // For payment methods that require off-platform transfer
+    navigate('/buy/payment', {
+      state: {
+        ...state,
+        paymentMethod: paymentMethodId,
+      }
+    });
+  };
 
   return (
     <div className="max-w-md mx-auto px-4 py-8 pb-32 md:pb-8">
       <button
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/buy')}
         className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors text-sm"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -22,11 +43,11 @@ export default function BuyConfirm() {
         <div className="bg-secondary/50 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">You pay</span>
-            <span className="font-semibold numeral-display">$100.00 USD</span>
+            <span className="font-semibold numeral-display">${payAmount} {currency}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">You receive</span>
-            <span className="font-semibold numeral-display text-primary">99.50 USDC</span>
+            <span className="font-semibold numeral-display text-primary">{receiveAmount} {crypto}</span>
           </div>
         </div>
 
@@ -34,15 +55,15 @@ export default function BuyConfirm() {
         <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-xl">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-sm font-medium">
-              V
+              {paymentMethod?.icon}
             </div>
             <div>
-              <p className="font-medium text-sm">Venmo</p>
+              <p className="font-medium text-sm">{paymentMethod?.name}</p>
               <p className="text-xs text-muted-foreground">Payment method</p>
             </div>
           </div>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/buy')}
             className="text-xs text-primary hover:underline"
           >
             Change
@@ -68,12 +89,12 @@ export default function BuyConfirm() {
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Check className="h-3.5 w-3.5 text-success" />
-            <span>Estimated arrival: ~10 minutes</span>
+            <span>Estimated arrival: {paymentMethod?.eta}</span>
           </div>
         </div>
 
         <p className="text-xs text-muted-foreground text-center">
-          Some payment methods may require verification.
+          Verification may be required depending on payment method, limits, or region.
         </p>
       </div>
 
@@ -83,7 +104,7 @@ export default function BuyConfirm() {
           <Button
             variant="hero"
             className="w-full"
-            onClick={() => navigate('/activity')}
+            onClick={handleComplete}
           >
             Complete Purchase
           </Button>
@@ -91,7 +112,7 @@ export default function BuyConfirm() {
             variant="ghost"
             className="w-full text-sm"
             size="sm"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/buy')}
           >
             Change payment method
           </Button>

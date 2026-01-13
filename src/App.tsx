@@ -5,8 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "@/contexts/AppContext";
 import { AppLayout } from "@/components/layout/AppLayout";
-import Index from "./pages/Index";
+import Home from "./pages/Home";
+import Buy from "./pages/Buy";
 import BuyConfirm from "./pages/BuyConfirm";
+import BuyPayment from "./pages/BuyPayment";
+import BuyVerify from "./pages/BuyVerify";
 import Sell from "./pages/Sell";
 import SellTransfer from "./pages/SellTransfer";
 import Activity from "./pages/Activity";
@@ -24,9 +27,11 @@ const App = () => (
         <BrowserRouter>
           <AppLayout>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/buy" element={<Index />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/buy" element={<Buy />} />
               <Route path="/buy/confirm" element={<BuyConfirm />} />
+              <Route path="/buy/payment" element={<BuyPayment />} />
+              <Route path="/buy/verify" element={<BuyVerify />} />
               <Route path="/sell" element={<Sell />} />
               <Route path="/sell/transfer" element={<SellTransfer />} />
               <Route path="/activity" element={<Activity />} />
