@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowDownToLine, ArrowUpFromLine, ExternalLink, Copy, Check, HelpCircle } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, ExternalLink, Copy, Check, HelpCircle, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
@@ -10,6 +10,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ActivityItem {
   id: string;
@@ -195,27 +196,42 @@ export default function Activity() {
                     <ArrowUpFromLine className="h-4 w-4 text-primary" />
                   )}
                 </div>
-                <div>
-                  <p className="font-medium text-sm">
-                    {activity.type === 'buy' ? 'Buy' : 'Sell'} • {activity.type === 'buy' ? '+' : '-'}
-                    {activity.cryptoAmount} {activity.crypto}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {activity.method} • {activity.timestamp}
-                  </p>
+                <div className="flex-1">
+                  {(activity.status === 'pending' || activity.status === 'processing') ? (
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="font-medium text-sm">
+                        {activity.type === 'buy' ? 'Buy' : 'Sell'} • {activity.type === 'buy' ? '+' : '-'}
+                        {activity.cryptoAmount} {activity.crypto}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {activity.method} • {activity.timestamp}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
-              <span
-                className={cn(
-                  'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
-                  activity.status === 'completed' && 'status-completed',
-                  activity.status === 'pending' && 'status-pending',
-                  activity.status === 'processing' && 'status-pending',
-                  activity.status === 'action_needed' && 'bg-primary/10 text-primary border border-primary/20'
-                )}
-              >
-                {statusLabels[activity.status]}
-              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                    activity.status === 'completed' && 'status-completed',
+                    activity.status === 'pending' && 'status-pending',
+                    activity.status === 'processing' && 'status-pending',
+                    activity.status === 'action_needed' && 'bg-primary/10 text-primary border border-primary/20'
+                  )}
+                >
+                  {statusLabels[activity.status]}
+                </span>
+                <button className="text-xs text-primary hover:underline flex items-center gap-1">
+                  <Eye className="h-3 w-3" />
+                  View
+                </button>
+              </div>
             </div>
           ))}
         </div>
