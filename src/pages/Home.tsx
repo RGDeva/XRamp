@@ -9,9 +9,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { DepositWidget } from '@/components/deposit';
 import xrampLogo from '@/assets/xramp-logo-full.png';
-
-// Mock recent activity data
 const recentItems = [
   {
     id: '1',
@@ -59,33 +58,9 @@ export default function Home() {
           <div className="absolute inset-0 proof-grid" />
           
           <div className="relative z-10 w-full max-w-4xl mx-auto">
-            {/* Quick Buy Widget Preview */}
+            {/* Deposit Widget Preview */}
             <div className="mb-8 animate-fade-in">
-              <div className="inline-block bg-card border border-border rounded-2xl p-6 max-w-xs w-full shadow-elevated">
-                <h3 className="text-left font-semibold mb-4">Buy</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between bg-input border border-border rounded-xl px-4 py-3">
-                    <div className="text-left">
-                      <p className="text-xs text-muted-foreground">You send</p>
-                      <p className="text-lg font-mono text-muted-foreground">0.00</p>
-                    </div>
-                    <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-1.5">
-                      <DollarSign className="h-4 w-4 text-success" />
-                      <span className="text-sm font-medium">USD</span>
-                      <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between bg-input border border-border rounded-xl px-4 py-3">
-                    <div className="text-left">
-                      <p className="text-xs text-muted-foreground">Paying using</p>
-                    </div>
-                    <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-1.5">
-                      <span className="text-sm font-medium">Venmo</span>
-                      <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <DepositWidget />
             </div>
 
             {/* Main Headline */}
@@ -95,7 +70,7 @@ export default function Home() {
             </h1>
             
             <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto animate-fade-in" style={{ animationDelay: '150ms' }}>
-              Buy crypto directly using any payment network
+              Deposit from any chain using any token
             </p>
 
             {/* CTA */}
