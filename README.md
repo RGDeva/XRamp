@@ -43,7 +43,7 @@ This repo contains the XRamp frontend built in Lovable and designed to stay mini
 
 ### Option 1: Use Lovable
 Open the project in Lovable and prompt changes:
-https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+(https://xramp.lovable.app/)
 
 Changes made in Lovable are committed automatically to this repo.
 
