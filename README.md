@@ -1,73 +1,57 @@
-# Welcome to your Lovable project
+# XRamp
 
-## Project info
+XRamp is an embedded crypto rails product that makes it easy to move between fiat and onchain assets in minutes.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+At a high level, XRamp orchestrates:
+- P2P onramp/offramp coordination (Peer / ZKP2P style flows)
+- Escrow-style safety guarantees (lock → confirm → release)
+- A universal swap layer (Trustware) to route USDC into any token
+- Optional privacy and shielded-transfer layers (future)
+- A distribution surface via web embed + Chrome extension (future)
 
-## How can I edit this code?
+This repo contains the XRamp frontend built in Lovable and designed to stay minimal, fast, and easy to embed.
 
-There are several ways of editing your application.
+## Product direction
 
-**Use Lovable**
+### Current focus (v0)
+- Clean 4-step flow: Amount → Funding → Swap → Withdraw
+- Intent + status tracking UI (funding, swapping, withdrawing)
+- Receipt view for users (timeline + tx refs)
+- Basic admin/debug surfaces (dev only)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### Planned integrations
+- **Peer / ZKP2P**: onramp and offramp coordination (fiat methods like Venmo, Cash App, Revolut, bank transfer)
+- **Trustware**: universal swaps and routing (USDC → target token)
+- **Escrow + verification**: automated lock/confirm/release lifecycle via orchestration + webhooks
+- **Veil.cash or similar** (optional): privacy mode and shielded transfers (phase 2)
 
-Changes made via Lovable will be committed automatically to this repo.
+### Future surfaces
+- **Chrome extension**: “XRamp anywhere” onramp/offramp/swap overlay
+- **Embedded SDK**: drop-in widget for partners
+- **Partner API**: create funding/swap/withdraw intents programmatically
 
-**Use your preferred IDE**
+## To-do (near-term)
+- [ ] Decide v0 chain + stablecoin scope (recommend: single chain + USDC only)
+- [ ] Define escrow model and verification rules per payment method
+- [ ] Implement intent-based state machine and status UI
+- [ ] Add webhook listeners for Peer and Trustware events
+- [ ] Add receipt export (JSON + human-readable)
+- [ ] Add basic admin view (intent list + detail + logs)
+- [ ] Spike Chrome extension architecture and onboarding flow
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Editing the app
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Option 1: Use Lovable
+Open the project in Lovable and prompt changes:
+https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
-Follow these steps:
+Changes made in Lovable are committed automatically to this repo.
+
+### Option 2: Work locally
+Requirements: Node.js + npm (nvm recommended)
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
 npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
