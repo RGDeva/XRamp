@@ -50,6 +50,10 @@ Changes made in Lovable are committed automatically to this repo.
 ### Option 2: Work locally
 Requirements: Node.js + npm (nvm recommended)
 
+
+Peer/ZkP2P Documentation - https://docs.peer.xyz/
+Trustware SDK Documentation - https://www.notion.so/trustware/Deposit-Widget-28671aae45df80c7b7bbeae1ff38848e
+
 ```sh
 git clone <YOUR_GIT_URL>
 cd <YOUR_PROJECT_NAME>
