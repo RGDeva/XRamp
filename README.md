@@ -53,7 +53,7 @@ Requirements: Node.js + npm (nvm recommended)
 
 Peer/ZkP2P Documentation - https://docs.peer.xyz/
 Trustware SDK Documentation - https://www.notion.so/trustware/Deposit-Widget-28671aae45df80c7b7bbeae1ff38848e
-
+https://github.com/zkp2p/zkp2p-contracts
 ```sh
 git clone <YOUR_GIT_URL>
 cd <YOUR_PROJECT_NAME>
