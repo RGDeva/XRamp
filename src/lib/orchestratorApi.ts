@@ -14,27 +14,65 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export interface CreateIntentPayload {
-  type: 'ONRAMP' | 'SWAP' | 'WITHDRAW';
+export type OrchestratorIntentState =
+  | 'CREATED'
+  | 'FUNDING'
+  | 'FUNDED'
+  | 'SWAPPING'
+  | 'READY_TO_WITHDRAW'
+  | 'WITHDRAWING'
+  | 'COMPLETE'
+  | 'FAILED'
+  | 'CANCELED'
+  | 'EXPIRED';
+
+export interface OrchestratorIntent {
+  id: string;
+  type: 'ONRAMP' | 'OFFRAMP' | 'SWAP' | 'WITHDRAW';
   userId: string;
   amount: string;
   sourceAsset: string;
   targetAsset: string;
+  state: OrchestratorIntentState;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const orchestratorApi = {
-  createOnrampIntent(payload: Omit<CreateIntentPayload, 'type'>) {
-    return request<{ intent: { id: string; state: string } }>('/intents/onramp', {
+  createOnrampIntent(payload: {
+    userId: string;
+    amount: string;
+    sourceAsset: string;
+    targetAsset: string;
+  }) {
+    return request<{ intent: OrchestratorIntent }>('/intents/onramp', {
       method: 'POST',
       body: JSON.stringify({ ...payload, type: 'ONRAMP' }),
     });
   },
 
-  getIntent(intentId: string) {
-    return request<{ intent: unknown; timeline: unknown[] }>(`/intents/${intentId}`);
+  createOfframpIntent(payload: {
+    userId: string;
+    amount: string;
+    sourceAsset: string;
+    targetAsset: string;
+  }) {
+    return request<{ intent: OrchestratorIntent }>('/intents/offramp', {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, type: 'OFFRAMP' }),
+    });
   },
 
-  transitionIntent(intentId: string, toState: string) {
+  listIntents(userId?: string) {
+    const qs = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    return request<{ intents: OrchestratorIntent[] }>(`/intents${qs}`);
+  },
+
+  getIntent(intentId: string) {
+    return request<{ intent: OrchestratorIntent; timeline: unknown[] }>(`/intents/${intentId}`);
+  },
+
+  transitionIntent(intentId: string, toState: OrchestratorIntentState) {
     return request(`/intents/${intentId}/transition`, {
       method: 'POST',
       body: JSON.stringify({ toState, actor: 'system' }),

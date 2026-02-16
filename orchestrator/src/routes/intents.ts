@@ -28,6 +28,14 @@ router.post('/intents/onramp', (req, res) => {
   return res.status(201).json({ intent });
 });
 
+router.post('/intents/offramp', (req, res) => {
+  const parsed = createIntentSchema.extend({ type: z.literal('OFFRAMP') }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+  const intent = createIntent(parsed.data);
+  return res.status(201).json({ intent });
+});
+
 router.post('/intents/swap', (req, res) => {
   const parsed = createIntentSchema.extend({ type: z.literal('SWAP') }).safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -44,8 +52,9 @@ router.post('/intents/withdraw', (req, res) => {
   return res.status(201).json({ intent });
 });
 
-router.get('/intents', (_req, res) => {
-  res.json({ intents: listIntents() });
+router.get('/intents', (req, res) => {
+  const userId = typeof req.query.userId === 'string' ? req.query.userId : undefined;
+  res.json({ intents: listIntents({ userId }) });
 });
 
 router.get('/intents/:id', (req, res) => {
@@ -78,6 +87,7 @@ router.get('/receipts/:intentId/export', (req, res) => {
   res.json({
     receipt: {
       intentId: intent.id,
+      type: intent.type,
       state: intent.state,
       amount: intent.amount,
       sourceAsset: intent.sourceAsset,
