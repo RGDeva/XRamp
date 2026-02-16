@@ -1,46 +1,59 @@
-# Intent State Machine (v0)
+# Intent State Machine (Canonical)
 
-## States
-- `created`
-- `matching`
-- `matched`
-- `awaiting_peer_payment`
-- `proof_submitted`
-- `proof_verified`
-- `settled`
-- `match_timeout`
-- `proof_rejected`
-- `disputed`
-- `cancelled`
-- `failed`
+## Canonical states (all intent types)
+- `CREATED`
+- `FUNDING`
+- `FUNDED`
+- `SWAPPING`
+- `READY_TO_WITHDRAW`
+- `WITHDRAWING`
+- `COMPLETE`
 
-## Allowed Transitions
-- `created -> matching`
-- `matching -> matched | match_timeout | cancelled`
-- `matched -> awaiting_peer_payment | cancelled`
-- `awaiting_peer_payment -> proof_submitted | match_timeout | disputed`
-- `proof_submitted -> proof_verified | proof_rejected | disputed`
-- `proof_verified -> settled`
-- `proof_rejected -> awaiting_peer_payment | disputed | failed`
-- `match_timeout -> matching | cancelled`
-- `disputed -> settled | failed`
+## Edge states
+- `FAILED`
+- `CANCELED`
+- `EXPIRED`
 
-## Timeouts (initial)
-- Match timeout: 180s
-- Peer payment/proof timeout: 900s
-- Dispute auto-escalation window: 1800s
+## Transition guidance by flow
 
-## Event Contract
-Every transition appends `event_log` row:
+### Onramp intent
+`CREATED -> FUNDING -> FUNDED -> (optional SWAPPING) -> READY_TO_WITHDRAW -> WITHDRAWING -> COMPLETE`
+
+### Offramp intent
+`CREATED -> FUNDING -> FUNDED -> COMPLETE`
+(If swap path is included, include `SWAPPING` before completion.)
+
+### Swap intent
+`CREATED -> SWAPPING -> READY_TO_WITHDRAW -> WITHDRAWING -> COMPLETE`
+
+### Withdraw intent
+`CREATED -> WITHDRAWING -> COMPLETE`
+
+## Failure transitions
+- Any active state -> `FAILED`
+- Any pre-complete state -> `CANCELED`
+- Any time-boxed state -> `EXPIRED`
+
+## Required transition side effects
+Every transition must:
+1. Append `event_log` row
+2. Update intent status
+3. Update timeline payload for UI
+4. Persist receipt artifacts when available
+
+## Event log fields (minimum)
 - `intent_id`
 - `from_state`
 - `to_state`
-- `actor` (`user|peer|system|admin`)
+- `actor` (`user|peer|system|admin|webhook`)
 - `reason_code`
 - `metadata_json`
 - `created_at`
 
-## Idempotency Rules
-- All webhook/event handlers require `idempotency_key`
-- Duplicate transition to same state returns 200 no-op
-- Invalid transition returns 409 + current state
+## Idempotency
+- Mutating endpoints require idempotency key
+- Duplicate transition to same target state = no-op + 200
+- Invalid transition = 409 + current state
+
+## Note
+Peer/ZKP2P matching, lock, proof, and verification are tracked in event metadata and receipt artifacts while the intent remains in canonical state progression above.
