@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, ChevronDown, User, Shield, LogOut } from 'lucide-react';
+import { Eye, EyeOff, ChevronDown, User, Shield, LogOut, Home, ArrowDownToLine, ArrowUpFromLine, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TubelightNavBar } from '@/components/ui/tubelight-navbar';
 import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
 import { cn } from '@/lib/utils';
@@ -18,24 +19,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import xrampLogoIcon from '@/assets/xramp-logo-icon.png';
 
+const desktopNavItems = [
+  { name: 'Home', url: '/', icon: Home, exact: true },
+  { name: 'Buy',  url: '/buy', icon: ArrowDownToLine },
+  { name: 'Sell', url: '/sell', icon: ArrowUpFromLine },
+  { name: 'Activity', url: '/activity', icon: Activity },
+];
+
 export function TopNav() {
   const location = useLocation();
   const { isAuthenticated, isLoading, user, login, logout } = useAuth();
   const { privacyMode, togglePrivacyMode } = useApp();
-
-  const navLinks = [
-    { path: '/', label: 'Home', exact: true },
-    { path: '/buy', label: 'Buy' },
-    { path: '/sell', label: 'Sell' },
-    { path: '/activity', label: 'Activity' },
-  ];
-
-  const isActiveLink = (link: typeof navLinks[0]) => {
-    if (link.exact) {
-      return location.pathname === link.path;
-    }
-    return location.pathname.startsWith(link.path);
-  };
 
   const deliveryAddress = getDeliveryAddress(user);
   const displayIdentifier = user?.email || (deliveryAddress ? truncateAddress(deliveryAddress) : null);
@@ -54,26 +48,10 @@ export function TopNav() {
             <span className="text-lg font-semibold text-foreground hidden sm:block">XRamp</span>
           </NavLink>
 
-          {/* Center nav */}
-          <nav className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-1 bg-secondary/50 p-1 rounded-xl">
-            {navLinks.map((link) => {
-              const isActive = isActiveLink(link);
-              return (
-                <NavLink
-                  key={link.path}
-                  to={link.path}
-                  className={cn(
-                    'px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200',
-                    isActive
-                      ? 'bg-card text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  {link.label}
-                </NavLink>
-              );
-            })}
-          </nav>
+          {/* Center nav — tubelight */}
+          <div className="absolute left-1/2 -translate-x-1/2 hidden md:block">
+            <TubelightNavBar items={desktopNavItems} />
+          </div>
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
