@@ -113,6 +113,31 @@ export default {
           from: { opacity: "0", transform: "scale(0.95)" },
           to: { opacity: "1", transform: "scale(1)" },
         },
+        "border-beam": {
+          "100%": { "offset-distance": "100%" },
+        },
+        "shimmer-slide": {
+          to: { transform: "translate(calc(100cqw - 100%), 0)" },
+        },
+        "spin-around": {
+          "0%": { transform: "translateZ(0) rotate(0)" },
+          "15%, 35%": { transform: "translateZ(0) rotate(90deg)" },
+          "65%, 85%": { transform: "translateZ(0) rotate(270deg)" },
+          "100%": { transform: "translateZ(0) rotate(360deg)" },
+        },
+        "gradient": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+          "100%": { backgroundPosition: "0% 50%" },
+        },
+        "pulse-scale": {
+          "0%, 100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.05)", opacity: "0.85" },
+        },
+        "count-up": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -121,6 +146,12 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
+        "border-beam": "border-beam calc(var(--duration)*1s) infinite linear",
+        "shimmer-slide": "shimmer-slide var(--speed) ease-in-out infinite alternate",
+        "spin-around": "spin-around calc(var(--speed)*2) infinite linear",
+        "gradient": "gradient 4s linear infinite",
+        "pulse-scale": "pulse-scale 2s ease-in-out infinite",
+        "count-up": "count-up 0.4s ease-out forwards",
       },
     },
   },

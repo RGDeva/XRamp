@@ -1,5 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
+import { BorderBeam } from '@/components/ui/border-beam';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 
@@ -35,7 +37,8 @@ export default function SellReview() {
         Back
       </button>
 
-      <div className="bg-card border border-border rounded-2xl p-5 space-y-5 animate-fade-in">
+      <div className="relative bg-card border border-border rounded-2xl p-5 space-y-5 animate-fade-in overflow-hidden">
+        <BorderBeam size={300} duration={10} colorFrom="hsl(185 80% 50%)" colorTo="hsl(142 70% 45%)" />
         <h1 className="text-xl font-semibold">Review sell</h1>
 
         {/* Summary */}
@@ -98,13 +101,11 @@ export default function SellReview() {
       {/* CTAs */}
       <div className="fixed bottom-20 md:bottom-8 left-0 right-0 p-4 md:relative md:p-0 md:mt-6">
         <div className="max-w-md mx-auto space-y-2">
-          <Button
-            variant="hero"
-            className="w-full"
+          <InteractiveHoverButton
+            text="Confirm sell"
             onClick={handleConfirm}
-          >
-            Confirm sell
-          </Button>
+            className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"
+          />
           <Button
             variant="ghost"
             className="w-full text-sm"

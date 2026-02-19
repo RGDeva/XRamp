@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { SwapInput } from '@/components/shared/SwapInput';
 import { PaymentMethodPicker, getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 import { useAuth } from '@/contexts/AuthContext';
@@ -91,7 +92,7 @@ export default function Sell() {
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-8 pb-24 md:pb-8">
       <div className="w-full max-w-md">
-        <div className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-elevated animate-fade-in">
+        <div className="relative bg-card border border-border rounded-2xl p-5 space-y-4 shadow-elevated animate-fade-in overflow-hidden shimmer-sweep">
           <div className="mb-2">
             <h1 className="text-xl font-semibold text-foreground">Sell crypto</h1>
           </div>
@@ -196,14 +197,12 @@ export default function Sell() {
 
         <div className="fixed bottom-20 md:bottom-8 left-0 right-0 p-4 md:relative md:p-0 md:mt-6">
           <div className="max-w-md mx-auto">
-            <Button
-              variant="hero"
-              className="w-full"
-              disabled={isSubmitting || (!canContinue && isAuthenticated)}
+            <InteractiveHoverButton
+              text={isSubmitting ? 'Creating intent…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
               onClick={handleContinue}
-            >
-              {isSubmitting ? 'Creating intent…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
-            </Button>
+              disabled={isSubmitting || (!canContinue && isAuthenticated)}
+              className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"
+            />
           </div>
         </div>
       </div>

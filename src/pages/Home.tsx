@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowDownToLine, ArrowUpFromLine, ArrowRight, Eye, EyeOff, Zap, DollarSign, Shield, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
+import { AnimatedGradientText } from '@/components/ui/animated-gradient-text';
 import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
 import { cn } from '@/lib/utils';
@@ -66,7 +68,7 @@ export default function Home() {
             {/* Main Headline */}
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground leading-tight mb-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
               Buy or Sell Crypto<br />
-              <span className="text-gradient-cyan">in 60 seconds</span>
+              <AnimatedGradientText>in 60 seconds</AnimatedGradientText>
             </h1>
             
             <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto animate-fade-in" style={{ animationDelay: '150ms' }}>
@@ -75,15 +77,12 @@ export default function Home() {
 
             {/* CTA */}
             <div className="flex flex-col items-center gap-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
-              <Button 
-                variant="hero" 
-                size="lg" 
+              <InteractiveHoverButton
+                text={isLoading ? 'Loading...' : 'Get Started'}
                 onClick={login}
                 disabled={isLoading}
-                className="px-8"
-              >
-                {isLoading ? 'Loading...' : 'Get Started'}
-              </Button>
+                className="w-44 h-12 text-base border-primary/40 text-foreground"
+              />
               <button 
                 onClick={() => document.getElementById('learn-more')?.scrollIntoView({ behavior: 'smooth' })}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
@@ -215,24 +214,16 @@ export default function Home() {
 
         {/* Action buttons - Cash App style */}
         <div className="grid grid-cols-2 gap-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
-          <Button
-            variant="hero"
-            size="lg"
+          <InteractiveHoverButton
+            text="Buy"
             onClick={() => navigate('/buy')}
-            className="h-20 text-lg flex-col gap-1"
-          >
-            <ArrowDownToLine className="h-6 w-6" />
-            Buy
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
+            className="w-full h-20 text-lg rounded-2xl border-primary/40 text-foreground"
+          />
+          <InteractiveHoverButton
+            text="Sell"
             onClick={() => navigate('/sell')}
-            className="h-20 text-lg flex-col gap-1 border-primary/30 text-primary hover:bg-primary/10"
-          >
-            <ArrowUpFromLine className="h-6 w-6" />
-            Sell
-          </Button>
+            className="w-full h-20 text-lg rounded-2xl border-primary/30 text-primary"
+          />
         </div>
 
         {/* Recent activity */}

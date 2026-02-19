@@ -1,5 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Check, Loader2 } from 'lucide-react';
 import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
 
@@ -20,7 +22,7 @@ export default function BuyComplete() {
     <div className="max-w-md mx-auto px-4 py-8 pb-32 md:pb-8">
       <div className="bg-card border border-border rounded-2xl p-6 space-y-6 animate-fade-in">
         {/* Success icon */}
-        <div className="h-16 w-16 mx-auto rounded-2xl bg-success/10 flex items-center justify-center">
+        <div className="h-16 w-16 mx-auto rounded-2xl bg-success/10 flex items-center justify-center animate-success-pop">
           <Check className="h-8 w-8 text-success" />
         </div>
 
@@ -36,11 +38,15 @@ export default function BuyComplete() {
         <div className="space-y-3 pt-4 border-t border-border">
           <div className="flex justify-between py-2">
             <span className="text-muted-foreground text-sm">Paid</span>
-            <span className="font-medium">${payAmount} {currency}</span>
+            <span className="font-medium">
+              $<AnimatedNumber value={parseFloat(payAmount) || 0} className="" /> {currency}
+            </span>
           </div>
           <div className="flex justify-between py-2">
             <span className="text-muted-foreground text-sm">Receiving</span>
-            <span className="font-medium text-primary">{receiveAmount} {crypto}</span>
+            <span className="font-medium text-primary">
+              <AnimatedNumber value={parseFloat(receiveAmount) || 0} className="" /> {crypto}
+            </span>
           </div>
           {deliveryAddress && (
             <div className="flex justify-between py-2">
@@ -61,13 +67,11 @@ export default function BuyComplete() {
       {/* CTAs */}
       <div className="fixed bottom-20 md:bottom-8 left-0 right-0 p-4 md:relative md:p-0 md:mt-6">
         <div className="max-w-md mx-auto space-y-2">
-          <Button
-            variant="hero"
-            className="w-full"
+          <InteractiveHoverButton
+            text="View activity"
             onClick={() => navigate('/activity')}
-          >
-            View activity
-          </Button>
+            className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"
+          />
           <Button
             variant="ghost"
             className="w-full text-sm"

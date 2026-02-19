@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { orchestratorApi, type OrchestratorIntent } from '@/lib/orchestratorApi';
 
 type FilterType = 'all' | 'active' | 'completed';
@@ -68,7 +69,11 @@ export default function Activity() {
         <h1 className="text-2xl font-semibold mb-6">Activity</h1>
         <div className="bg-card border border-border rounded-2xl text-center py-16">
           <p className="text-muted-foreground mb-4">Log in to see your activity</p>
-          <Button onClick={login}>Log in</Button>
+          <InteractiveHoverButton
+            text="Log in"
+            onClick={login}
+            className="mx-auto h-10 w-32 border-primary/40 text-foreground"
+          />
         </div>
       </div>
     );
@@ -109,8 +114,8 @@ export default function Activity() {
               <div
                 key={activity.id}
                 onClick={() => setSelectedActivity(activity)}
-                className="bg-card border border-border rounded-xl p-4 flex items-center justify-between cursor-pointer hover:bg-secondary/30 transition-colors animate-fade-in"
-                style={{ animationDelay: `${index * 40}ms` }}
+                className="bg-card border border-border rounded-xl p-4 flex items-center justify-between cursor-pointer hover:bg-secondary/30 transition-colors animate-slide-up"
+                style={{ animationDelay: `${index * 60}ms` }}
               >
                 <div className="flex items-center gap-3">
                   <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg', isBuy ? 'bg-success/10' : 'bg-primary/10')}>
