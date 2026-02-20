@@ -92,9 +92,9 @@ export default function Buy() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-8 pb-24 md:pb-8">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center px-4 py-8 pb-32 md:pb-12">
       <div className="w-full max-w-md">
-        <div className="relative bg-card border border-border rounded-2xl p-5 space-y-4 shadow-elevated animate-fade-in overflow-hidden shimmer-sweep">
+        <div className="relative bg-card border border-border rounded-2xl p-5 space-y-4 shadow-elevated animate-fade-in">
           <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
           <div className="mb-2">
             <h1 className="text-xl font-semibold text-foreground">Buy crypto</h1>
@@ -199,15 +199,13 @@ export default function Buy() {
           )}
         </div>
 
-        <div className="fixed bottom-20 md:bottom-8 left-0 right-0 p-4 md:relative md:p-0 md:mt-6">
-          <div className="max-w-md mx-auto">
-            <InteractiveHoverButton
-              text={isSubmitting ? 'Creating intent…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
-              onClick={handleContinue}
-              disabled={isSubmitting || (!canContinue && isAuthenticated)}
-              className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"
-            />
-          </div>
+        <div className="mt-4">
+          <InteractiveHoverButton
+            text={isSubmitting ? 'Creating intent…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
+            onClick={handleContinue}
+            disabled={isSubmitting || (!canContinue && isAuthenticated)}
+            className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"
+          />
         </div>
       </div>
 
