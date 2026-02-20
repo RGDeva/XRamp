@@ -59,25 +59,25 @@ export default function Ramp() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-background pb-24">
       <div className="max-w-lg mx-auto px-4 pt-8">
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">xRamp</h1>
-          <p className="text-gray-500 text-base">Buy crypto or create a deposit listing</p>
+          <h1 className="text-3xl font-bold text-foreground mb-1">xRamp</h1>
+          <p className="text-muted-foreground text-base">Buy crypto or create a deposit listing</p>
         </div>
 
         {/* Tab nav */}
-        <div className="flex gap-0 mb-8 border-b border-gray-200">
+        <div className="flex gap-0 mb-8 border-b border-border">
           {(['Buy', 'Send'] as Tab[]).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={`px-8 py-3 text-lg font-semibold transition-all border-b-2 -mb-px ${
                 tab === t
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               {t}
@@ -90,49 +90,49 @@ export default function Ramp() {
           <div className="space-y-5">
 
             {/* Amount + Token */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <label className="block text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">You Pay</label>
+            <div className="xramp-card">
+              <label className="block text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-widest">You Pay</label>
               <div className="flex gap-3 items-stretch">
                 <div className="flex-1 relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl font-medium">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-xl font-medium">$</span>
                   <input
                     type="number"
                     value={usdAmount}
                     onChange={e => setUsdAmount(e.target.value)}
                     placeholder="Enter USD"
-                    className="w-full pl-9 pr-4 py-4 text-2xl font-bold text-gray-900 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-blue-400 transition-colors"
+                    className="w-full pl-9 pr-4 py-4 text-2xl font-bold text-foreground bg-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                   />
                 </div>
                 <button
                   onClick={() => setShowTokenPicker(v => !v)}
-                  className="flex items-center gap-2 bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 hover:border-blue-300 transition-colors min-w-[120px] justify-between"
+                  className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-4 py-3 hover:border-primary/50 transition-all min-w-[120px] justify-between"
                 >
                   <div className="flex items-center gap-2">
                     <CryptoIcon symbol={selectedToken.symbol} size={32} />
-                    <span className="font-bold text-gray-900 text-lg">{selectedToken.symbol}</span>
+                    <span className="font-bold text-foreground text-lg">{selectedToken.symbol}</span>
                   </div>
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </button>
               </div>
 
               {/* Token picker dropdown */}
               {showTokenPicker && (
-                <div className="mt-3 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                <div className="mt-3 bg-card border border-border rounded-xl shadow-elevated overflow-hidden">
                   {TOKENS.map(token => (
                     <button
                       key={token.symbol}
                       onClick={() => { setSelectedToken(token); setShowTokenPicker(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors ${
-                        selectedToken.symbol === token.symbol ? 'bg-blue-50' : ''
+                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors ${
+                        selectedToken.symbol === token.symbol ? 'bg-secondary' : ''
                       }`}
                     >
                       <CryptoIcon symbol={token.symbol} size={36} />
                       <div className="text-left">
-                        <div className="font-bold text-gray-900">{token.symbol}</div>
-                        <div className="text-xs text-gray-400">{token.network}</div>
+                        <div className="font-bold text-foreground">{token.symbol}</div>
+                        <div className="text-xs text-muted-foreground">{token.network}</div>
                       </div>
                       {selectedToken.symbol === token.symbol && (
-                        <CheckCircle2 className="h-4 w-4 text-blue-500 ml-auto" />
+                        <CheckCircle2 className="h-4 w-4 text-primary ml-auto" />
                       )}
                     </button>
                   ))}
@@ -141,78 +141,78 @@ export default function Ramp() {
             </div>
 
             {/* Quotes preview card */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
+            <div className="xramp-card">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Quote</span>
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">Safe ramp</span>
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Quote</span>
+                <span className="text-xs bg-success/10 text-success border border-success/20 px-2 py-1 rounded-full font-medium">Safe ramp</span>
               </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
+              <div className="text-3xl font-bold text-foreground mb-1">
                 ${usdAmount || '0'} = {tokenAmount} {selectedToken.symbol}
               </div>
-              <div className="text-gray-400 text-sm mb-4">1 {selectedToken.symbol} ≈ ${price.toLocaleString()}</div>
-              <div className="flex items-center justify-between text-sm border-t border-gray-100 pt-3">
-                <div className="flex items-center gap-1 text-gray-500">
+              <div className="text-muted-foreground text-sm mb-4">1 {selectedToken.symbol} ≈ ${price.toLocaleString()}</div>
+              <div className="flex items-center justify-between text-sm border-t border-border pt-3">
+                <div className="flex items-center gap-1 text-muted-foreground">
                   <span>Fee (0.5%)</span>
-                  <div className="relative group">
-                    <Info className="h-3.5 w-3.5 text-gray-400 cursor-help" />
-                    <div className="absolute bottom-5 left-0 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  <div className="relative group/tip">
+                    <Info className="h-3.5 w-3.5 cursor-help" />
+                    <div className="absolute bottom-5 left-0 bg-popover border border-border text-foreground text-xs rounded-lg px-3 py-2 w-48 opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10 shadow-elevated">
                       Small cost for exchange — covers network & service
                     </div>
                   </div>
                 </div>
-                <span className="font-semibold text-gray-700">${fee}</span>
+                <span className="font-semibold text-foreground">${fee}</span>
               </div>
               <div className="flex items-center justify-between text-sm pt-2">
-                <span className="text-gray-500">You receive</span>
-                <span className="font-bold text-green-600">{tokenAmount} {selectedToken.symbol}</span>
+                <span className="text-muted-foreground">You receive</span>
+                <span className="font-bold text-success">{tokenAmount} {selectedToken.symbol}</span>
               </div>
             </div>
 
             {/* Rail mini-select */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <label className="block text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">Pay with</label>
+            <div className="xramp-card">
+              <label className="block text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Pay with</label>
               <div className="flex gap-3">
                 {BUY_RAILS.map(rail => (
                   <button
                     key={rail.id}
                     onClick={() => setSelectedBuyRail(rail.id)}
-                    className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-xl border-2 transition-all ${
+                    className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${
                       selectedBuyRail === rail.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-100 bg-gray-50 hover:border-gray-200'
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border bg-secondary hover:border-primary/40'
                     }`}
                   >
                     <RailIcon rail={rail.id} size={36} />
-                    <span className={`text-xs font-semibold ${selectedBuyRail === rail.id ? 'text-blue-600' : 'text-gray-500'}`}>
+                    <span className={`text-xs font-semibold ${selectedBuyRail === rail.id ? 'text-primary' : 'text-muted-foreground'}`}>
                       {rail.name}
                     </span>
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-gray-400 mt-3 text-center">
-                <span className="font-medium">Venmo</span> = Fast US P2P pay &nbsp;·&nbsp;
-                <span className="font-medium">Wise</span> = International transfers
+              <p className="text-xs text-muted-foreground mt-3 text-center">
+                <span className="text-foreground font-medium">Venmo</span> = Fast US P2P &nbsp;·&nbsp;
+                <span className="text-foreground font-medium">Wise</span> = International
               </p>
             </div>
 
             {/* CTA */}
             <div className="space-y-3">
               {buyStep === 'connecting' && (
-                <div className="bg-white rounded-2xl shadow-md flex flex-col items-center py-2">
+                <div className="xramp-card flex flex-col items-center py-2">
                   <KineticDotsLoader dots={4} className="py-2" />
-                  <p className="text-blue-600 text-sm font-semibold pb-4">Step 1/2: Connecting wallet…</p>
+                  <p className="text-primary text-sm font-semibold pb-4">Step 1/2: Connecting wallet…</p>
                 </div>
               )}
-              <div className="relative group">
+              <div className="relative group/cta">
                 <button
                   onClick={handleBuyNow}
                   disabled={!usdAmount || parseFloat(usdAmount) <= 0}
-                  className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-xl py-5 rounded-2xl flex items-center justify-center gap-3 transition-colors shadow-lg"
+                  className="w-full bg-success hover:bg-success/90 disabled:bg-muted disabled:text-muted-foreground text-success-foreground font-bold text-xl py-5 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-elevated"
                 >
                   Buy Now
                   <ArrowRight className="h-6 w-6" />
                 </button>
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 w-56 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-popover border border-border text-foreground text-xs rounded-lg px-3 py-2 w-56 text-center opacity-0 group-hover/cta:opacity-100 transition-opacity pointer-events-none z-10 shadow-elevated">
                   Sign to receive crypto — no upfront fee required
                 </div>
               </div>
@@ -225,8 +225,8 @@ export default function Ramp() {
           <div className="space-y-5">
 
             {/* Escrow amount + token */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <label className="block text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">Lock Amount</label>
+            <div className="xramp-card">
+              <label className="block text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Lock Amount</label>
               <div className="flex gap-3 items-stretch">
                 <div className="flex-1 relative">
                   <input
@@ -234,38 +234,38 @@ export default function Ramp() {
                     value={escrowAmount}
                     onChange={e => setEscrowAmount(e.target.value)}
                     placeholder="100"
-                    className="w-full px-4 py-4 text-2xl font-bold text-gray-900 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-blue-400 transition-colors"
+                    className="w-full px-4 py-4 text-2xl font-bold text-foreground bg-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                   />
                 </div>
                 <button
                   onClick={() => setShowSendTokenPicker(v => !v)}
-                  className="flex items-center gap-2 bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 hover:border-blue-300 transition-colors min-w-[120px] justify-between"
+                  className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-4 py-3 hover:border-primary/50 transition-all min-w-[120px] justify-between"
                 >
                   <div className="flex items-center gap-2">
                     <CryptoIcon symbol={selectedSendToken.symbol} size={32} />
-                    <span className="font-bold text-gray-900 text-lg">{selectedSendToken.symbol}</span>
+                    <span className="font-bold text-foreground text-lg">{selectedSendToken.symbol}</span>
                   </div>
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </button>
               </div>
 
               {showSendTokenPicker && (
-                <div className="mt-3 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                <div className="mt-3 bg-card border border-border rounded-xl shadow-elevated overflow-hidden">
                   {TOKENS.map(token => (
                     <button
                       key={token.symbol}
                       onClick={() => { setSelectedSendToken(token); setShowSendTokenPicker(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors ${
-                        selectedSendToken.symbol === token.symbol ? 'bg-blue-50' : ''
+                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors ${
+                        selectedSendToken.symbol === token.symbol ? 'bg-secondary' : ''
                       }`}
                     >
                       <CryptoIcon symbol={token.symbol} size={36} />
                       <div className="text-left">
-                        <div className="font-bold text-gray-900">{token.symbol}</div>
-                        <div className="text-xs text-gray-400">{token.network}</div>
+                        <div className="font-bold text-foreground">{token.symbol}</div>
+                        <div className="text-xs text-muted-foreground">{token.network}</div>
                       </div>
                       {selectedSendToken.symbol === token.symbol && (
-                        <CheckCircle2 className="h-4 w-4 text-blue-500 ml-auto" />
+                        <CheckCircle2 className="h-4 w-4 text-primary ml-auto" />
                       )}
                     </button>
                   ))}
@@ -274,8 +274,8 @@ export default function Ramp() {
             </div>
 
             {/* Rail + handle combined */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <label className="block text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">Receive via</label>
+            <div className="xramp-card">
+              <label className="block text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Receive via</label>
 
               {/* Rail selector */}
               <div className="flex gap-2 mb-4 flex-wrap">
@@ -283,14 +283,14 @@ export default function Ramp() {
                   <button
                     key={rail.id}
                     onClick={() => setSelectedRail(rail)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all ${
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
                       selectedRail.id === rail.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-100 bg-gray-50 hover:border-gray-200'
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border bg-secondary hover:border-primary/40'
                     }`}
                   >
                     <RailIcon rail={rail.id} size={28} />
-                    <span className={`text-sm font-semibold ${selectedRail.id === rail.id ? 'text-blue-600' : 'text-gray-600'}`}>
+                    <span className={`text-sm font-semibold ${selectedRail.id === rail.id ? 'text-primary' : 'text-muted-foreground'}`}>
                       {rail.name}
                     </span>
                   </button>
@@ -298,74 +298,74 @@ export default function Ramp() {
               </div>
 
               {/* Handle input */}
-              <div className="flex items-center gap-3 bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 focus-within:border-blue-400 transition-colors">
+              <div className="flex items-center gap-3 bg-secondary border border-border rounded-xl px-4 py-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition-all">
                 <RailIcon rail={selectedRail.id} size={28} />
                 <div className="flex-1">
-                  <div className="text-xs text-gray-400 font-medium mb-0.5">{selectedRail.tag}</div>
+                  <div className="text-xs text-muted-foreground font-medium mb-0.5">{selectedRail.tag}</div>
                   <input
                     type="text"
                     value={handle}
                     onChange={e => setHandle(e.target.value)}
                     placeholder={selectedRail.placeholder}
-                    className="w-full bg-transparent text-gray-900 font-semibold text-lg focus:outline-none placeholder:text-gray-300"
+                    className="w-full bg-transparent text-foreground font-semibold text-lg focus:outline-none placeholder:text-muted-foreground/40"
                   />
                 </div>
               </div>
             </div>
 
             {/* Preview card */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
+            <div className="xramp-card">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Deposit Preview</span>
-                <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Deposit Preview</span>
+                <div className="flex items-center gap-1 text-xs text-warning bg-warning/10 border border-warning/20 px-2 py-1 rounded-full">
                   <Clock className="h-3 w-3" /> 7d escrow
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900 mb-1">
+              <div className="text-2xl font-bold text-foreground mb-1">
                 Lock {escrowAmount || '0'} {selectedSendToken.symbol}
               </div>
-              <div className="text-gray-500 text-sm mb-4">
+              <div className="text-muted-foreground text-sm mb-4">
                 for USD fiat trades via {selectedRail.name} · 7-day safe escrow
               </div>
-              <div className="flex items-start gap-2 bg-blue-50 rounded-xl p-3">
-                <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-blue-700">
-                  <strong>Escrow</strong> = Lock crypto safely, release only on fiat proof. Buyers contact you via chat.
+              <div className="flex items-start gap-2 bg-primary/10 border border-primary/20 rounded-xl p-3">
+                <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-foreground/80">
+                  <strong className="text-primary">Escrow</strong> = Lock crypto safely, release only on fiat proof. Buyers contact you via chat.
                 </p>
               </div>
             </div>
 
             {/* Send queue mock */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <div className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Recent Activity</div>
+            <div className="xramp-card">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">Recent Activity</div>
               <div className="space-y-3">
                 {MOCK_QUEUE.map(item => (
                   <div key={item.id} className="flex items-center gap-3">
                     <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${
-                      item.status === 'done' ? 'bg-green-500' :
-                      item.status === 'matched' ? 'bg-blue-500' : 'bg-amber-400'
+                      item.status === 'done'    ? 'bg-success' :
+                      item.status === 'matched' ? 'bg-primary' : 'bg-warning'
                     }`} />
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-800 text-sm">{item.label}</div>
-                      <div className="text-xs text-gray-400">{item.sub}</div>
+                      <div className="font-semibold text-foreground text-sm">{item.label}</div>
+                      <div className="text-xs text-muted-foreground">{item.sub}</div>
                     </div>
-                    <span className="text-xs text-gray-400 flex-shrink-0">{item.time}</span>
+                    <span className="text-xs text-muted-foreground flex-shrink-0">{item.time}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* CTA */}
-            <div className="relative group">
+            <div className="relative group/cta2">
               <button
                 onClick={handleCreateDeposit}
                 disabled={!escrowAmount || parseFloat(escrowAmount) <= 0 || !handle.trim()}
-                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-xl py-5 rounded-2xl flex items-center justify-center gap-3 transition-colors shadow-lg"
+                className="w-full bg-success hover:bg-success/90 disabled:bg-muted disabled:text-muted-foreground text-success-foreground font-bold text-xl py-5 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-elevated"
               >
                 Create Deposit
                 <ArrowRight className="h-6 w-6" />
               </button>
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 w-56 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-popover border border-border text-foreground text-xs rounded-lg px-3 py-2 w-56 text-center opacity-0 group-hover/cta2:opacity-100 transition-opacity pointer-events-none z-10 shadow-elevated">
                 Buyers contact you via chat for fiat — Listed! Share QR after creation
               </div>
             </div>
@@ -373,7 +373,7 @@ export default function Ramp() {
             {depositCreated && !showSendSheet && (
               <button
                 onClick={() => setShowSendSheet(true)}
-                className="w-full border-2 border-green-500 text-green-600 font-semibold py-3 rounded-2xl hover:bg-green-50 transition-colors"
+                className="w-full border border-primary text-primary font-semibold py-3 rounded-2xl hover:bg-primary/10 transition-all"
               >
                 Share deposit link again
               </button>
