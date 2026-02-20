@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { SwapInput } from '@/components/shared/SwapInput';
+import { QuotesCard } from '@/components/shared/QuotesCard';
+import { TokenSelectorModal } from '@/components/shared/TokenSelectorModal';
 import { PaymentMethodPicker, getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
@@ -28,6 +30,7 @@ export default function Buy() {
   const [showDetails, setShowDetails] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showTokenModal, setShowTokenModal] = useState(false);
 
   const selectedMethod = paymentMethod ? getPaymentMethodById(paymentMethod) : null;
   const numericAmount = parseFloat(payAmount) || 0;
@@ -124,7 +127,7 @@ export default function Buy() {
               value={receiveAmount}
               onChange={setReceiveAmount}
               currency={selectedCrypto}
-              onCurrencyChange={setSelectedCrypto}
+              onCurrencyChange={(val) => { setSelectedCrypto(val); setShowTokenModal(true); }}
               currencyType="crypto"
               readOnly
               showEstimate={hasValidAmount}
@@ -132,6 +135,13 @@ export default function Buy() {
             />
             <p className="text-xs text-muted-foreground mt-2">Sent to your delivery address.</p>
           </div>
+
+          {/* Quotes card */}
+          <QuotesCard
+            payAmount={payAmount}
+            payCurrency={selectedCurrency}
+            receiveCrypto={selectedCrypto}
+          />
 
           <div>
             <p className="text-sm text-muted-foreground mb-2">Payment method</p>
@@ -217,6 +227,13 @@ export default function Buy() {
         type="payment"
         amount={numericAmount}
         currency={selectedCurrency}
+      />
+
+      <TokenSelectorModal
+        open={showTokenModal}
+        onClose={() => setShowTokenModal(false)}
+        onSelect={(sym) => { setSelectedCrypto(sym); }}
+        selected={selectedCrypto}
       />
     </div>
   );

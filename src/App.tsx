@@ -11,9 +11,10 @@ import Home from "./pages/Home";
 import Buy from "./pages/Buy";
 import BuyReview from "./pages/BuyReview";
 import BuyComplete from "./pages/BuyComplete";
-import Sell from "./pages/Sell";
-import SellReview from "./pages/SellReview";
-import SellComplete from "./pages/SellComplete";
+import Sell from './pages/Sell';
+import SellReview from './pages/SellReview';
+import SellComplete from './pages/SellComplete';
+import OffRamp from './pages/OffRamp';
 import Activity from "./pages/Activity";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
                   <Route path="/buy/review" element={<BuyReview />} />
                   <Route path="/buy/complete" element={<BuyComplete />} />
                   <Route path="/sell" element={<Sell />} />
+                  <Route path="/offramp" element={<OffRamp />} />
                   <Route path="/sell/review" element={<SellReview />} />
                   <Route path="/sell/complete" element={<SellComplete />} />
                   <Route path="/activity" element={<Activity />} />
