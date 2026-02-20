@@ -62,13 +62,8 @@ export default function Home() {
           <div className="absolute inset-0 proof-grid" />
           
           <div className="relative z-10 w-full max-w-4xl mx-auto">
-            {/* Deposit Widget Preview */}
-            <div className="mb-8 animate-fade-in">
-              <DepositWidget />
-            </div>
-
             {/* Main Headline */}
-            <div className="mb-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
+            <div className="mb-6 animate-fade-in">
               <WordRotate
                 words={['Buy crypto', 'Sell crypto']}
                 duration={2500}
@@ -78,22 +73,20 @@ export default function Home() {
                 <AnimatedGradientText>in 60 seconds</AnimatedGradientText>
               </h1>
             </div>
-            
-            <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto animate-fade-in" style={{ animationDelay: '150ms' }}>
+
+            <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto animate-fade-in" style={{ animationDelay: '50ms' }}>
               Deposit from any chain using any token
             </p>
 
-            {/* CTA */}
-            <div className="flex flex-col items-center gap-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
-              <InteractiveHoverButton
-                text={isLoading ? 'Loading...' : 'Get Started'}
-                onClick={login}
-                disabled={isLoading}
-                className="w-44 h-12 text-base border-primary/40 text-foreground"
-              />
+            {/* Deposit Widget — Get Started triggers Privy login */}
+            <div className="mb-8 flex justify-center animate-fade-in" style={{ animationDelay: '100ms' }}>
+              <DepositWidget onGetStarted={login} />
+            </div>
+
+            <div className="animate-fade-in" style={{ animationDelay: '150ms' }}>
               <button 
                 onClick={() => document.getElementById('learn-more')?.scrollIntoView({ behavior: 'smooth' })}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 mx-auto"
               >
                 Learn more
                 <ChevronDown className="h-4 w-4" />

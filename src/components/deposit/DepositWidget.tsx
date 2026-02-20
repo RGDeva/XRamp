@@ -18,9 +18,10 @@ import {
 
 interface DepositWidgetProps {
   apiKey?: string;
+  onGetStarted?: () => void;
 }
 
-export function DepositWidget({ apiKey = '' }: DepositWidgetProps) {
+export function DepositWidget({ apiKey = '', onGetStarted }: DepositWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<DepositMode>('swap');
   const [chain, setChain] = useState(BASE_CHAIN_ID);
@@ -89,17 +90,19 @@ export function DepositWidget({ apiKey = '' }: DepositWidgetProps) {
               <p className="text-xs text-muted-foreground">You receive</p>
               <p className="text-lg font-mono text-foreground">{selectedToken?.symbol || 'USDC'} on Base</p>
             </div>
-            <button
-              onClick={() => setIsOpen(true)}
-              className="text-xs text-primary hover:underline"
-            >
-              Change
-            </button>
+            {!onGetStarted && (
+              <button
+                onClick={() => setIsOpen(true)}
+                className="text-xs text-primary hover:underline"
+              >
+                Change
+              </button>
+            )}
           </div>
           <Button
             variant="hero"
             className="w-full gap-2"
-            onClick={() => setIsOpen(true)}
+            onClick={onGetStarted ?? (() => setIsOpen(true))}
           >
             Get Started
             <ArrowRight className="h-4 w-4" />
