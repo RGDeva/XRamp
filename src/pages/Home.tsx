@@ -3,6 +3,7 @@ import { ArrowDownToLine, ArrowUpFromLine, ArrowRight, Eye, EyeOff, Zap, DollarS
 import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { AnimatedGradientText } from '@/components/ui/animated-gradient-text';
+import { WordRotate } from '@/components/ui/word-rotate';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
@@ -67,10 +68,16 @@ export default function Home() {
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground leading-tight mb-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
-              Buy or Sell Crypto<br />
-              <AnimatedGradientText>in 60 seconds</AnimatedGradientText>
-            </h1>
+            <div className="mb-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
+              <WordRotate
+                words={['Buy crypto', 'Sell crypto']}
+                duration={2500}
+                className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground leading-tight"
+              />
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight">
+                <AnimatedGradientText>in 60 seconds</AnimatedGradientText>
+              </h1>
+            </div>
             
             <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto animate-fade-in" style={{ animationDelay: '150ms' }}>
               Deposit from any chain using any token
