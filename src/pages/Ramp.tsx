@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { ArrowRight, ChevronDown, Info, CheckCircle2, Wallet, History, LayoutList, X, Send as SendIcon, Shield } from 'lucide-react';
+import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { CryptoIcon, TOKENS } from '@/components/shared/CryptoIcon';
 import { RailIcon, RAILS } from '@/components/shared/RailIcon';
 import { SendSheet } from '@/components/deposits/SendSheet';
@@ -229,6 +230,7 @@ export default function Ramp() {
 
             {/* Quotes preview card */}
             <div className="xramp-card">
+              <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Quote</span>
                 <span className="text-xs bg-success/10 text-success border border-success/20 px-2 py-1 rounded-full font-medium">Safe ramp</span>
@@ -313,6 +315,7 @@ export default function Ramp() {
 
             {/* 1 — Send: USDC on Avalanche (fixed) */}
             <div className="xramp-card">
+              <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
               <label className="block text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-widest">You Send</label>
               <div className="flex gap-3 items-stretch">
                 <div className="flex-1">
@@ -337,6 +340,7 @@ export default function Ramp() {
 
             {/* 2 — Wallet address */}
             <div className="xramp-card">
+              <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
               <label className="block text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Recipient Wallet Address</label>
               <input
                 type="text"
@@ -349,6 +353,7 @@ export default function Ramp() {
 
             {/* 3 — Receive token */}
             <div className="xramp-card">
+              <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
               <label className="block text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-widest">They Receive</label>
               <button
                 onClick={() => setShowReceiveTokenPicker(v => !v)}
@@ -391,6 +396,7 @@ export default function Ramp() {
             {/* Preview */}
             {sendAmount && parseFloat(sendAmount) > 0 && walletAddress.trim() && (
               <div className="xramp-card border-primary/20">
+                <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Preview</div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-muted-foreground text-sm">Sending</span>
