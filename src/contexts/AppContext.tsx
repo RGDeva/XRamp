@@ -7,6 +7,9 @@ interface AppContextType {
   setSelectedCurrency: (currency: string) => void;
   selectedCrypto: string;
   setSelectedCrypto: (crypto: string) => void;
+  rampPanelOpen: boolean;
+  toggleRampPanel: () => void;
+  setRampPanelOpen: (open: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -15,10 +18,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [privacyMode, setPrivacyMode] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [selectedCrypto, setSelectedCrypto] = useState('USDC');
+  const [rampPanelOpen, setRampPanelOpen] = useState(false);
 
-  const togglePrivacyMode = () => {
-    setPrivacyMode(prev => !prev);
-  };
+  const togglePrivacyMode = () => setPrivacyMode(prev => !prev);
+  const toggleRampPanel = () => setRampPanelOpen(prev => !prev);
 
   return (
     <AppContext.Provider
@@ -29,6 +32,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setSelectedCurrency,
         selectedCrypto,
         setSelectedCrypto,
+        rampPanelOpen,
+        toggleRampPanel,
+        setRampPanelOpen,
       }}
     >
       {children}

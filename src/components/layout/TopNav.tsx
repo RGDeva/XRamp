@@ -29,7 +29,8 @@ const desktopNavItems = [
 export function TopNav() {
   const location = useLocation();
   const { isAuthenticated, isLoading, user, login, logout } = useAuth();
-  const { privacyMode, togglePrivacyMode } = useApp();
+  const { privacyMode, togglePrivacyMode, toggleRampPanel, rampPanelOpen } = useApp();
+  const isRamp = location.pathname === '/ramp';
 
   const deliveryAddress = getDeliveryAddress(user);
   const displayIdentifier = user?.email || (deliveryAddress ? truncateAddress(deliveryAddress) : null);
@@ -55,6 +56,22 @@ export function TopNav() {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
+            {/* Profile panel toggle — only on /ramp */}
+            {isRamp && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleRampPanel}
+                    className={cn('h-9 w-9 rounded-full border border-border', rampPanelOpen && 'bg-primary/10 border-primary text-primary')}
+                  >
+                    <User className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p className="text-sm">Account panel</p></TooltipContent>
+              </Tooltip>
+            )}
             {/* Privacy Mode */}
             <Tooltip>
               <TooltipTrigger asChild>

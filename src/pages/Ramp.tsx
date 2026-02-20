@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ArrowRight, ChevronDown, Info, CheckCircle2, Clock, ChevronRight, Wallet, History, LayoutList, X, Send as SendIcon, Shield } from 'lucide-react';
+import { useApp } from '@/contexts/AppContext';
+import { ArrowRight, ChevronDown, Info, CheckCircle2, Wallet, History, LayoutList, X, Send as SendIcon, Shield } from 'lucide-react';
 import { CryptoIcon, TOKENS } from '@/components/shared/CryptoIcon';
 import { RailIcon, RAILS } from '@/components/shared/RailIcon';
 import { SendSheet } from '@/components/deposits/SendSheet';
@@ -37,8 +38,8 @@ export default function Ramp() {
   const [showSendSheet, setShowSendSheet] = useState(false);
   const [mockDepositId] = useState(Math.floor(3000 + Math.random() * 999));
 
-  // Right panel
-  const [panelOpen, setPanelOpen] = useState(true);
+  // Right panel — driven by AppContext so TopNav profile icon can toggle it
+  const { rampPanelOpen: panelOpen, setRampPanelOpen: setPanelOpen } = useApp();
 
   // Derived quote values
   const usdNum = parseFloat(usdAmount) || 0;
@@ -60,16 +61,6 @@ export default function Ramp() {
 
   return (
     <div className="min-h-screen pb-24 relative">
-      {/* Collapsible panel toggle — fixed right edge */}
-      <button
-        onClick={() => setPanelOpen(v => !v)}
-        className="fixed top-24 right-0 z-40 bg-card border border-border border-r-0 rounded-l-xl px-2 py-3 flex flex-col items-center gap-1 hover:bg-secondary transition-colors shadow-elevated"
-        title={panelOpen ? 'Close panel' : 'Open panel'}
-      >
-        <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${panelOpen ? 'rotate-0' : 'rotate-180'}`} />
-        <span className="text-[10px] text-muted-foreground font-medium [writing-mode:vertical-rl] tracking-widest uppercase">Panel</span>
-      </button>
-
       {/* Right collapsible panel */}
       <div className={`fixed top-16 right-0 h-[calc(100vh-4rem)] z-30 flex flex-col bg-card/95 backdrop-blur-xl border-l border-border shadow-elevated transition-all duration-300 ease-in-out ${panelOpen ? 'w-72 translate-x-0' : 'w-72 translate-x-full'}`}>
         {/* Panel header */}
