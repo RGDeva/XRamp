@@ -1,15 +1,9 @@
 import { useState } from 'react';
-import { X, ArrowLeft, Check, ChevronDown, Plus } from 'lucide-react';
+import { X, ArrowLeft, Check, ChevronDown, Plus, Share2 } from 'lucide-react';
 import { TokenSelectorModal } from '@/components/shared/TokenSelectorModal';
+import { RailIcon, RAILS } from '@/components/shared/RailIcon';
+import { SendSheet } from '@/components/deposits/SendSheet';
 import { cn } from '@/lib/utils';
-
-const RAILS = [
-  { id: 'venmo',   name: 'Venmo',    icon: '/icons/venmo.svg',   tag: '@username',     placeholder: 'e.g. @john-doe' },
-  { id: 'cashapp', name: 'Cash App', icon: '/icons/cashapp.svg', tag: '$cashtag',      placeholder: 'e.g. $johndoe' },
-  { id: 'zelle',   name: 'Zelle',    icon: '/icons/zelle.svg',   tag: 'email/phone',   placeholder: 'e.g. john@email.com' },
-  { id: 'revolut', name: 'Revolut',  icon: '/icons/revolut.svg', tag: '@revolut-tag',  placeholder: 'e.g. @john' },
-  { id: 'wise',    name: 'Wise',     icon: '/icons/wise.svg',    tag: 'email',         placeholder: 'e.g. john@email.com' },
-];
 
 const TOKEN_COLORS: Record<string, string> = {
   USDC: '#2775CA', ETH: '#627EEA', AVAX: '#E84142',
@@ -40,6 +34,8 @@ export function NewDepositWizard({ onClose }: WizardProps) {
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [showRailPicker, setShowRailPicker] = useState(false);
+  const [showSendSheet, setShowSendSheet] = useState(false);
+  const [createdDepositId] = useState(() => Math.floor(Math.random() * 1000) + 3000);
   const [pendingRail, setPendingRail] = useState(RAILS[0]);
   const [pendingHandle, setPendingHandle] = useState('');
   const [pendingMin, setPendingMin] = useState('0.1');
@@ -192,7 +188,7 @@ export function NewDepositWizard({ onClose }: WizardProps) {
                 const rail = RAILS.find(r => r.id === p.railId)!;
                 return (
                   <div key={i} className="flex items-center gap-3 bg-secondary/30 rounded-xl px-4 py-3">
-                    <img src={rail.icon} width={24} height={24} alt={rail.name} className="rounded flex-shrink-0" />
+                    <RailIcon rail={p.railId} size={24} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold">{rail.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
@@ -230,7 +226,7 @@ export function NewDepositWizard({ onClose }: WizardProps) {
                           pendingRail.id === r.id ? 'border-primary bg-primary/10' : 'border-border hover:bg-secondary/50'
                         )}
                       >
-                        <img src={r.icon} width={24} height={24} alt={r.name} className="rounded" />
+                        <RailIcon rail={r.id} size={24} />
                         <span className="text-[10px] text-muted-foreground">{r.name.split(' ')[0]}</span>
                       </button>
                     ))}
@@ -325,7 +321,7 @@ export function NewDepositWizard({ onClose }: WizardProps) {
                       const rail = RAILS.find(r => r.id === p.railId)!;
                       return (
                         <div key={i} className="flex items-center gap-2">
-                          <img src={rail.icon} width={16} height={16} alt={rail.name} className="rounded" />
+                          <RailIcon rail={p.railId} size={16} />
                           <span className="text-sm font-medium">{rail.name}</span>
                           <span className="text-sm text-muted-foreground">— {p.handle}</span>
                         </div>
@@ -372,12 +368,21 @@ export function NewDepositWizard({ onClose }: WizardProps) {
               {step === 0 ? 'Continue' : 'Review & Create'}
             </button>
           ) : (
-            <button
-              className="w-full py-3 rounded-xl bg-secondary border border-border text-sm font-semibold text-muted-foreground cursor-not-allowed"
-              disabled
-            >
-              Insufficient Balance — Deposit {token}
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={() => setShowSendSheet(true)}
+                className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+              >
+                <Share2 className="h-4 w-4" />
+                Create & Send Deposit
+              </button>
+              <button
+                className="w-full py-2 rounded-xl text-xs text-muted-foreground hover:text-foreground transition-colors"
+                onClick={onClose}
+              >
+                Create without sending
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -387,6 +392,17 @@ export function NewDepositWizard({ onClose }: WizardProps) {
         onClose={() => setShowTokenModal(false)}
         onSelect={setToken}
         selected={token}
+      />
+
+      <SendSheet
+        open={showSendSheet}
+        onClose={() => { setShowSendSheet(false); onClose(); }}
+        depositId={createdDepositId}
+        amount={amount}
+        token={token}
+        railId={platforms[0]?.railId ?? 'venmo'}
+        railName={RAILS.find(r => r.id === (platforms[0]?.railId ?? 'venmo'))?.name ?? 'Venmo'}
+        handle={platforms[0]?.handle ?? ''}
       />
     </div>
   );

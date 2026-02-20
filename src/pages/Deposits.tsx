@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Plus, RotateCcw, TrendingUp, BarChart2, Target, ChevronDown, ChevronRight, Pause, X, Copy } from 'lucide-react';
+import { Plus, RotateCcw, TrendingUp, BarChart2, Target, ChevronDown, ChevronRight, Pause, X, Share2 } from 'lucide-react';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { NewDepositWizard } from '@/components/deposits/NewDepositWizard';
+import { SendSheet } from '@/components/deposits/SendSheet';
+import { RailIcon } from '@/components/shared/RailIcon';
 import { cn } from '@/lib/utils';
 
 type DepositStatus = 'ACTIVE' | 'PAUSED' | 'CLOSED';
@@ -13,7 +15,7 @@ interface Deposit {
   locked: string | null;
   taken: string;
   platform: string;
-  platformIcon: string;
+  railId: string;
   currency: string;
   status: DepositStatus;
   token: string;
@@ -21,19 +23,14 @@ interface Deposit {
 }
 
 const MOCK_DEPOSITS: Deposit[] = [
-  { id: 2441, remaining: '0.00', locked: null, taken: '18.69', platform: 'Venmo',   platformIcon: '/icons/venmo.svg',   currency: 'USD', status: 'PAUSED', token: 'USDC', handle: '@xramp-seller' },
-  { id: 2428, remaining: '0.00', locked: null, taken: '6.69',  platform: 'Venmo',   platformIcon: '/icons/venmo.svg',   currency: 'USD', status: 'ACTIVE', token: 'USDC', handle: '@xramp-seller' },
-  { id: 2426, remaining: '0.00', locked: null, taken: '10.00', platform: 'Venmo',   platformIcon: '/icons/venmo.svg',   currency: 'USD', status: 'PAUSED', token: 'USDC', handle: '@xramp-seller' },
-  { id: 2310, remaining: '5.00', locked: null, taken: '25.00', platform: 'Cash App', platformIcon: '/icons/cashapp.svg', currency: 'USD', status: 'CLOSED', token: 'USDC', handle: '$xramp' },
+  { id: 2441, remaining: '0.00', locked: null, taken: '18.69', platform: 'Venmo',    railId: 'venmo',   currency: 'USD', status: 'PAUSED', token: 'USDC', handle: '@xramp-seller' },
+  { id: 2428, remaining: '0.00', locked: null, taken: '6.69',  platform: 'Venmo',    railId: 'venmo',   currency: 'USD', status: 'ACTIVE', token: 'USDC', handle: '@xramp-seller' },
+  { id: 2426, remaining: '0.00', locked: null, taken: '10.00', platform: 'Venmo',    railId: 'venmo',   currency: 'USD', status: 'PAUSED', token: 'USDC', handle: '@xramp-seller' },
+  { id: 2310, remaining: '5.00', locked: null, taken: '25.00', platform: 'Cash App', railId: 'cashapp', currency: 'USD', status: 'CLOSED', token: 'USDC', handle: '$xramp' },
 ];
 
-const RAIL_ICONS: Record<string, string> = {
-  Venmo: '/icons/venmo.svg',
-  'Cash App': '/icons/cashapp.svg',
-  Zelle: '/icons/zelle.svg',
-  Revolut: '/icons/revolut.svg',
-  Wise: '/icons/wise.svg',
-};
+const RAIL_NAMES = ['Venmo', 'Cash App', 'Zelle', 'Revolut', 'Wise'];
+const RAIL_IDS   = ['venmo', 'cashapp',  'zelle', 'revolut', 'wise'];
 
 const STATUS_STYLES: Record<DepositStatus, string> = {
   ACTIVE: 'bg-green-500/15 text-green-400 border border-green-500/30',
@@ -45,6 +42,7 @@ export default function Deposits() {
   const [tab, setTab] = useState<TabFilter>('Active');
   const [showWizard, setShowWizard] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [sendDeposit, setSendDeposit] = useState<Deposit | null>(null);
 
   const filtered = MOCK_DEPOSITS.filter(d => {
     if (tab === 'Active')  return d.status === 'ACTIVE';
@@ -77,9 +75,9 @@ export default function Deposits() {
 
       {/* Rail icons strip */}
       <div className="flex items-center gap-3 mb-6">
-        {Object.entries(RAIL_ICONS).map(([name, icon]) => (
-          <div key={name} className="h-9 w-9 rounded-full bg-card border border-border flex items-center justify-center overflow-hidden shadow-sm" title={name}>
-            <img src={icon} width={22} height={22} alt={name} />
+        {RAIL_IDS.map((id, i) => (
+          <div key={id} className="h-9 w-9 rounded-full bg-card border border-border flex items-center justify-center overflow-hidden shadow-sm" title={RAIL_NAMES[i]}>
+            <RailIcon rail={id} size={26} />
           </div>
         ))}
       </div>
@@ -143,7 +141,7 @@ export default function Deposits() {
                     <span className="text-xs text-muted-foreground">· {dep.taken} sold</span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <img src={dep.platformIcon} width={14} height={14} alt={dep.platform} className="rounded" />
+                    <RailIcon rail={dep.railId} size={14} />
                     <span className="text-xs text-muted-foreground">{dep.platform}</span>
                     <span className="text-xs text-muted-foreground">·</span>
                     <span className="text-xs text-muted-foreground">🇺🇸 {dep.currency} · 1.000</span>
@@ -175,8 +173,11 @@ export default function Deposits() {
                   <button className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 transition-colors px-3 py-1.5 rounded-lg hover:bg-destructive/10 ml-auto">
                     <X className="h-3.5 w-3.5" /> Close
                   </button>
-                  <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-secondary">
-                    <Copy className="h-3.5 w-3.5" /> Copy
+                  <button
+                    onClick={() => setSendDeposit(dep)}
+                    className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors px-3 py-1.5 rounded-lg hover:bg-primary/10"
+                  >
+                    <Share2 className="h-3.5 w-3.5" /> Send
                   </button>
                 </div>
               )}
@@ -238,6 +239,18 @@ export default function Deposits() {
 
       {/* New Deposit Wizard */}
       {showWizard && <NewDepositWizard onClose={() => setShowWizard(false)} />}
+
+      {/* Send Sheet */}
+      <SendSheet
+        open={!!sendDeposit}
+        onClose={() => setSendDeposit(null)}
+        depositId={sendDeposit?.id ?? 0}
+        amount={sendDeposit?.taken ?? '0'}
+        token={sendDeposit?.token ?? 'USDC'}
+        railId={sendDeposit?.railId ?? 'venmo'}
+        railName={sendDeposit?.platform ?? 'Venmo'}
+        handle={sendDeposit?.handle ?? ''}
+      />
     </div>
   );
 }
