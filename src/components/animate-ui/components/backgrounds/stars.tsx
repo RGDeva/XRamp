@@ -6,7 +6,7 @@ import {
   useSpring,
   type SpringOptions,
   type Transition,
-} from 'motion/react';
+} from 'framer-motion';
 
 import { cn } from '@/lib/utils';
 
