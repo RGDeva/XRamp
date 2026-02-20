@@ -15,6 +15,7 @@ import Sell from './pages/Sell';
 import SellReview from './pages/SellReview';
 import SellComplete from './pages/SellComplete';
 import OffRamp from './pages/OffRamp';
+import Deposits from './pages/Deposits';
 import Activity from "./pages/Activity";
 import NotFound from "./pages/NotFound";
 
@@ -37,6 +38,7 @@ const App = () => (
                   <Route path="/buy/complete" element={<BuyComplete />} />
                   <Route path="/sell" element={<Sell />} />
                   <Route path="/offramp" element={<OffRamp />} />
+                  <Route path="/deposits" element={<Deposits />} />
                   <Route path="/sell/review" element={<SellReview />} />
                   <Route path="/sell/complete" element={<SellComplete />} />
                   <Route path="/activity" element={<Activity />} />

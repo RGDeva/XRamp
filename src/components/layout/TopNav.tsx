@@ -22,7 +22,7 @@ import xrampLogoIcon from '@/assets/xramp-logo-icon.png';
 const desktopNavItems = [
   { name: 'Home',     url: '/',         icon: Home,             exact: true },
   { name: 'Buy',      url: '/buy',      icon: ArrowDownToLine },
-  { name: 'Sell',     url: '/offramp',  icon: ArrowUpFromLine },
+  { name: 'Sell',     url: '/deposits', icon: ArrowUpFromLine },
   { name: 'Activity', url: '/activity', icon: Activity },
 ];
 
