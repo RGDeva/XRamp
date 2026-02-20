@@ -3,6 +3,7 @@ import { ArrowRight, ChevronDown, Info, CheckCircle2, Clock } from 'lucide-react
 import { CryptoIcon, TOKENS } from '@/components/shared/CryptoIcon';
 import { RailIcon, RAILS } from '@/components/shared/RailIcon';
 import { SendSheet } from '@/components/deposits/SendSheet';
+import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
 
 type Tab = 'Buy' | 'Send';
 
@@ -197,11 +198,9 @@ export default function Ramp() {
             {/* CTA */}
             <div className="space-y-3">
               {buyStep === 'connecting' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-3">
-                  <div className="h-2 bg-blue-200 rounded-full flex-1 overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full animate-pulse w-1/2" />
-                  </div>
-                  <span className="text-blue-600 text-sm font-medium whitespace-nowrap">Step 1/2: Connecting…</span>
+                <div className="bg-white rounded-2xl shadow-md flex flex-col items-center py-2">
+                  <KineticDotsLoader dots={4} className="py-2" />
+                  <p className="text-blue-600 text-sm font-semibold pb-4">Step 1/2: Connecting wallet…</p>
                 </div>
               )}
               <div className="relative group">
