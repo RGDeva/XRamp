@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { Check, Loader2 } from 'lucide-react';
 import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 
@@ -20,7 +21,8 @@ export default function SellComplete() {
 
   return (
     <div className="max-w-md mx-auto px-4 py-8 pb-32 md:pb-8">
-      <div className="bg-card border border-border rounded-2xl p-6 space-y-6 animate-fade-in">
+      <div className="relative bg-card border border-border rounded-2xl p-6 space-y-6 animate-fade-in">
+        <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
         {/* Success icon */}
         <div className="h-16 w-16 mx-auto rounded-2xl bg-success/10 flex items-center justify-center animate-success-pop">
           <Check className="h-8 w-8 text-success" />

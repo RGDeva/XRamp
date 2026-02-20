@@ -3,6 +3,7 @@ import { ArrowDownToLine, ArrowUpFromLine, ArrowRight, Eye, EyeOff, Zap, DollarS
 import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { AnimatedGradientText } from '@/components/ui/animated-gradient-text';
+import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
 import { cn } from '@/lib/utils';
@@ -116,7 +117,8 @@ export default function Home() {
 
               {/* Right - Feature Cards */}
               <div className="space-y-4">
-                <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-4">
+                <div className="relative bg-card border border-border rounded-xl p-5 flex items-start gap-4">
+                  <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
                   <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Zap className="h-5 w-5 text-primary" />
                   </div>
@@ -128,7 +130,8 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-4">
+                <div className="relative bg-card border border-border rounded-xl p-5 flex items-start gap-4">
+                  <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
                   <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <DollarSign className="h-5 w-5 text-primary" />
                   </div>
@@ -140,7 +143,8 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-4">
+                <div className="relative bg-card border border-border rounded-xl p-5 flex items-start gap-4">
+                  <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
                   <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Shield className="h-5 w-5 text-primary" />
                   </div>
@@ -171,7 +175,8 @@ export default function Home() {
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center px-4 py-8 pb-24 md:pb-8">
       <div className="w-full max-w-md space-y-6">
         {/* User info card */}
-        <div className="bg-card border border-border rounded-2xl p-6 shadow-elevated animate-fade-in">
+        <div className="relative bg-card border border-border rounded-2xl p-6 shadow-elevated animate-fade-in">
+          <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm text-muted-foreground">Signed in</span>
             <Tooltip>
@@ -245,7 +250,8 @@ export default function Home() {
               <p className="text-muted-foreground text-xs">Your buys and sells will show up here.</p>
             </div>
           ) : (
-            <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
+            <div className="relative bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
+              <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
               {recentItems.slice(0, 3).map((item) => (
                 <div
                   key={item.id}

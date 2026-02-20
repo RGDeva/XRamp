@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { BorderBeam } from '@/components/ui/border-beam';
+import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
@@ -42,6 +43,7 @@ export default function BuyReview() {
 
       <div className="relative bg-card border border-border rounded-2xl p-5 space-y-5 animate-fade-in overflow-hidden">
         <BorderBeam size={300} duration={10} />
+        <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
         <h1 className="text-xl font-semibold">Review buy</h1>
 
         {/* Summary */}
