@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Check, Clock, AlertCircle, Search } from 'lucide-react';
+import { RailIcon } from '@/components/shared/RailIcon';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -27,12 +28,14 @@ export interface PaymentMethod {
 }
 
 const paymentMethods: PaymentMethod[] = [
-  { id: 'venmo', name: 'Venmo', icon: 'V', maxAmount: 2000, eta: '~10 min', available: true, category: 'popular' },
-  { id: 'cashapp', name: 'Cash App', icon: '$', maxAmount: 1500, eta: '~10 min', available: true, category: 'popular' },
-  { id: 'zelle', name: 'Zelle', icon: 'Z', maxAmount: 2500, eta: '~15 min', available: true, category: 'popular' },
-  { id: 'revolut', name: 'Revolut', icon: 'R', maxAmount: 5000, eta: '~20 min', available: true, category: 'apps' },
-  { id: 'wise', name: 'Wise', icon: 'W', maxAmount: 10000, eta: '~1 hour', available: true, category: 'apps' },
-  { id: 'bank', name: 'Bank transfer', icon: '🏦', maxAmount: 50000, eta: '1-3 days', cooldown: '24h', available: true, category: 'bank' },
+  { id: 'venmo',   name: 'Venmo',    icon: 'venmo',   maxAmount: 2000,  eta: '~10 min',  available: true, category: 'popular' },
+  { id: 'cashapp', name: 'Cash App', icon: 'cashapp', maxAmount: 1500,  eta: '~10 min',  available: true, category: 'popular' },
+  { id: 'chime',   name: 'Chime',    icon: 'chime',   maxAmount: 2000,  eta: '~10 min',  available: true, category: 'popular' },
+  { id: 'zelle',   name: 'Zelle',    icon: 'zelle',   maxAmount: 2500,  eta: '~15 min',  available: true, category: 'popular' },
+  { id: 'revolut', name: 'Revolut',  icon: 'revolut', maxAmount: 5000,  eta: '~20 min',  available: true, category: 'apps' },
+  { id: 'wise',    name: 'Wise',     icon: 'wise',    maxAmount: 10000, eta: '~1 hour',  available: true, category: 'apps' },
+  { id: 'paypal',  name: 'PayPal',   icon: 'paypal',  maxAmount: 5000,  eta: '~15 min',  available: true, category: 'apps' },
+  { id: 'bank',    name: 'Bank transfer', icon: '🏦', maxAmount: 50000, eta: '1-3 days', cooldown: '24h', available: true, category: 'bank' },
 ];
 
 interface PaymentMethodPickerProps {
@@ -99,11 +102,11 @@ export function PaymentMethodPicker({
           )}
         >
           <div className="flex items-center gap-3">
-            <div className={cn(
-              'h-10 w-10 rounded-lg flex items-center justify-center text-base font-semibold',
-              method.available ? 'bg-muted text-foreground' : 'bg-muted/50 text-muted-foreground'
-            )}>
-              {method.icon}
+            <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center">
+              {method.icon.length <= 2
+                ? <span className={cn('h-10 w-10 rounded-lg flex items-center justify-center text-base font-semibold', method.available ? 'bg-muted text-foreground' : 'bg-muted/50 text-muted-foreground')}>{method.icon}</span>
+                : <RailIcon rail={method.icon} size={40} className={cn(!method.available && 'opacity-50')} />
+              }
             </div>
             <div className="text-left">
               <p className={cn('font-medium', !method.available && 'text-muted-foreground')}>

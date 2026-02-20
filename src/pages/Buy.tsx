@@ -10,6 +10,7 @@ import { PaymentMethodPicker, getPaymentMethodById } from '@/components/shared/P
 import { useAuth } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
 import { ChevronDown, Clock, ChevronRight, AlertCircle } from 'lucide-react';
+import { RailIcon } from '@/components/shared/RailIcon';
 import { cn } from '@/lib/utils';
 import {
   Collapsible,
@@ -152,9 +153,7 @@ export default function Buy() {
               {selectedMethod ? (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-sm font-medium">
-                      {selectedMethod.icon}
-                    </div>
+                    <RailIcon rail={selectedMethod.id} size={36} />
                     <div>
                       <p className="font-medium text-sm">{selectedMethod.name}</p>
                       <p className="text-xs text-muted-foreground">

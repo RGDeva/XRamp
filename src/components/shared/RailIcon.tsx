@@ -51,6 +51,15 @@ function WiseSvg({ size }: { size: number }) {
   );
 }
 
+function ChimeSvg({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="10" fill="#1EC677"/>
+      <path d="M24 10c-7.7 0-14 6.3-14 14s6.3 14 14 14 14-6.3 14-14-6.3-14-14-14zm0 4c5.5 0 10 4.5 10 10s-4.5 10-10 10S14 29.5 14 24s4.5-10 10-10zm-1 5v6h-4v2h4v4h2v-4h4v-2h-4v-6h-2z" fill="white"/>
+    </svg>
+  );
+}
+
 function PayPalSvg({ size }: { size: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -69,6 +78,7 @@ const RAIL_MAP: Record<string, (size: number) => JSX.Element> = {
   revolut: (s) => <RevolutSvg size={s} />,
   wise:    (s) => <WiseSvg size={s} />,
   paypal:  (s) => <PayPalSvg size={s} />,
+  chime:   (s) => <ChimeSvg size={s} />,
 };
 
 export function RailIcon({ rail, size = 24, className }: RailIconProps) {
