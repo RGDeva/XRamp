@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, ChevronDown, Info, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowRight, ChevronDown, Info, CheckCircle2, Clock, ChevronRight, Wallet, History, LayoutList, X, Send as SendIcon, Shield } from 'lucide-react';
 import { CryptoIcon, TOKENS } from '@/components/shared/CryptoIcon';
 import { RailIcon, RAILS } from '@/components/shared/RailIcon';
 import { SendSheet } from '@/components/deposits/SendSheet';
@@ -39,6 +39,9 @@ export default function Ramp() {
   const [depositCreated, setDepositCreated] = useState(false);
   const [mockDepositId] = useState(Math.floor(3000 + Math.random() * 999));
 
+  // Right panel
+  const [panelOpen, setPanelOpen] = useState(true);
+
   // Derived quote values
   const usdNum = parseFloat(usdAmount) || 0;
   const tokenPrices: Record<string, number> = {
@@ -59,7 +62,103 @@ export default function Ramp() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen pb-24 relative">
+      {/* Collapsible panel toggle — fixed right edge */}
+      <button
+        onClick={() => setPanelOpen(v => !v)}
+        className="fixed top-24 right-0 z-40 bg-card border border-border border-r-0 rounded-l-xl px-2 py-3 flex flex-col items-center gap-1 hover:bg-secondary transition-colors shadow-elevated"
+        title={panelOpen ? 'Close panel' : 'Open panel'}
+      >
+        <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${panelOpen ? 'rotate-0' : 'rotate-180'}`} />
+        <span className="text-[10px] text-muted-foreground font-medium [writing-mode:vertical-rl] tracking-widest uppercase">Panel</span>
+      </button>
+
+      {/* Right collapsible panel */}
+      <div className={`fixed top-16 right-0 h-[calc(100vh-4rem)] z-30 flex flex-col bg-card/95 backdrop-blur-xl border-l border-border shadow-elevated transition-all duration-300 ease-in-out ${panelOpen ? 'w-72 translate-x-0' : 'w-72 translate-x-full'}`}>
+        {/* Panel header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Account</span>
+          <button onClick={() => setPanelOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          {/* Wallet balance */}
+          <div>
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Wallet Balance</div>
+            <div className="bg-secondary border border-border rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Wallet className="h-4 w-4 text-primary" />
+                <span className="text-xs text-muted-foreground">Top up via bridge or direct transfer</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CryptoIcon symbol="USDC" size={24} />
+                <span className="text-2xl font-bold text-foreground">0.00</span>
+                <span className="text-muted-foreground font-medium">USDC</span>
+              </div>
+              <button className="mt-3 w-full text-xs text-primary border border-primary/30 rounded-lg py-2 hover:bg-primary/10 transition-colors font-medium">
+                + Add Funds
+              </button>
+            </div>
+          </div>
+
+          {/* Protocol tier */}
+          <div>
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Protocol Tier</div>
+            <div className="bg-secondary border border-border rounded-xl p-4 flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-warning/20 border border-warning/30 flex items-center justify-center flex-shrink-0">
+                <Shield className="h-4 w-4 text-warning" />
+              </div>
+              <div>
+                <div className="font-semibold text-foreground text-sm">Peer Peasant</div>
+                <div className="text-xs text-warning">$0 – $500 volume</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Active deposits */}
+          <div>
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Active Deposits</div>
+            <div className="space-y-2">
+              {[
+                { id: 2428, token: 'USDC', taken: '6.69', rail: 'venmo' },
+                { id: 2441, token: 'USDC', taken: '18.69', rail: 'cashapp' },
+              ].map(dep => (
+                <div key={dep.id} className="bg-secondary border border-border rounded-xl px-4 py-3 flex items-center gap-3">
+                  <CryptoIcon symbol={dep.token} size={28} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-foreground">#{dep.id}</div>
+                    <div className="text-xs text-muted-foreground">${dep.taken} taken</div>
+                  </div>
+                  <RailIcon rail={dep.rail} size={20} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Nav links */}
+          <div className="border-t border-border pt-4 space-y-1">
+            {[
+              { icon: SendIcon,   label: 'Send',          action: () => setTab('Send') },
+              { icon: History,    label: 'Order History',  action: () => {} },
+              { icon: LayoutList, label: 'My Deposits',    action: () => {} },
+            ].map(({ icon: Icon, label, action }) => (
+              <button
+                key={label}
+                onClick={action}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors text-left"
+              >
+                <Icon className="h-4 w-4 flex-shrink-0" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Main content — shifts left when panel open on desktop */}
+      <div className={`transition-all duration-300 ${panelOpen ? 'md:mr-72' : 'mr-0'}`}>
       <div className="max-w-lg mx-auto px-4 pt-8">
 
         {/* Header */}
@@ -382,17 +481,18 @@ export default function Ramp() {
         )}
       </div>
 
-      {/* SendSheet */}
-      <SendSheet
-        open={showSendSheet}
-        onClose={() => setShowSendSheet(false)}
-        depositId={mockDepositId}
-        amount={escrowAmount}
-        token={selectedSendToken.symbol}
-        railId={selectedRail.id}
-        railName={selectedRail.name}
-        handle={handle}
-      />
+        {/* SendSheet */}
+        <SendSheet
+          open={showSendSheet}
+          onClose={() => setShowSendSheet(false)}
+          depositId={mockDepositId}
+          amount={escrowAmount}
+          token={selectedSendToken.symbol}
+          railId={selectedRail.id}
+          railName={selectedRail.name}
+          handle={handle}
+        />
+      </div>{/* end md:mr-72 wrapper */}
     </div>
   );
 }
