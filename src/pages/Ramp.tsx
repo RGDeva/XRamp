@@ -306,7 +306,7 @@ export default function Ramp() {
                 <button
                   onClick={handleBuyNow}
                   disabled={!usdAmount || parseFloat(usdAmount) <= 0}
-                  className="w-full bg-success hover:bg-success/90 disabled:bg-muted disabled:text-muted-foreground text-success-foreground font-bold text-xl py-5 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-elevated"
+                  className="w-full bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground font-bold text-xl py-5 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-elevated"
                 >
                   Buy Now
                   <ArrowRight className="h-6 w-6" />
@@ -459,7 +459,7 @@ export default function Ramp() {
               <button
                 onClick={handleCreateDeposit}
                 disabled={!escrowAmount || parseFloat(escrowAmount) <= 0 || !handle.trim()}
-                className="w-full bg-success hover:bg-success/90 disabled:bg-muted disabled:text-muted-foreground text-success-foreground font-bold text-xl py-5 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-elevated"
+                className="w-full bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground font-bold text-xl py-5 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-elevated"
               >
                 Create Deposit
                 <ArrowRight className="h-6 w-6" />
