@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { TopNav } from './TopNav';
 import { BottomNav } from './BottomNav';
 import { StarsBackground } from '@/components/animate-ui/components/backgrounds/stars';
+import { CommandMode } from '@/components/command/CommandMode';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -29,6 +30,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </main>
 
       <BottomNav />
+      <CommandMode />
     </div>
   );
 }
