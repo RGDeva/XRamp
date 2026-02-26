@@ -147,6 +147,7 @@ export default function Ramp() {
   const [showBuyTokenPicker, setShowBuyTokenPicker] = useState(false);
   const [buyMethod, setBuyMethod] = useState<string | null>(null);
   const [showBuyMethodPicker, setShowBuyMethodPicker] = useState(false);
+  const [buyHandle, setBuyHandle] = useState('');
   const [buySubmitting, setBuySubmitting] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
 
@@ -175,7 +176,10 @@ export default function Ramp() {
   const buyReceive = buyNum > 0 ? (buyNum / buyPrice).toFixed(6) : '';
   const buyFee = (buyNum * 0.005).toFixed(2);
   const buySelectedMethod = buyMethod ? getPaymentMethodById(buyMethod) : null;
-  const buyCanContinue = buyNum > 0 && !!buyMethod;
+  const buyHandleMeta = buyMethod ? (HANDLE_META[buyMethod] ?? null) : null;
+  const buyRequiresHandle = !!buyMethod && buyMethod !== 'bank';
+  const buyHasHandle = !buyRequiresHandle || buyHandle.trim().length > 0;
+  const buyCanContinue = buyNum > 0 && !!buyMethod && buyHasHandle;
 
   const sellNum = parseFloat(sellAmount) || 0;
   const sellPrice = TOKEN_PRICES[sellToken.symbol] ?? 1;
@@ -186,6 +190,7 @@ export default function Ramp() {
   const sellHasHandle = !sellRequiresHandle || sellHandle.trim().length > 0;
   const sellCanContinue = sellNum > 0 && !!sellMethod && sellHasHandle;
 
+  const handleBuyMethodChange = (id: string) => { setBuyMethod(id); setBuyHandle(''); };
   const handleSellMethodChange = (id: string) => { setSellMethod(id); setSellHandle(''); };
 
   const handleBuyContinue = async () => {
@@ -200,7 +205,7 @@ export default function Ramp() {
       });
       navigate('/buy/review', { state: {
         payAmount: buyAmount, receiveAmount: buyReceive,
-        paymentMethod: buyMethod, currency: 'USD',
+        paymentMethod: buyMethod, paymentHandle: buyHandle.trim(), currency: 'USD',
         crypto: buyToken.symbol, intentId: intent.id,
       }});
     } catch (e) {
@@ -364,6 +369,22 @@ export default function Ramp() {
                     )}
                   </button>
                 </div>
+                {buyHandleMeta && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">{buyHandleMeta.label}</p>
+                    <div className="relative">
+                      {buyHandleMeta.prefix && (
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium select-none">{buyHandleMeta.prefix}</span>
+                      )}
+                      <input type="text" value={buyHandle} onChange={e => setBuyHandle(e.target.value)}
+                        placeholder={buyHandleMeta.placeholder} autoComplete="off" spellCheck={false}
+                        className={cn(
+                          'w-full rounded-xl p-3.5 bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all',
+                          buyHandleMeta.prefix ? 'pl-7' : 'pl-3.5',
+                        )} />
+                    </div>
+                  </div>
+                )}
                 {buyError && (
                   <div className="flex items-center gap-2 text-xs text-destructive">
                     <AlertCircle className="h-3.5 w-3.5" /><span>{buyError}</span>
@@ -566,7 +587,7 @@ export default function Ramp() {
 
       <PaymentMethodPicker
         open={showBuyMethodPicker} onOpenChange={setShowBuyMethodPicker}
-        value={buyMethod || ''} onValueChange={setBuyMethod}
+        value={buyMethod || ''} onValueChange={handleBuyMethodChange}
         type="payment" amount={buyNum} currency="USD"
       />
       <PaymentMethodPicker
