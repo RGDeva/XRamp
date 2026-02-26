@@ -5,6 +5,7 @@ import { BorderBeam } from '@/components/ui/border-beam';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
+import { RailIcon } from '@/components/shared/RailIcon';
 import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
 
 export default function BuyReview() {
@@ -88,9 +89,7 @@ export default function BuyReview() {
 
         {/* Payment method */}
         <div className="flex items-center gap-3 p-4 bg-secondary/30 rounded-xl">
-          <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-sm font-medium">
-            {paymentMethod?.icon}
-          </div>
+          {paymentMethod && <RailIcon rail={paymentMethod.id} size={36} />}
           <div className="flex-1">
             <p className="font-medium text-sm">{paymentMethod?.name}</p>
             <p className="text-xs text-muted-foreground">Payment method</p>

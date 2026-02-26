@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowDownToLine, ArrowUpFromLine, Eye } from 'lucide-react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { ArrowDownToLine, ArrowUpFromLine, Eye, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
+import { RailIcon } from '@/components/shared/RailIcon';
 import { orchestratorApi, type OrchestratorIntent } from '@/lib/orchestratorApi';
 
 type FilterType = 'all' | 'active' | 'completed';
@@ -17,7 +18,13 @@ function formatType(type: OrchestratorIntent['type']) {
 }
 
 function stateLabel(state: string) {
-  return state.replaceAll('_', ' ');
+  return state.replace(/_/g, ' ');
+}
+
+function stateBadgeClass(state: string) {
+  if (state === 'COMPLETE') return 'bg-success/15 text-success border border-success/30';
+  if (state === 'FAILED' || state === 'CANCELED' || state === 'EXPIRED') return 'bg-destructive/15 text-destructive border border-destructive/30';
+  return 'bg-primary/10 text-primary border border-primary/20 animate-pulse';
 }
 
 export default function Activity() {
@@ -32,24 +39,26 @@ export default function Activity() {
 
   const userId = user?.email || user?.walletAddress || user?.embeddedWalletAddress || 'guest';
 
+  const load = useCallback(async (silent = false) => {
+    try {
+      if (!silent) setLoading(true);
+      setError(null);
+      const { intents } = await orchestratorApi.listIntents(userId);
+      setActivities(intents);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load activity');
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
   useEffect(() => {
     if (!isAuthenticated) return;
-
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const { intents } = await orchestratorApi.listIntents(userId);
-        setActivities(intents.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load activity');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     load();
-  }, [isAuthenticated, userId]);
+    // Auto-poll every 5s to reflect state progressions in demo mode
+    const interval = setInterval(() => load(true), 5000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, load]);
 
   const filteredActivities = useMemo(() => {
     if (filter === 'all') return activities;
@@ -81,7 +90,15 @@ export default function Activity() {
 
   return (
     <div className="max-w-xl mx-auto px-4 py-8 pb-24 md:pb-8">
-      <h1 className="text-2xl font-semibold mb-6">Activity</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold">Activity</h1>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium uppercase tracking-widest">Demo</span>
+          <button onClick={() => load()} className="p-1.5 rounded-lg hover:bg-secondary transition-colors" title="Refresh">
+            <RefreshCw className={cn('h-4 w-4 text-muted-foreground', loading && 'animate-spin')} />
+          </button>
+        </div>
+      </div>
 
       <div className="flex gap-2 mb-6">
         {filters.map((f) => (
@@ -98,7 +115,7 @@ export default function Activity() {
         ))}
       </div>
 
-      {loading && <p className="text-sm text-muted-foreground">Loading activity…</p>}
+      {loading && activities.length === 0 && <p className="text-sm text-muted-foreground">Loading activity…</p>}
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {!loading && filteredActivities.length === 0 ? (
@@ -118,16 +135,21 @@ export default function Activity() {
                 style={{ animationDelay: `${index * 60}ms` }}
               >
                 <div className="flex items-center gap-3">
-                  <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg', isBuy ? 'bg-success/10' : 'bg-primary/10')}>
-                    {isBuy ? <ArrowDownToLine className="h-4 w-4 text-success" /> : <ArrowUpFromLine className="h-4 w-4 text-primary" />}
-                  </div>
+                  {activity.rail
+                    ? <RailIcon rail={activity.rail} size={40} />
+                    : <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg flex-shrink-0', isBuy ? 'bg-success/10' : 'bg-primary/10')}>
+                        {isBuy ? <ArrowDownToLine className="h-4 w-4 text-success" /> : <ArrowUpFromLine className="h-4 w-4 text-primary" />}
+                      </div>
+                  }
                   <div>
-                    <p className="font-medium text-sm">{formatType(activity.type)} • {activity.amount} {activity.sourceAsset}</p>
+                    <p className="font-medium text-sm">
+                      {formatType(activity.type)} · {activity.amount} {activity.sourceAsset} → {activity.targetAsset}
+                    </p>
                     <p className="text-xs text-muted-foreground">{new Date(activity.updatedAt).toLocaleString()}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-foreground">
+                  <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide', stateBadgeClass(activity.state))}>
                     {stateLabel(activity.state)}
                   </span>
                   <Eye className="h-3.5 w-3.5 text-muted-foreground" />

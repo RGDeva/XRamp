@@ -5,6 +5,7 @@ import { BorderBeam } from '@/components/ui/border-beam';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
+import { RailIcon } from '@/components/shared/RailIcon';
 
 export default function SellReview() {
   const navigate = useNavigate();
@@ -85,9 +86,7 @@ export default function SellReview() {
 
         {/* Payout method */}
         <div className="flex items-center gap-3 p-4 bg-secondary/30 rounded-xl">
-          <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-sm font-medium">
-            {payoutMethod?.icon}
-          </div>
+          {payoutMethod && <RailIcon rail={payoutMethod.id} size={36} />}
           <div className="flex-1">
             <p className="font-medium text-sm">{payoutMethod?.name}</p>
             <p className="text-xs text-muted-foreground">Payout method</p>
