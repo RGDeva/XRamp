@@ -92,20 +92,6 @@ export default function Ramp() {
             </div>
           </div>
 
-          {/* Protocol tier */}
-          <div>
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Protocol Tier</div>
-            <div className="bg-secondary border border-border rounded-xl p-4 flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full bg-warning/20 border border-warning/30 flex items-center justify-center flex-shrink-0">
-                <Shield className="h-4 w-4 text-warning" />
-              </div>
-              <div>
-                <div className="font-semibold text-foreground text-sm">Peer Peasant</div>
-                <div className="text-xs text-warning">$0 – $500 volume</div>
-              </div>
-            </div>
-          </div>
-
           {/* Active deposits */}
           <div>
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Active Deposits</div>

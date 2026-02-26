@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Send, X, Zap, CheckCircle2, Clock, TrendingUp, Wifi } from 'lucide-react';
+import { Send, X, Zap, CheckCircle2, Clock, TrendingUp, Wifi, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ─── Simulated LP Engine ────────────────────────────────────────────────────
@@ -105,11 +105,12 @@ function SLATimer({ seconds, onComplete }: { seconds: number; onComplete: () => 
 
 export function CommandMode() {
   const [open, setOpen] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
     {
       id: uid(),
       role: 'system',
-      text: 'XRamp Command Mode active. Intent-based settlement on Avalanche. Type a command or tap a quick action below.',
+      text: 'XRamp Command Mode active. Intent-based settlement on Avalanche. Tap a quick command or type below.',
       ts: Date.now(),
     },
   ]);
@@ -124,38 +125,32 @@ export function CommandMode() {
   }, []);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, slaActive]);
+    if (!minimized) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, slaActive, minimized]);
 
   const runSimulation = useCallback(async (text: string) => {
     if (busy) return;
     setBusy(true);
+    setMinimized(false);
 
     const intent = parseIntent(text);
     const lp = routeLP(intent.express);
     setMatchedLP(lp);
 
-    // User echo
     push('user', text);
-
     await delay(400);
 
-    // Express notice
     if (intent.express) {
       push('info', '⚡ Express routing enabled (+0.5% fee) — matching with top-tier liquidity provider…');
       await delay(600);
     }
 
-    // LP match
     push('info', `Matched with ${lp.name} (${lp.reliability}% reliability, avg ${lp.avgTime})`);
     await delay(400);
-    push('info', `SLA: 5 minutes`);
+    push('info', 'SLA: 5 minutes');
     await delay(300);
 
-    // SLA timer message
     setSlaActive(true);
-
-    // Simulate fiat arrival after 4s
     await delay(4000);
     setSlaActive(false);
 
@@ -165,7 +160,6 @@ export function CommandMode() {
     await delay(700);
     push('success', '✓ Swap executed on Avalanche (LFJ simulated)');
 
-    // Optional AVAX swap
     if (intent.swapToAvax) {
       await delay(800);
       push('info', 'Executing swap via LFJ router…');
@@ -177,7 +171,6 @@ export function CommandMode() {
 
     await delay(300);
     push('system', `Order complete. ${intent.action === 'sell' ? 'Fiat payout' : 'Crypto'} delivered successfully.`);
-
     setBusy(false);
   }, [busy, push]);
 
@@ -192,145 +185,147 @@ export function CommandMode() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  return (
-    <>
-      {/* ── Floating Button ── */}
-      <div className="fixed bottom-24 right-4 z-50 md:bottom-8">
-        <motion.button
-          onClick={() => setOpen((o) => !o)}
-          className={cn(
-            'relative flex items-center gap-2 px-4 py-3 rounded-full font-semibold text-sm',
-            'bg-primary text-primary-foreground shadow-[0_0_20px_rgba(6,182,212,0.5)]',
-            'hover:shadow-[0_0_32px_rgba(6,182,212,0.7)] transition-shadow'
-          )}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.96 }}
-        >
-          {/* pulse ring */}
-          <span className="absolute inset-0 rounded-full animate-ping bg-primary/30 pointer-events-none" />
-          <Zap className="h-4 w-4 fill-current" />
-          Command
-        </motion.button>
-      </div>
+  // Unread badge: count messages since last open
+  const unreadCount = !open ? messages.filter(m => m.role !== 'system' || messages.indexOf(m) > 0).length : 0;
 
-      {/* ── Side Panel ── */}
+  return (
+    <div className="fixed bottom-20 right-4 z-50 md:bottom-6 flex flex-col items-end gap-2">
+      {/* ── Expanded Chat Window (expands upward) ── */}
       <AnimatePresence>
         {open && (
-          <>
-            {/* backdrop (mobile) */}
-            <motion.div
-              key="backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
-              onClick={() => setOpen(false)}
-            />
-
-            <motion.div
-              key="panel"
-              initial={{ x: '100%', opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: '100%', opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 340, damping: 36 }}
-              className={cn(
-                'fixed right-0 top-0 bottom-0 z-50 flex flex-col',
-                'w-full max-w-sm',
-                'bg-[rgba(10,13,20,0.92)] backdrop-blur-xl',
-                'border-l border-border/60',
-                'shadow-[-8px_0_40px_rgba(0,0,0,0.5)]'
-              )}
-            >
-              {/* ── Header ── */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                    <span className="text-[10px] text-success font-medium uppercase tracking-widest">Connected</span>
-                  </div>
+          <motion.div
+            key="chat"
+            initial={{ opacity: 0, scale: 0.92, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 16 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+            className={cn(
+              'flex flex-col rounded-2xl overflow-hidden',
+              'w-[320px] sm:w-[360px]',
+              'bg-[rgba(10,13,20,0.96)] backdrop-blur-xl',
+              'border border-border/60',
+              'shadow-[0_8px_40px_rgba(0,0,0,0.6)]',
+              minimized ? 'h-auto' : 'h-[480px]'
+            )}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-success animate-pulse flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground leading-none">XRamp Command</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Intent-based · Avalanche</p>
                 </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setMinimized((m) => !m)}
+                  className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+                  title={minimized ? 'Expand' : 'Minimise'}
+                >
+                  <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
                 <button
                   onClick={() => setOpen(false)}
                   className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
                 >
-                  <X className="h-4 w-4 text-muted-foreground" />
+                  <X className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               </div>
+            </div>
 
-              <div className="px-5 py-3 border-b border-border/30">
-                <h2 className="text-base font-bold text-foreground">XRamp Command Mode</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Intent-based settlement on Avalanche</p>
-              </div>
-
-              {/* ── Messages ── */}
-              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scrollbar-thin">
-                {messages.map((msg) => (
-                  <ChatBubble key={msg.id} msg={msg} />
-                ))}
-
-                {/* SLA Timer bubble */}
-                {slaActive && (
-                  <div className="flex">
-                    <div className="max-w-[85%] rounded-2xl rounded-tl-sm px-4 py-2.5 bg-amber-500/10 border border-amber-500/20 text-sm">
-                      <SLATimer seconds={299} onComplete={() => setSlaActive(false)} />
-                    </div>
-                  </div>
-                )}
-
-                <div ref={bottomRef} />
-              </div>
-
-              {/* ── Quick Commands ── */}
-              <div className="px-4 py-2 border-t border-border/30">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">Quick commands</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {QUICK_COMMANDS.map((cmd) => (
-                    <button
-                      key={cmd}
-                      onClick={() => { if (!busy) runSimulation(cmd); }}
-                      disabled={busy}
-                      className={cn(
-                        'text-[11px] px-2.5 py-1 rounded-full border transition-all',
-                        cmd.toLowerCase().includes('express')
-                          ? 'border-amber-500/50 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20'
-                          : 'border-primary/30 text-primary bg-primary/10 hover:bg-primary/20',
-                        busy && 'opacity-40 cursor-not-allowed'
-                      )}
-                    >
-                      {cmd}
-                    </button>
+            {/* Body — hidden when minimized */}
+            {!minimized && (
+              <>
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
+                  {messages.map((msg) => (
+                    <ChatBubble key={msg.id} msg={msg} />
                   ))}
+                  {slaActive && (
+                    <div className="flex">
+                      <div className="max-w-[88%] rounded-2xl rounded-tl-sm px-3 py-2 bg-amber-500/10 border border-amber-500/20 text-sm">
+                        <SLATimer seconds={299} onComplete={() => setSlaActive(false)} />
+                      </div>
+                    </div>
+                  )}
+                  <div ref={bottomRef} />
                 </div>
-              </div>
 
-              {/* ── Input ── */}
-              <div className="px-4 py-3 border-t border-border/50">
-                <div className="flex items-center gap-2 bg-secondary/50 border border-border rounded-xl px-3 py-2">
-                  <input
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKey}
-                    placeholder="Type a command…"
-                    disabled={busy}
-                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none min-w-0"
-                  />
-                  <button
-                    onClick={handleSend}
-                    disabled={!input.trim() || busy}
-                    className="p-1.5 rounded-lg bg-primary/20 hover:bg-primary/40 text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                  </button>
+                {/* Quick commands */}
+                <div className="px-3 py-2 border-t border-border/30 flex-shrink-0">
+                  <div className="flex flex-wrap gap-1.5">
+                    {QUICK_COMMANDS.map((cmd) => (
+                      <button
+                        key={cmd}
+                        onClick={() => { if (!busy) runSimulation(cmd); }}
+                        disabled={busy}
+                        className={cn(
+                          'text-[10px] px-2 py-1 rounded-full border transition-all',
+                          cmd.toLowerCase().includes('express')
+                            ? 'border-amber-500/50 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20'
+                            : 'border-primary/30 text-primary bg-primary/10 hover:bg-primary/20',
+                          busy && 'opacity-40 cursor-not-allowed'
+                        )}
+                      >
+                        {cmd}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* ── LP Stats Footer ── */}
-              <LPStatsBar lp={matchedLP} />
-            </motion.div>
-          </>
+                {/* Input */}
+                <div className="px-3 pb-3 pt-1 flex-shrink-0">
+                  <div className="flex items-center gap-2 bg-secondary/50 border border-border rounded-xl px-3 py-2">
+                    <input
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKey}
+                      placeholder="Type a command…"
+                      disabled={busy}
+                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none min-w-0"
+                    />
+                    <button
+                      onClick={handleSend}
+                      disabled={!input.trim() || busy}
+                      className="p-1.5 rounded-lg bg-primary/20 hover:bg-primary/40 text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* LP Stats */}
+                <LPStatsBar lp={matchedLP} />
+              </>
+            )}
+          </motion.div>
         )}
       </AnimatePresence>
-    </>
+
+      {/* ── Floating Trigger Bubble ── */}
+      <motion.button
+        onClick={() => { setOpen((o) => !o); setMinimized(false); }}
+        className={cn(
+          'relative flex items-center gap-2 px-4 py-3 rounded-full font-semibold text-sm flex-shrink-0',
+          'bg-primary text-primary-foreground',
+          'shadow-[0_0_20px_rgba(6,182,212,0.45)] hover:shadow-[0_0_32px_rgba(6,182,212,0.7)]',
+          'transition-shadow'
+        )}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.96 }}
+      >
+        {!open && <span className="absolute inset-0 rounded-full animate-ping bg-primary/25 pointer-events-none" />}
+        <Zap className="h-4 w-4 fill-current flex-shrink-0" />
+        Command
+        {/* Unread badge */}
+        {!open && unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[9px] font-bold text-white flex items-center justify-center">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </motion.button>
+    </div>
   );
 }
 
