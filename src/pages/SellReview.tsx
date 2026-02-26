@@ -15,6 +15,7 @@ export default function SellReview() {
   const sellAmount = state.sellAmount || '100';
   const receiveAmount = state.receiveAmount || '99.00';
   const payoutMethodId = state.payoutMethod || 'venmo';
+  const payoutHandle = state.payoutHandle || '';
   const currency = state.currency || 'USD';
   const crypto = state.crypto || 'USDC';
   
@@ -89,6 +90,9 @@ export default function SellReview() {
           {payoutMethod && <RailIcon rail={payoutMethod.id} size={36} />}
           <div className="flex-1">
             <p className="font-medium text-sm">{payoutMethod?.name}</p>
+            {payoutHandle && (
+              <p className="text-xs text-primary font-mono mt-0.5">{payoutHandle}</p>
+            )}
             <p className="text-xs text-muted-foreground">Payout method</p>
           </div>
         </div>

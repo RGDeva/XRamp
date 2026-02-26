@@ -26,11 +26,18 @@ export default function Sell() {
   const [receiveAmount, setReceiveAmount] = useState('');
   const [payoutMethod, setPayoutMethod] = useState<string | null>(null);
   const [showMethodPicker, setShowMethodPicker] = useState(false);
+  const [payoutHandle, setPayoutHandle] = useState('');
   const [showDetails, setShowDetails] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const selectedMethod = payoutMethod ? getPaymentMethodById(payoutMethod) : null;
+
+  // Reset handle when method changes
+  const handleMethodChange = (id: string) => {
+    setPayoutMethod(id);
+    setPayoutHandle('');
+  };
   const numericAmount = parseFloat(sellAmount) || 0;
 
   const calculateReceive = (amount: string) => {
@@ -45,11 +52,26 @@ export default function Sell() {
 
   const hasValidAmount = numericAmount > 0;
   const hasMethod = !!payoutMethod;
-  const canContinue = hasValidAmount && hasMethod;
+  const requiresHandle = !!payoutMethod && payoutMethod !== 'bank';
+  const hasHandle = !requiresHandle || payoutHandle.trim().length > 0;
+  const canContinue = hasValidAmount && hasMethod && hasHandle;
+
+  const HANDLE_META: Record<string, { label: string; placeholder: string; prefix?: string }> = {
+    venmo:   { label: 'Venmo username',  placeholder: 'yourname',   prefix: '@' },
+    cashapp: { label: 'Cash Tag',        placeholder: 'yourcashtag', prefix: '$' },
+    chime:   { label: 'ChimeSign',       placeholder: 'yourname',   prefix: '@' },
+    zelle:   { label: 'Zelle email / phone', placeholder: 'email or phone' },
+    revolut: { label: 'Revolut tag',     placeholder: 'yourrevtag', prefix: '@' },
+    wise:    { label: 'Wise email',      placeholder: 'you@email.com' },
+    paypal:  { label: 'PayPal email / @username', placeholder: 'you@email.com' },
+  };
+
+  const handleMeta = payoutMethod ? (HANDLE_META[payoutMethod] ?? null) : null;
 
   const getValidationMessage = () => {
     if (!hasValidAmount) return 'Enter an amount';
     if (!hasMethod) return 'Select a payout method';
+    if (requiresHandle && !payoutHandle.trim()) return `Enter your ${handleMeta?.label ?? 'payout handle'}`;
     if (!isAuthenticated) return 'Connect to continue';
     return null;
   };
@@ -72,6 +94,7 @@ export default function Sell() {
         amount: sellAmount,
         sourceAsset: selectedCrypto,
         targetAsset: selectedCurrency,
+        rail: payoutMethod ?? undefined,
       });
 
       navigate('/sell/review', {
@@ -79,6 +102,7 @@ export default function Sell() {
           sellAmount,
           receiveAmount,
           payoutMethod,
+          payoutHandle: payoutHandle.trim(),
           currency: selectedCurrency,
           crypto: selectedCrypto,
           intentId: intent.id,
@@ -131,6 +155,31 @@ export default function Sell() {
               placeholder="0"
             />
           </div>
+
+          {handleMeta && (
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">{handleMeta.label}</p>
+              <div className="relative">
+                {handleMeta.prefix && (
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium select-none">
+                    {handleMeta.prefix}
+                  </span>
+                )}
+                <input
+                  type="text"
+                  value={payoutHandle}
+                  onChange={(e) => setPayoutHandle(e.target.value)}
+                  placeholder={handleMeta.placeholder}
+                  autoComplete="off"
+                  spellCheck={false}
+                  className={cn(
+                    'w-full rounded-xl p-3.5 bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all',
+                    handleMeta.prefix ? 'pl-7' : 'pl-3.5',
+                  )}
+                />
+              </div>
+            </div>
+          )}
 
           <div>
             <p className="text-sm text-muted-foreground mb-2">Payout method</p>
@@ -210,7 +259,7 @@ export default function Sell() {
         open={showMethodPicker}
         onOpenChange={setShowMethodPicker}
         value={payoutMethod || ''}
-        onValueChange={setPayoutMethod}
+        onValueChange={handleMethodChange}
         type="payout"
         amount={numericAmount}
         currency={selectedCurrency}

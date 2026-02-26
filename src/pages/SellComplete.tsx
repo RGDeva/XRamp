@@ -14,6 +14,7 @@ export default function SellComplete() {
   const sellAmount = state.sellAmount || '100';
   const receiveAmount = state.receiveAmount || '99.00';
   const payoutMethodId = state.payoutMethod || 'venmo';
+  const payoutHandle = state.payoutHandle || '';
   const currency = state.currency || 'USD';
   const crypto = state.crypto || 'USDC';
   
@@ -52,7 +53,12 @@ export default function SellComplete() {
           </div>
           <div className="flex justify-between py-2">
             <span className="text-muted-foreground text-sm">Via</span>
-            <span className="font-medium">{payoutMethod?.name}</span>
+            <div className="text-right">
+              <span className="font-medium">{payoutMethod?.name}</span>
+              {payoutHandle && (
+                <p className="text-xs text-primary font-mono">{payoutHandle}</p>
+              )}
+            </div>
           </div>
           <div className="flex justify-between py-2">
             <span className="text-muted-foreground text-sm">Status</span>
