@@ -18,6 +18,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { orchestratorApi } from '@/lib/orchestratorApi';
+import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
 
 export default function Buy() {
   const navigate = useNavigate();
@@ -208,9 +209,14 @@ export default function Buy() {
           )}
         </div>
 
+        {isSubmitting && (
+          <div className="flex justify-center">
+            <KineticDotsLoader dots={3} className="py-0" />
+          </div>
+        )}
         <div className="mt-4">
           <InteractiveHoverButton
-            text={isSubmitting ? 'Creating intent…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
+            text={isSubmitting ? 'Matching LP…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
             onClick={handleContinue}
             disabled={isSubmitting || (!canContinue && isAuthenticated)}
             className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"

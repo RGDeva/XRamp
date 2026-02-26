@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
 import { ArrowDownToLine, ArrowUpFromLine, Eye, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -115,7 +116,11 @@ export default function Activity() {
         ))}
       </div>
 
-      {loading && activities.length === 0 && <p className="text-sm text-muted-foreground">Loading activity…</p>}
+      {loading && activities.length === 0 && (
+        <div className="flex justify-center py-8">
+          <KineticDotsLoader dots={3} className="py-2" />
+        </div>
+      )}
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {!loading && filteredActivities.length === 0 ? (

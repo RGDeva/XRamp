@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -369,8 +370,13 @@ export default function Ramp() {
                   </div>
                 )}
               </div>
+              {buySubmitting && (
+                <div className="flex justify-center">
+                  <KineticDotsLoader dots={3} className="py-0" />
+                </div>
+              )}
               <InteractiveHoverButton
-                text={buySubmitting ? 'Creating intent…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
+                text={buySubmitting ? 'Matching LP…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
                 onClick={handleBuyContinue}
                 disabled={buySubmitting || (isAuthenticated && !buyCanContinue)}
                 className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"
@@ -460,8 +466,13 @@ export default function Ramp() {
                   </div>
                 )}
               </div>
+              {sellSubmitting && (
+                <div className="flex justify-center">
+                  <KineticDotsLoader dots={3} className="py-0" />
+                </div>
+              )}
               <InteractiveHoverButton
-                text={sellSubmitting ? 'Creating intent…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
+                text={sellSubmitting ? 'Matching LP…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
                 onClick={handleSellContinue}
                 disabled={sellSubmitting || (isAuthenticated && !sellCanContinue)}
                 className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"

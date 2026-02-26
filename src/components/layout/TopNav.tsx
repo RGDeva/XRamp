@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
 import { Eye, EyeOff, ChevronDown, User, Shield, LogOut, Home, ArrowDownToLine, ArrowUpFromLine, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TubelightNavBar } from '@/components/ui/tubelight-navbar';
@@ -93,9 +94,9 @@ export function TopNav() {
 
             {/* Auth */}
             {isLoading ? (
-              <Button size="sm" variant="outline" disabled className="h-9">
-                <div className="h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-              </Button>
+              <div className="h-9 flex items-center px-2">
+                <KineticDotsLoader dots={3} className="p-0" />
+              </div>
             ) : isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

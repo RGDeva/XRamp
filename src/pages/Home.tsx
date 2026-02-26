@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/tooltip';
 import { DepositWidget } from '@/components/deposit';
 import xrampLogo from '@/assets/xramp-logo-full.png';
+import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
 const recentItems = [
   {
     id: '1',
@@ -51,6 +52,15 @@ export default function Home() {
   const { privacyMode, togglePrivacyMode } = useApp();
 
   const deliveryAddress = getDeliveryAddress(user);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center">
+        <KineticDotsLoader dots={4} />
+        <p className="text-sm text-muted-foreground mt-2">Loading XRamp…</p>
+      </div>
+    );
+  }
 
   // Not logged in state - ZKP2P style landing
   if (!isAuthenticated) {
