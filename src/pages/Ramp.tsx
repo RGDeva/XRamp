@@ -1,79 +1,243 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
-import { ArrowRight, ChevronDown, Info, CheckCircle2, Wallet, History, LayoutList, X, Send as SendIcon, Shield } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  ChevronDown, X, Wallet, History, LayoutList, Send as SendIcon,
+  Search, Check, AlertCircle, ChevronRight, Info,
+} from 'lucide-react';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
-import { CryptoIcon, TOKENS } from '@/components/shared/CryptoIcon';
-import { RailIcon, RAILS } from '@/components/shared/RailIcon';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
+import { CryptoIcon, TOKENS, type Token } from '@/components/shared/CryptoIcon';
+import { RailIcon } from '@/components/shared/RailIcon';
+import { PaymentMethodPicker, getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
+import { QuotesCard } from '@/components/shared/QuotesCard';
 import { SendSheet } from '@/components/deposits/SendSheet';
-import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
+import { orchestratorApi } from '@/lib/orchestratorApi';
+import { cn } from '@/lib/utils';
 
-type Tab = 'Buy' | 'Send';
+type RampTab = 'Buy' | 'Sell' | 'Send';
 
-const BUY_RAILS = [
-  { id: 'venmo',   name: 'Venmo' },
-  { id: 'cashapp', name: 'Cash App' },
-  { id: 'wise',    name: 'Wise' },
-];
+const CHAIN_LABELS: Record<string, string> = {
+  avalanche: 'Avalanche', ethereum: 'Ethereum', base: 'Base',
+  arbitrum: 'Arbitrum', solana: 'Solana', other: 'Other',
+};
+const CHAIN_ORDER = ['avalanche', 'ethereum', 'base', 'arbitrum', 'solana', 'other'];
 
-const MOCK_QUEUE = [
-  { id: 'q1', label: 'Waiting buyer', sub: 'Proof via agent', status: 'waiting', time: '2m ago' },
-  { id: 'q2', label: 'Buyer matched', sub: 'Awaiting fiat proof', status: 'matched', time: '8m ago' },
-  { id: 'q3', label: 'Completed', sub: '$50 released', status: 'done', time: '1h ago' },
-];
+const TOKEN_PRICES: Record<string, number> = {
+  AVAX: 28.5, WAVAX: 28.5, ETH: 2650, WETH: 2650, SOL: 145,
+  BASE: 2650, ARB: 0.92, USDC: 1, USDT: 1, 'BTC.b': 62000,
+  BTC: 62000, JOE: 0.45, LINK: 14.5, AAVE: 92, GMX: 28,
+};
+
+const HANDLE_META: Record<string, { label: string; placeholder: string; prefix?: string }> = {
+  venmo:   { label: 'Venmo username',         placeholder: 'yourname',     prefix: '@' },
+  cashapp: { label: 'Cash Tag',               placeholder: 'yourcashtag',  prefix: '$' },
+  chime:   { label: 'ChimeSign',              placeholder: 'yourname',     prefix: '@' },
+  zelle:   { label: 'Zelle email / phone',    placeholder: 'email or phone' },
+  revolut: { label: 'Revolut tag',            placeholder: 'yourrevtag',   prefix: '@' },
+  wise:    { label: 'Wise email',             placeholder: 'you@email.com' },
+  paypal:  { label: 'PayPal email / @handle', placeholder: 'you@email.com' },
+};
+
+function TokenPicker({
+  open, onClose, selected, onSelect,
+}: {
+  open: boolean; onClose: () => void; selected: Token; onSelect: (t: Token) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 50); }, [open]);
+  if (!open) return null;
+
+  const query = search.toLowerCase();
+  const filtered = TOKENS.filter(t =>
+    t.symbol.toLowerCase().includes(query) ||
+    t.name.toLowerCase().includes(query) ||
+    t.network.toLowerCase().includes(query),
+  );
+  const grouped = CHAIN_ORDER.map(chain => ({
+    chain, label: CHAIN_LABELS[chain],
+    tokens: filtered.filter(t => t.chain === chain),
+  })).filter(g => g.tokens.length > 0);
+
+  const quickTokens = TOKENS.filter(t => ['AVAX','USDC','USDT','BTC.b','ETH'].includes(t.symbol));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full sm:max-w-md bg-card border border-border rounded-t-3xl sm:rounded-2xl shadow-2xl z-10 max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <h2 className="text-lg font-semibold">Select token</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+            <X className="h-5 w-5 text-muted-foreground" />
+          </button>
+        </div>
+        <div className="px-5 py-3">
+          <div className="flex items-center gap-2 bg-secondary/60 rounded-xl px-3 py-2.5">
+            <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <input
+              ref={inputRef} type="text" placeholder="Search tokens or chains…"
+              value={search} onChange={e => setSearch(e.target.value)}
+              className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+        {!search && (
+          <div className="flex gap-2 px-5 pb-3 flex-wrap">
+            {quickTokens.map(t => (
+              <button key={t.symbol} onClick={() => { onSelect(t); onClose(); }}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
+                  selected.symbol === t.symbol
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-secondary/50 hover:border-primary/50 text-foreground',
+                )}>
+                <CryptoIcon symbol={t.symbol} size={16} />{t.symbol}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="overflow-y-auto flex-1 px-3 pb-5">
+          {grouped.map(({ chain, label, tokens }) => (
+            <div key={chain}>
+              <div className="px-3 pt-4 pb-1.5">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{label}</span>
+              </div>
+              {tokens.map(token => (
+                <button key={token.symbol} onClick={() => { onSelect(token); onClose(); }}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors text-left',
+                    selected.symbol === token.symbol ? 'bg-primary/10' : 'hover:bg-secondary/50',
+                  )}>
+                  <CryptoIcon symbol={token.symbol} size={40} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm">{token.symbol}</p>
+                    <p className="text-xs text-muted-foreground truncate">{token.name} · {token.network}</p>
+                    {token.address && (
+                      <p className="text-[10px] text-muted-foreground/60 font-mono">{token.address.slice(0,6)}…{token.address.slice(-4)}</p>
+                    )}
+                  </div>
+                  {selected.symbol === token.symbol && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
+                </button>
+              ))}
+            </div>
+          ))}
+          {grouped.length === 0 && <p className="text-center text-muted-foreground text-sm py-8">No tokens found</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Ramp() {
-  const [tab, setTab] = useState<Tab>('Buy');
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { rampPanelOpen: panelOpen, setRampPanelOpen: setPanelOpen } = useApp();
+  const { isAuthenticated, login, user } = useAuth();
 
-  // Buy tab state
-  const [usdAmount, setUsdAmount] = useState('100');
-  const [selectedToken, setSelectedToken] = useState(TOKENS[0]);
-  const [showTokenPicker, setShowTokenPicker] = useState(false);
-  const [selectedBuyRail, setSelectedBuyRail] = useState(BUY_RAILS[0].id);
-  const [buyStep, setBuyStep] = useState<'form' | 'connecting'>('form');
+  const rawTab = searchParams.get('tab') ?? '';
+  const initialTab = (['Buy','Sell','Send'].includes(rawTab) ? rawTab : 'Buy') as RampTab;
+  const [tab, setTab] = useState<RampTab>(initialTab);
 
-  // Send tab state
+  const [buyAmount, setBuyAmount] = useState('');
+  const [buyToken, setBuyToken] = useState<Token>(TOKENS[0]);
+  const [showBuyTokenPicker, setShowBuyTokenPicker] = useState(false);
+  const [buyMethod, setBuyMethod] = useState<string | null>(null);
+  const [showBuyMethodPicker, setShowBuyMethodPicker] = useState(false);
+  const [buySubmitting, setBuySubmitting] = useState(false);
+  const [buyError, setBuyError] = useState<string | null>(null);
+
+  const [sellAmount, setSellAmount] = useState('');
+  const [sellToken, setSellToken] = useState<Token>(TOKENS[0]);
+  const [showSellTokenPicker, setShowSellTokenPicker] = useState(false);
+  const [sellMethod, setSellMethod] = useState<string | null>(null);
+  const [showSellMethodPicker, setShowSellMethodPicker] = useState(false);
+  const [sellHandle, setSellHandle] = useState('');
+  const [sellSubmitting, setSellSubmitting] = useState(false);
+  const [sellError, setSellError] = useState<string | null>(null);
+
   const [sendAmount, setSendAmount] = useState('');
+  const [sendToken, setSendToken] = useState<Token>(TOKENS[1]);
+  const [showSendTokenPicker, setShowSendTokenPicker] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
-  const [receiveToken, setReceiveToken] = useState(TOKENS[0]);
+  const [receiveToken, setReceiveToken] = useState<Token>(TOKENS[0]);
   const [showReceiveTokenPicker, setShowReceiveTokenPicker] = useState(false);
   const [showSendSheet, setShowSendSheet] = useState(false);
   const [mockDepositId] = useState(Math.floor(3000 + Math.random() * 999));
 
-  // Right panel — driven by AppContext so TopNav profile icon can toggle it
-  const { rampPanelOpen: panelOpen, setRampPanelOpen: setPanelOpen } = useApp();
+  const getUserId = () => user?.email || user?.walletAddress || user?.embeddedWalletAddress || 'guest';
 
-  // Derived quote values
-  const usdNum = parseFloat(usdAmount) || 0;
-  const tokenPrices: Record<string, number> = {
-    AVAX: 28.5, ETH: 2650, SOL: 145, BASE: 2650, ARB: 0.92, USDC: 1,
+  const buyNum = parseFloat(buyAmount) || 0;
+  const buyPrice = TOKEN_PRICES[buyToken.symbol] ?? 1;
+  const buyReceive = buyNum > 0 ? (buyNum / buyPrice).toFixed(6) : '';
+  const buyFee = (buyNum * 0.005).toFixed(2);
+  const buySelectedMethod = buyMethod ? getPaymentMethodById(buyMethod) : null;
+  const buyCanContinue = buyNum > 0 && !!buyMethod;
+
+  const sellNum = parseFloat(sellAmount) || 0;
+  const sellPrice = TOKEN_PRICES[sellToken.symbol] ?? 1;
+  const sellReceive = sellNum > 0 ? (sellNum * sellPrice * 0.99).toFixed(2) : '';
+  const sellSelectedMethod = sellMethod ? getPaymentMethodById(sellMethod) : null;
+  const sellHandleMeta = sellMethod ? (HANDLE_META[sellMethod] ?? null) : null;
+  const sellRequiresHandle = !!sellMethod && sellMethod !== 'bank';
+  const sellHasHandle = !sellRequiresHandle || sellHandle.trim().length > 0;
+  const sellCanContinue = sellNum > 0 && !!sellMethod && sellHasHandle;
+
+  const handleSellMethodChange = (id: string) => { setSellMethod(id); setSellHandle(''); };
+
+  const handleBuyContinue = async () => {
+    if (!isAuthenticated) { login(); return; }
+    if (!buyCanContinue) return;
+    try {
+      setBuySubmitting(true); setBuyError(null);
+      const { intent } = await orchestratorApi.createOnrampIntent({
+        userId: getUserId(), amount: buyAmount,
+        sourceAsset: 'USD', targetAsset: buyToken.symbol,
+        rail: buyMethod ?? undefined,
+      });
+      navigate('/buy/review', { state: {
+        payAmount: buyAmount, receiveAmount: buyReceive,
+        paymentMethod: buyMethod, currency: 'USD',
+        crypto: buyToken.symbol, intentId: intent.id,
+      }});
+    } catch (e) {
+      setBuyError(e instanceof Error ? e.message : 'Failed');
+    } finally { setBuySubmitting(false); }
   };
-  const price = tokenPrices[selectedToken.symbol] ?? 1;
-  const tokenAmount = usdNum > 0 ? (usdNum / price).toFixed(4) : '0';
-  const fee = (usdNum * 0.005).toFixed(2);
 
-  function handleBuyNow() {
-    setBuyStep('connecting');
-    setTimeout(() => setBuyStep('form'), 3000);
-  }
-
-  function handleSend() {
-    setShowSendSheet(true);
-  }
+  const handleSellContinue = async () => {
+    if (!isAuthenticated) { login(); return; }
+    if (!sellCanContinue) return;
+    try {
+      setSellSubmitting(true); setSellError(null);
+      const { intent } = await orchestratorApi.createOfframpIntent({
+        userId: getUserId(), amount: sellAmount,
+        sourceAsset: sellToken.symbol, targetAsset: 'USD',
+        rail: sellMethod ?? undefined,
+      });
+      navigate('/sell/review', { state: {
+        sellAmount, receiveAmount: sellReceive,
+        payoutMethod: sellMethod, payoutHandle: sellHandle.trim(),
+        currency: 'USD', crypto: sellToken.symbol, intentId: intent.id,
+      }});
+    } catch (e) {
+      setSellError(e instanceof Error ? e.message : 'Failed');
+    } finally { setSellSubmitting(false); }
+  };
 
   return (
     <div className="min-h-screen pb-24 relative">
       {/* Right collapsible panel */}
       <div className={`fixed top-16 right-0 h-[calc(100vh-4rem)] z-30 flex flex-col bg-card/95 backdrop-blur-xl border-l border-border shadow-elevated transition-all duration-300 ease-in-out ${panelOpen ? 'w-72 translate-x-0' : 'w-72 translate-x-full'}`}>
-        {/* Panel header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Account</span>
           <button onClick={() => setPanelOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
-
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-          {/* Wallet balance */}
           <div>
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Wallet Balance</div>
             <div className="bg-secondary border border-border rounded-xl p-4">
@@ -86,13 +250,9 @@ export default function Ramp() {
                 <span className="text-2xl font-bold text-foreground">0.00</span>
                 <span className="text-muted-foreground font-medium">USDC</span>
               </div>
-              <button className="mt-3 w-full text-xs text-primary border border-primary/30 rounded-lg py-2 hover:bg-primary/10 transition-colors font-medium">
-                + Add Funds
-              </button>
+              <button className="mt-3 w-full text-xs text-primary border border-primary/30 rounded-lg py-2 hover:bg-primary/10 transition-colors font-medium">+ Add Funds</button>
             </div>
           </div>
-
-          {/* Active deposits */}
           <div>
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Active Deposits</div>
             <div className="space-y-2">
@@ -111,327 +271,304 @@ export default function Ramp() {
               ))}
             </div>
           </div>
-
-          {/* Nav links */}
           <div className="border-t border-border pt-4 space-y-1">
-            {[
-              { icon: SendIcon,   label: 'Send',          action: () => setTab('Send') },
-              { icon: History,    label: 'Order History',  action: () => {} },
-              { icon: LayoutList, label: 'My Deposits',    action: () => {} },
-            ].map(({ icon: Icon, label, action }) => (
-              <button
-                key={label}
-                onClick={action}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors text-left"
-              >
-                <Icon className="h-4 w-4 flex-shrink-0" />
-                {label}
+            {([
+              { icon: SendIcon,   label: 'Send',         action: () => setTab('Send') },
+              { icon: History,    label: 'Order History', action: () => navigate('/activity') },
+              { icon: LayoutList, label: 'My Deposits',   action: () => {} },
+            ] as const).map(({ icon: Icon, label, action }) => (
+              <button key={label} onClick={action} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors text-left">
+                <Icon className="h-4 w-4 flex-shrink-0" />{label}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Main content — shifts left when panel open on desktop */}
+      {/* Main content */}
       <div className={`transition-all duration-300 ${panelOpen ? 'md:mr-72' : 'mr-0'}`}>
-      <div className="max-w-lg mx-auto px-4 pt-8">
+        <div className="max-w-lg mx-auto px-4 pt-8 pb-8">
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-1">xRamp</h1>
-          <p className="text-muted-foreground text-base">Buy crypto or create a deposit listing</p>
-        </div>
-
-        {/* Tab nav */}
-        <div className="flex gap-0 mb-8 border-b border-border">
-          {(['Buy', 'Send'] as Tab[]).map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-8 py-3 text-lg font-semibold transition-all border-b-2 -mb-px ${
-                tab === t
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        {/* ── BUY TAB ── */}
-        {tab === 'Buy' && (
-          <div className="space-y-5">
-
-            {/* Amount + Token */}
-            <div className="xramp-card">
-              <label className="block text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-widest">You Pay</label>
-              <div className="flex gap-3 items-stretch">
-                <div className="flex-1 relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-xl font-medium">$</span>
-                  <input
-                    type="number"
-                    value={usdAmount}
-                    onChange={e => setUsdAmount(e.target.value)}
-                    placeholder="Enter USD"
-                    className="w-full pl-9 pr-4 py-4 text-2xl font-bold text-foreground bg-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                  />
-                </div>
-                <button
-                  onClick={() => setShowTokenPicker(v => !v)}
-                  className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-4 py-3 hover:border-primary/50 transition-all min-w-[120px] justify-between"
-                >
-                  <div className="flex items-center gap-2">
-                    <CryptoIcon symbol={selectedToken.symbol} size={32} />
-                    <span className="font-bold text-foreground text-lg">{selectedToken.symbol}</span>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </button>
-              </div>
-
-              {/* Token picker dropdown */}
-              {showTokenPicker && (
-                <div className="mt-3 bg-card border border-border rounded-xl shadow-elevated overflow-hidden">
-                  {TOKENS.map(token => (
-                    <button
-                      key={token.symbol}
-                      onClick={() => { setSelectedToken(token); setShowTokenPicker(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors ${
-                        selectedToken.symbol === token.symbol ? 'bg-secondary' : ''
-                      }`}
-                    >
-                      <CryptoIcon symbol={token.symbol} size={36} />
-                      <div className="text-left">
-                        <div className="font-bold text-foreground">{token.symbol}</div>
-                        <div className="text-xs text-muted-foreground">{token.network}</div>
-                      </div>
-                      {selectedToken.symbol === token.symbol && (
-                        <CheckCircle2 className="h-4 w-4 text-primary ml-auto" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Quotes preview card */}
-            <div className="xramp-card">
-              <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Quote</span>
-                <span className="text-xs bg-success/10 text-success border border-success/20 px-2 py-1 rounded-full font-medium">Safe ramp</span>
-              </div>
-              <div className="text-3xl font-bold text-foreground mb-1">
-                ${usdAmount || '0'} = {tokenAmount} {selectedToken.symbol}
-              </div>
-              <div className="text-muted-foreground text-sm mb-4">1 {selectedToken.symbol} ≈ ${price.toLocaleString()}</div>
-              <div className="flex items-center justify-between text-sm border-t border-border pt-3">
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <span>Fee (0.5%)</span>
-                  <div className="relative group/tip">
-                    <Info className="h-3.5 w-3.5 cursor-help" />
-                    <div className="absolute bottom-5 left-0 bg-popover border border-border text-foreground text-xs rounded-lg px-3 py-2 w-48 opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10 shadow-elevated">
-                      Small cost for exchange — covers network & service
-                    </div>
-                  </div>
-                </div>
-                <span className="font-semibold text-foreground">${fee}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm pt-2">
-                <span className="text-muted-foreground">You receive</span>
-                <span className="font-bold text-success">{tokenAmount} {selectedToken.symbol}</span>
-              </div>
-            </div>
-
-            {/* Rail mini-select */}
-            <div className="xramp-card">
-              <label className="block text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Pay with</label>
-              <div className="flex gap-3">
-                {BUY_RAILS.map(rail => (
-                  <button
-                    key={rail.id}
-                    onClick={() => setSelectedBuyRail(rail.id)}
-                    className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-xl border transition-all ${
-                      selectedBuyRail === rail.id
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border bg-secondary hover:border-primary/40'
-                    }`}
-                  >
-                    <RailIcon rail={rail.id} size={36} />
-                    <span className={`text-xs font-semibold ${selectedBuyRail === rail.id ? 'text-primary' : 'text-muted-foreground'}`}>
-                      {rail.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground mt-3 text-center">
-                <span className="text-foreground font-medium">Venmo</span> = Fast US P2P &nbsp;·&nbsp;
-                <span className="text-foreground font-medium">Wise</span> = International
-              </p>
-            </div>
-
-            {/* CTA */}
-            <div className="space-y-3">
-              {buyStep === 'connecting' && (
-                <div className="xramp-card flex flex-col items-center py-2">
-                  <KineticDotsLoader dots={4} className="py-2" />
-                  <p className="text-primary text-sm font-semibold pb-4">Step 1/2: Connecting wallet…</p>
-                </div>
-              )}
-              <div className="relative group/cta">
-                <button
-                  onClick={handleBuyNow}
-                  disabled={!usdAmount || parseFloat(usdAmount) <= 0}
-                  className="w-full bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground font-bold text-xl py-5 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-elevated"
-                >
-                  Buy Now
-                  <ArrowRight className="h-6 w-6" />
-                </button>
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-popover border border-border text-foreground text-xs rounded-lg px-3 py-2 w-56 text-center opacity-0 group-hover/cta:opacity-100 transition-opacity pointer-events-none z-10 shadow-elevated">
-                  Sign to receive crypto — no upfront fee required
-                </div>
-              </div>
-            </div>
+          {/* Tabs */}
+          <div className="flex gap-0 mb-8 border-b border-border">
+            {(['Buy', 'Sell', 'Send'] as RampTab[]).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className={cn(
+                  'px-7 py-3 text-base font-semibold transition-all border-b-2 -mb-px',
+                  tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground',
+                )}>
+                {t}
+              </button>
+            ))}
           </div>
-        )}
 
-        {/* ── SEND TAB ── */}
-        {tab === 'Send' && (
-          <div className="space-y-4">
-
-            {/* 1 — Send: USDC on Avalanche (fixed) */}
-            <div className="xramp-card">
-              <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-              <label className="block text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-widest">You Send</label>
-              <div className="flex gap-3 items-stretch">
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    value={sendAmount}
-                    onChange={e => setSendAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full px-4 py-4 text-2xl font-bold text-foreground bg-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                  />
-                </div>
-                {/* Fixed: USDC on Avalanche */}
-                <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-4 py-3 min-w-[130px]">
-                  <CryptoIcon symbol="USDC" size={32} />
-                  <div>
-                    <div className="font-bold text-foreground text-base leading-tight">USDC</div>
-                    <div className="text-[10px] text-muted-foreground leading-tight">Avalanche</div>
+          {/* ── BUY ── */}
+          {tab === 'Buy' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="relative bg-card border border-border rounded-2xl p-5 space-y-4 shadow-elevated">
+                <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">You pay</p>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+                      <input type="number" value={buyAmount} onChange={e => setBuyAmount(e.target.value)} placeholder="0"
+                        className="w-full pl-7 pr-3 py-3.5 text-xl font-bold text-foreground bg-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                    </div>
+                    <span className="flex items-center px-3.5 bg-secondary border border-border rounded-xl text-sm font-medium text-muted-foreground">USD</span>
                   </div>
                 </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">You receive</p>
+                  <div className="flex gap-2">
+                    <input readOnly value={buyReceive} placeholder="0"
+                      className="flex-1 px-3.5 py-3.5 text-xl font-bold text-foreground bg-secondary/50 border border-border rounded-xl cursor-default focus:outline-none" />
+                    <button onClick={() => setShowBuyTokenPicker(true)}
+                      className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-3.5 py-2.5 hover:border-primary/50 transition-all min-w-[120px] justify-between">
+                      <div className="flex items-center gap-2">
+                        <CryptoIcon symbol={buyToken.symbol} size={28} />
+                        <div className="text-left">
+                          <div className="font-bold text-foreground text-sm leading-tight">{buyToken.symbol}</div>
+                          <div className="text-[10px] text-muted-foreground leading-none">{buyToken.chain === 'avalanche' ? 'Avalanche' : buyToken.network.split(' ')[0]}</div>
+                        </div>
+                      </div>
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
+                  {buyNum > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1.5">1 {buyToken.symbol} ≈ ${buyPrice.toLocaleString()} · Fee: ${buyFee}</p>
+                  )}
+                </div>
+                {buyNum > 0 && <QuotesCard payAmount={buyAmount} payCurrency="USD" receiveCrypto={buyToken.symbol} />}
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Payment method</p>
+                  <button onClick={() => setShowBuyMethodPicker(true)}
+                    className="w-full rounded-xl p-4 bg-secondary/50 hover:bg-secondary transition-colors text-left">
+                    {buySelectedMethod ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <RailIcon rail={buySelectedMethod.id} size={36} />
+                          <div>
+                            <p className="font-medium text-sm">{buySelectedMethod.name}</p>
+                            <p className="text-xs text-muted-foreground">Limit ${buySelectedMethod.maxAmount.toLocaleString()} · {buySelectedMethod.eta}</p>
+                          </div>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Choose a method</span>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </button>
+                </div>
+                {buyError && (
+                  <div className="flex items-center gap-2 text-xs text-destructive">
+                    <AlertCircle className="h-3.5 w-3.5" /><span>{buyError}</span>
+                  </div>
+                )}
               </div>
-            </div>
-
-            {/* 2 — Wallet address */}
-            <div className="xramp-card">
-              <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-              <label className="block text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Recipient Wallet Address</label>
-              <input
-                type="text"
-                value={walletAddress}
-                onChange={e => setWalletAddress(e.target.value)}
-                placeholder="0x… or wallet address"
-                className="w-full px-4 py-4 text-sm font-mono text-foreground bg-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-muted-foreground/40 placeholder:font-sans"
+              <InteractiveHoverButton
+                text={buySubmitting ? 'Creating intent…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
+                onClick={handleBuyContinue}
+                disabled={buySubmitting || (isAuthenticated && !buyCanContinue)}
+                className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"
               />
             </div>
+          )}
 
-            {/* 3 — Receive token */}
-            <div className="xramp-card">
-              <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-              <label className="block text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-widest">They Receive</label>
-              <button
-                onClick={() => setShowReceiveTokenPicker(v => !v)}
-                className="w-full flex items-center justify-between bg-secondary border border-border rounded-xl px-4 py-3 hover:border-primary/50 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <CryptoIcon symbol={receiveToken.symbol} size={36} />
-                  <div className="text-left">
-                    <div className="font-bold text-foreground text-lg leading-tight">{receiveToken.symbol}</div>
-                    <div className="text-xs text-muted-foreground leading-tight">{receiveToken.network}</div>
-                  </div>
-                </div>
-                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${showReceiveTokenPicker ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showReceiveTokenPicker && (
-                <div className="mt-2 bg-card border border-border rounded-xl shadow-elevated overflow-hidden">
-                  {TOKENS.map(token => (
-                    <button
-                      key={token.symbol}
-                      onClick={() => { setReceiveToken(token); setShowReceiveTokenPicker(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors ${
-                        receiveToken.symbol === token.symbol ? 'bg-secondary' : ''
-                      }`}
-                    >
-                      <CryptoIcon symbol={token.symbol} size={36} />
-                      <div className="text-left flex-1">
-                        <div className="font-bold text-foreground">{token.symbol}</div>
-                        <div className="text-xs text-muted-foreground">{token.network}</div>
-                      </div>
-                      {receiveToken.symbol === token.symbol && (
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Preview */}
-            {sendAmount && parseFloat(sendAmount) > 0 && walletAddress.trim() && (
-              <div className="xramp-card border-primary/20">
+          {/* ── SELL ── */}
+          {tab === 'Sell' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="relative bg-card border border-border rounded-2xl p-5 space-y-4 shadow-elevated">
                 <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Preview</div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-muted-foreground text-sm">Sending</span>
-                  <span className="font-bold text-foreground">{sendAmount} USDC <span className="text-muted-foreground font-normal text-xs">on Avalanche</span></span>
-                </div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-muted-foreground text-sm">To</span>
-                  <span className="font-mono text-foreground text-xs truncate max-w-[180px]">{walletAddress}</span>
-                </div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-muted-foreground text-sm">Receive</span>
-                  <div className="flex items-center gap-1.5">
-                    <CryptoIcon symbol={receiveToken.symbol} size={18} />
-                    <span className="font-bold text-foreground">{receiveToken.symbol}</span>
-                    <span className="text-muted-foreground text-xs">on {receiveToken.network}</span>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">You sell</p>
+                  <div className="flex gap-2">
+                    <input type="number" value={sellAmount} onChange={e => setSellAmount(e.target.value)} placeholder="0"
+                      className="flex-1 px-3.5 py-3.5 text-xl font-bold text-foreground bg-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                    <button onClick={() => setShowSellTokenPicker(true)}
+                      className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-3.5 py-2.5 hover:border-primary/50 transition-all min-w-[120px] justify-between">
+                      <div className="flex items-center gap-2">
+                        <CryptoIcon symbol={sellToken.symbol} size={28} />
+                        <div className="text-left">
+                          <div className="font-bold text-foreground text-sm leading-tight">{sellToken.symbol}</div>
+                          <div className="text-[10px] text-muted-foreground leading-none">{sellToken.chain === 'avalanche' ? 'Avalanche' : sellToken.network.split(' ')[0]}</div>
+                        </div>
+                      </div>
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 bg-primary/10 border border-primary/20 rounded-xl p-3">
-                  <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-foreground/80">Rate locked at time of send · 0.5% protocol fee included</p>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">You receive</p>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+                      <input readOnly value={sellReceive} placeholder="0"
+                        className="w-full pl-7 pr-3 py-3.5 text-xl font-bold text-foreground bg-secondary/50 border border-border rounded-xl cursor-default focus:outline-none" />
+                    </div>
+                    <span className="flex items-center px-3.5 bg-secondary border border-border rounded-xl text-sm font-medium text-muted-foreground">USD</span>
+                  </div>
+                  {sellNum > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1.5">1 {sellToken.symbol} ≈ ${sellPrice.toLocaleString()} · 1% fee</p>
+                  )}
                 </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Payout method</p>
+                  <button onClick={() => setShowSellMethodPicker(true)}
+                    className="w-full rounded-xl p-4 bg-secondary/50 hover:bg-secondary transition-colors text-left">
+                    {sellSelectedMethod ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <RailIcon rail={sellSelectedMethod.id} size={36} />
+                          <div>
+                            <p className="font-medium text-sm">{sellSelectedMethod.name}</p>
+                            <p className="text-xs text-muted-foreground">Limit ${sellSelectedMethod.maxAmount.toLocaleString()} · {sellSelectedMethod.eta}</p>
+                          </div>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Choose a method</span>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </button>
+                </div>
+                {sellHandleMeta && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">{sellHandleMeta.label}</p>
+                    <div className="relative">
+                      {sellHandleMeta.prefix && (
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium select-none">{sellHandleMeta.prefix}</span>
+                      )}
+                      <input type="text" value={sellHandle} onChange={e => setSellHandle(e.target.value)}
+                        placeholder={sellHandleMeta.placeholder} autoComplete="off" spellCheck={false}
+                        className={cn(
+                          'w-full rounded-xl p-3.5 bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all',
+                          sellHandleMeta.prefix ? 'pl-7' : 'pl-3.5',
+                        )} />
+                    </div>
+                  </div>
+                )}
+                {sellError && (
+                  <div className="flex items-center gap-2 text-xs text-destructive">
+                    <AlertCircle className="h-3.5 w-3.5" /><span>{sellError}</span>
+                  </div>
+                )}
               </div>
-            )}
+              <InteractiveHoverButton
+                text={sellSubmitting ? 'Creating intent…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
+                onClick={handleSellContinue}
+                disabled={sellSubmitting || (isAuthenticated && !sellCanContinue)}
+                className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"
+              />
+            </div>
+          )}
 
-            {/* CTA */}
-            <button
-              onClick={handleSend}
-              disabled={!sendAmount || parseFloat(sendAmount) <= 0 || !walletAddress.trim()}
-              className="w-full bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground font-bold text-xl py-5 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-elevated"
-            >
-              Send
-              <ArrowRight className="h-6 w-6" />
-            </button>
-          </div>
-        )}
+          {/* ── SEND ── */}
+          {tab === 'Send' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="relative bg-card border border-border rounded-2xl p-5 space-y-4 shadow-elevated">
+                <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">You send</p>
+                  <div className="flex gap-2">
+                    <input type="number" value={sendAmount} onChange={e => setSendAmount(e.target.value)} placeholder="0.00"
+                      className="flex-1 px-3.5 py-3.5 text-xl font-bold text-foreground bg-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                    <button onClick={() => setShowSendTokenPicker(true)}
+                      className="flex items-center gap-2 bg-secondary border border-border rounded-xl px-3.5 py-2.5 hover:border-primary/50 transition-all min-w-[110px] justify-between">
+                      <div className="flex items-center gap-2">
+                        <CryptoIcon symbol={sendToken.symbol} size={28} />
+                        <div className="text-left">
+                          <div className="font-bold text-foreground text-sm leading-tight">{sendToken.symbol}</div>
+                          <div className="text-[10px] text-muted-foreground leading-none">Avalanche</div>
+                        </div>
+                      </div>
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Recipient wallet address</p>
+                  <input type="text" value={walletAddress} onChange={e => setWalletAddress(e.target.value)}
+                    placeholder="0x… or wallet address"
+                    className="w-full px-3.5 py-3.5 text-sm font-mono text-foreground bg-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/40 placeholder:font-sans" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">They receive</p>
+                  <button onClick={() => setShowReceiveTokenPicker(true)}
+                    className="w-full flex items-center justify-between bg-secondary border border-border rounded-xl px-3.5 py-3 hover:border-primary/50 transition-all">
+                    <div className="flex items-center gap-3">
+                      <CryptoIcon symbol={receiveToken.symbol} size={36} />
+                      <div className="text-left">
+                        <div className="font-bold text-foreground text-sm leading-tight">{receiveToken.symbol}</div>
+                        <div className="text-xs text-muted-foreground leading-tight">{receiveToken.network}</div>
+                      </div>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </div>
+                {sendAmount && parseFloat(sendAmount) > 0 && walletAddress.trim() && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Sending</span>
+                      <span className="font-semibold">{sendAmount} {sendToken.symbol}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">To</span>
+                      <span className="font-mono text-xs truncate max-w-[180px]">{walletAddress}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Receive</span>
+                      <div className="flex items-center gap-1.5">
+                        <CryptoIcon symbol={receiveToken.symbol} size={16} />
+                        <span className="font-semibold">{receiveToken.symbol}</span>
+                        <span className="text-muted-foreground text-xs">on {receiveToken.network}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 pt-1 border-t border-primary/10">
+                      <Info className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-muted-foreground">0.5% protocol fee included · Rate locked at send</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <InteractiveHoverButton
+                text="Send"
+                onClick={() => setShowSendSheet(true)}
+                disabled={!sendAmount || parseFloat(sendAmount) <= 0 || !walletAddress.trim()}
+                className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
-        {/* SendSheet */}
-        <SendSheet
-          open={showSendSheet}
-          onClose={() => setShowSendSheet(false)}
-          depositId={mockDepositId}
-          amount={sendAmount}
-          token={receiveToken.symbol}
-          railId="wallet"
-          railName="Wallet"
-          handle={walletAddress}
-        />
-      </div>{/* end md:mr-72 wrapper */}
+      <TokenPicker open={showBuyTokenPicker}     onClose={() => setShowBuyTokenPicker(false)}     selected={buyToken}     onSelect={setBuyToken} />
+      <TokenPicker open={showSellTokenPicker}    onClose={() => setShowSellTokenPicker(false)}    selected={sellToken}    onSelect={setSellToken} />
+      <TokenPicker open={showSendTokenPicker}    onClose={() => setShowSendTokenPicker(false)}    selected={sendToken}    onSelect={setSendToken} />
+      <TokenPicker open={showReceiveTokenPicker} onClose={() => setShowReceiveTokenPicker(false)} selected={receiveToken} onSelect={setReceiveToken} />
+
+      <PaymentMethodPicker
+        open={showBuyMethodPicker} onOpenChange={setShowBuyMethodPicker}
+        value={buyMethod || ''} onValueChange={setBuyMethod}
+        type="payment" amount={buyNum} currency="USD"
+      />
+      <PaymentMethodPicker
+        open={showSellMethodPicker} onOpenChange={setShowSellMethodPicker}
+        value={sellMethod || ''} onValueChange={handleSellMethodChange}
+        type="payout" amount={sellNum} currency="USD"
+      />
+
+      <SendSheet
+        open={showSendSheet} onClose={() => setShowSendSheet(false)}
+        depositId={mockDepositId} amount={sendAmount}
+        token={receiveToken.symbol} railId="wallet" railName="Wallet" handle={walletAddress}
+      />
     </div>
   );
 }

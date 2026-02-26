@@ -221,12 +221,12 @@ export default function Home() {
         <div className="grid grid-cols-2 gap-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
           <InteractiveHoverButton
             text="Buy"
-            onClick={() => navigate('/buy')}
+            onClick={() => navigate('/ramp?tab=Buy')}
             className="w-full h-20 text-lg rounded-2xl border-primary/40 text-foreground"
           />
           <InteractiveHoverButton
             text="Sell"
-            onClick={() => navigate('/sell')}
+            onClick={() => navigate('/ramp?tab=Sell')}
             className="w-full h-20 text-lg rounded-2xl border-primary/30 text-primary"
           />
         </div>
