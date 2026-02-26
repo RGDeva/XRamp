@@ -117,9 +117,8 @@ export function DepositWidget({ apiKey = '', onGetStarted }: DepositWidgetProps)
           <div className="flex items-center justify-between bg-input border border-border rounded-xl px-4 py-3">
             <div className="text-left">
               <p className="text-xs text-muted-foreground">You receive</p>
-              <p className="text-lg font-mono text-foreground flex items-baseline gap-1 overflow-hidden">
-                {selectedToken?.symbol || 'USDC'} on
-                <ChainRotator />
+              <p className="text-lg font-mono text-foreground flex items-baseline overflow-hidden">
+                {selectedToken?.symbol || 'USDC'} on&nbsp;<ChainRotator />
               </p>
             </div>
             {!onGetStarted && (
