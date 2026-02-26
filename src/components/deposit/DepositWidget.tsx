@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { TrustwareProvider, TrustwareWidget } from '@trustware/sdk';
 import { ChevronDown, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,34 @@ import {
 interface DepositWidgetProps {
   apiKey?: string;
   onGetStarted?: () => void;
+}
+
+const CHAINS = ['Avalanche', 'Base', 'Solana'];
+
+function ChainRotator() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setIndex((i) => (i + 1) % CHAINS.length), 2500);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <span className="inline-block overflow-hidden" style={{ minWidth: '6.5rem' }}>
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={CHAINS[index]}
+          initial={{ opacity: 0, y: -16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 16 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="inline-block text-primary"
+        >
+          {CHAINS[index]}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
 }
 
 export function DepositWidget({ apiKey = '', onGetStarted }: DepositWidgetProps) {
@@ -88,7 +117,10 @@ export function DepositWidget({ apiKey = '', onGetStarted }: DepositWidgetProps)
           <div className="flex items-center justify-between bg-input border border-border rounded-xl px-4 py-3">
             <div className="text-left">
               <p className="text-xs text-muted-foreground">You receive</p>
-              <p className="text-lg font-mono text-foreground">{selectedToken?.symbol || 'USDC'} on Base</p>
+              <p className="text-lg font-mono text-foreground flex items-baseline gap-1 overflow-hidden">
+                {selectedToken?.symbol || 'USDC'} on
+                <ChainRotator />
+              </p>
             </div>
             {!onGetStarted && (
               <button
