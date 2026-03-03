@@ -171,6 +171,23 @@ export default function Ramp() {
 
   const getUserId = () => user?.email || user?.walletAddress || user?.embeddedWalletAddress || 'guest';
 
+  // Listen for postMessage from XRamp Chrome extension to prefill state
+  useEffect(() => {
+    const handleExtensionMessage = (event: MessageEvent) => {
+      if (event.data?.type !== 'XRAMP_CONTEXT') return;
+      const p = event.data.payload;
+      if (p?.tab && ['Buy', 'Sell', 'Send'].includes(p.tab)) setTab(p.tab as RampTab);
+      if (p?.amount) setBuyAmount(p.amount);
+      if (p?.rail) { setBuyMethod(p.rail); setSellMethod(p.rail); }
+      if (p?.asset) {
+        const found = TOKENS.find(t => t.symbol.toLowerCase() === p.asset.toLowerCase());
+        if (found) { setBuyToken(found); setSellToken(found); }
+      }
+    };
+    window.addEventListener('message', handleExtensionMessage);
+    return () => window.removeEventListener('message', handleExtensionMessage);
+  }, []);
+
   const buyNum = parseFloat(buyAmount) || 0;
   const buyPrice = TOKEN_PRICES[buyToken.symbol] ?? 1;
   const buyReceive = buyNum > 0 ? (buyNum / buyPrice).toFixed(6) : '';
