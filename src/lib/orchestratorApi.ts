@@ -1,8 +1,41 @@
-// ─── Demo-mode orchestrator (no real backend required) ───────────────────────
-// Future: swap DEMO_MODE = false and point VITE_ORCHESTRATOR_URL at the real
-// Cloudflare Worker to use live intent state machine.
+// ─── XRamp Orchestrator API Client ────────────────────────────────────────────
+// Calls the real Cloudflare Worker backend. Set VITE_ORCHESTRATOR_URL in .env.
+// Falls back to localhost:8787 for local dev.
 
-const DEMO_MODE = true;
+const BASE_URL =
+  import.meta.env.VITE_ORCHESTRATOR_URL || 'http://localhost:8787';
+
+// ─── Token helper ─────────────────────────────────────────────────────────────
+// Privy access token is fetched from the auth context and passed per-request.
+// The caller is responsible for providing it via setAuthToken / getAuthToken.
+
+let _authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  _authToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return _authToken;
+}
+
+function headers(): HeadersInit {
+  const h: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (_authToken) h['Authorization'] = `Bearer ${_authToken}`;
+  return h;
+}
+
+async function apiFetch<T>(path: string, opts: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...opts,
+    headers: { ...headers(), ...(opts.headers as Record<string, string> || {}) },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error((data as { error?: string }).error || `API ${res.status}`);
+  return data as T;
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export type OrchestratorIntentState =
   | 'CREATED'
@@ -18,174 +51,132 @@ export type OrchestratorIntentState =
 
 export interface OrchestratorIntent {
   id: string;
-  type: 'ONRAMP' | 'OFFRAMP' | 'SWAP' | 'WITHDRAW';
+  type: 'ONRAMP' | 'OFFRAMP' | 'SWAP' | 'WITHDRAW' | 'SEND';
   userId: string;
   amount: string;
   sourceAsset: string;
   targetAsset: string;
   state: OrchestratorIntentState;
   rail?: string;
+  paymentHandle?: string;
+  escrowId?: string;
+  depositTxHash?: string;
+  releaseTxHash?: string;
+  proofHash?: string;
+  metaJson?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// ─── In-memory store ──────────────────────────────────────────────────────────
-
-function uid() {
-  return 'intent_' + Math.random().toString(36).slice(2, 10);
+export interface OrchestratorProof {
+  id: string;
+  intentId: string;
+  providerId: string;
+  verified: boolean | number;
+  proofHash: string;
+  payloadJson: string;
+  ts: string;
 }
 
-function iso(offsetMs = 0) {
-  return new Date(Date.now() - offsetMs).toISOString();
-}
-
-// Seed realistic demo history that shows on first load
-const SEED_INTENTS: OrchestratorIntent[] = [
-  {
-    id: 'intent_demo001',
-    type: 'ONRAMP',
-    userId: 'demo',
-    amount: '100.00',
-    sourceAsset: 'USD',
-    targetAsset: 'USDC',
-    state: 'COMPLETE',
-    rail: 'venmo',
-    createdAt: iso(1000 * 60 * 60 * 2),
-    updatedAt: iso(1000 * 60 * 90),
-  },
-  {
-    id: 'intent_demo002',
-    type: 'OFFRAMP',
-    userId: 'demo',
-    amount: '250.00',
-    sourceAsset: 'USDC',
-    targetAsset: 'USD',
-    state: 'COMPLETE',
-    rail: 'cashapp',
-    createdAt: iso(1000 * 60 * 60 * 24),
-    updatedAt: iso(1000 * 60 * 60 * 23),
-  },
-  {
-    id: 'intent_demo003',
-    type: 'ONRAMP',
-    userId: 'demo',
-    amount: '500.00',
-    sourceAsset: 'USD',
-    targetAsset: 'AVAX',
-    state: 'FUNDED',
-    rail: 'zelle',
-    createdAt: iso(1000 * 60 * 20),
-    updatedAt: iso(1000 * 60 * 5),
-  },
-  {
-    id: 'intent_demo004',
-    type: 'ONRAMP',
-    userId: 'demo',
-    amount: '75.00',
-    sourceAsset: 'USD',
-    targetAsset: 'USDC',
-    state: 'SWAPPING',
-    rail: 'venmo',
-    createdAt: iso(1000 * 60 * 8),
-    updatedAt: iso(1000 * 60 * 2),
-  },
-];
-
-// Runtime store — starts from seed, new intents appended
-const _store: OrchestratorIntent[] = [...SEED_INTENTS];
-
-function simDelay(ms = 300) {
-  return new Promise<void>((r) => setTimeout(r, ms));
-}
-
-// Simulate state progression after creation (CREATED → FUNDING → FUNDED → COMPLETE)
-async function progressIntent(id: string) {
-  const transitions: OrchestratorIntentState[] = ['FUNDING', 'FUNDED', 'SWAPPING', 'COMPLETE'];
-  for (const state of transitions) {
-    await simDelay(3000);
-    const intent = _store.find((i) => i.id === id);
-    if (intent) {
-      intent.state = state;
-      intent.updatedAt = new Date().toISOString();
-    }
-  }
+export interface EventLogEntry {
+  id: string;
+  intentId: string;
+  ts: string;
+  actor: string;
+  fromState: string;
+  toState: string;
+  metaJson: string;
 }
 
 // ─── API surface ──────────────────────────────────────────────────────────────
 
 export const orchestratorApi = {
+  /** Create a new intent (BUY = ONRAMP, SELL = OFFRAMP, etc.) */
+  async createIntent(payload: {
+    type: string;
+    amount: string;
+    sourceAsset: string;
+    targetAsset: string;
+    rail?: string;
+    paymentHandle?: string;
+  }): Promise<{ intent: OrchestratorIntent }> {
+    return apiFetch('/intents', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Convenience: create ONRAMP intent */
   async createOnrampIntent(payload: {
     userId: string;
     amount: string;
     sourceAsset: string;
     targetAsset: string;
     rail?: string;
+    paymentHandle?: string;
   }): Promise<{ intent: OrchestratorIntent }> {
-    await simDelay(350);
-    const intent: OrchestratorIntent = {
-      id: uid(),
-      type: 'ONRAMP',
-      userId: payload.userId,
-      amount: payload.amount,
-      sourceAsset: payload.sourceAsset,
-      targetAsset: payload.targetAsset,
-      state: 'CREATED',
-      rail: payload.rail,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    _store.unshift(intent);
-    if (DEMO_MODE) progressIntent(intent.id);
-    return { intent };
+    return this.createIntent({ ...payload, type: 'ONRAMP' });
   },
 
+  /** Convenience: create OFFRAMP intent */
   async createOfframpIntent(payload: {
     userId: string;
     amount: string;
     sourceAsset: string;
     targetAsset: string;
     rail?: string;
+    paymentHandle?: string;
   }): Promise<{ intent: OrchestratorIntent }> {
-    await simDelay(350);
-    const intent: OrchestratorIntent = {
-      id: uid(),
-      type: 'OFFRAMP',
-      userId: payload.userId,
-      amount: payload.amount,
-      sourceAsset: payload.sourceAsset,
-      targetAsset: payload.targetAsset,
-      state: 'CREATED',
-      rail: payload.rail,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    _store.unshift(intent);
-    if (DEMO_MODE) progressIntent(intent.id);
-    return { intent };
+    return this.createIntent({ ...payload, type: 'OFFRAMP' });
   },
 
+  /** List intents for a user (activity feed) */
   async listIntents(userId?: string): Promise<{ intents: OrchestratorIntent[] }> {
-    await simDelay(200);
-    // Return all demo seed + any user-created intents
-    const intents = userId
-      ? _store.filter((i) => i.userId === userId || i.userId === 'demo')
-      : [..._store];
-    return { intents: intents.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)) };
+    const qs = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    return apiFetch(`/intents${qs}`);
   },
 
-  async getIntent(intentId: string): Promise<{ intent: OrchestratorIntent; timeline: unknown[] }> {
-    await simDelay(150);
-    const intent = _store.find((i) => i.id === intentId);
-    if (!intent) throw new Error(`Intent ${intentId} not found`);
-    return { intent, timeline: [] };
+  /** Get single intent with timeline and proofs */
+  async getIntent(intentId: string): Promise<{
+    intent: OrchestratorIntent;
+    timeline: EventLogEntry[];
+    proofs: OrchestratorProof[];
+  }> {
+    return apiFetch(`/intents/${intentId}`);
   },
 
-  async transitionIntent(intentId: string, toState: OrchestratorIntentState): Promise<{ intent: OrchestratorIntent }> {
-    await simDelay(150);
-    const intent = _store.find((i) => i.id === intentId);
-    if (!intent) throw new Error(`Intent ${intentId} not found`);
-    intent.state = toState;
-    intent.updatedAt = new Date().toISOString();
-    return { intent };
+  /** Advance intent state (e.g. CREATED → FUNDING → FUNDED) */
+  async transitionIntent(
+    intentId: string,
+    toState: OrchestratorIntentState,
+    extra?: { actor?: string; depositTxHash?: string; escrowId?: string; meta?: Record<string, unknown> }
+  ): Promise<{ intent: OrchestratorIntent }> {
+    return apiFetch(`/intents/${intentId}/state`, {
+      method: 'PATCH',
+      body: JSON.stringify({ toState, ...extra }),
+    });
+  },
+
+  /** Submit a proof for an intent */
+  async submitProof(intentId: string, payload: {
+    proofHash?: string;
+    providerId?: string;
+    payload?: Record<string, unknown>;
+  }): Promise<{ proof: OrchestratorProof }> {
+    return apiFetch(`/intents/${intentId}/proof`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Admin: verify proof and release escrow → COMPLETE */
+  async verifyAndRelease(intentId: string): Promise<{
+    intent: OrchestratorIntent;
+    releaseTxHash: string | null;
+  }> {
+    return apiFetch(`/intents/${intentId}/verify`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
   },
 };

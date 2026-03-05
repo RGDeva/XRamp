@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
-import { ArrowDownToLine, ArrowUpFromLine, Eye, RefreshCw } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Eye, RefreshCw, ExternalLink, ShieldCheck, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { RailIcon } from '@/components/shared/RailIcon';
 import { orchestratorApi, type OrchestratorIntent } from '@/lib/orchestratorApi';
+import { txUrl } from '@/lib/fuji';
+
+const ADMIN_EMAILS = ['rishig@umich.edu'];
 
 type FilterType = 'all' | 'active' | 'completed';
 
@@ -94,7 +97,6 @@ export default function Activity() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Activity</h1>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium uppercase tracking-widest">Demo</span>
           <button onClick={() => load()} className="p-1.5 rounded-lg hover:bg-secondary transition-colors" title="Refresh">
             <RefreshCw className={cn('h-4 w-4 text-muted-foreground', loading && 'animate-spin')} />
           </button>
@@ -170,36 +172,107 @@ export default function Activity() {
           <SheetHeader>
             <SheetTitle>Intent details</SheetTitle>
           </SheetHeader>
-          {selectedActivity && (
-            <div className="mt-6 space-y-4 text-sm">
-              <div className="flex justify-between border-b border-border pb-2">
-                <span className="text-muted-foreground">Intent ID</span>
-                <span className="font-mono text-xs">{selectedActivity.id}</span>
-              </div>
-              <div className="flex justify-between border-b border-border pb-2">
-                <span className="text-muted-foreground">Type</span>
-                <span>{formatType(selectedActivity.type)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border pb-2">
-                <span className="text-muted-foreground">State</span>
-                <span>{stateLabel(selectedActivity.state)}</span>
-              </div>
-              <div className="flex justify-between border-b border-border pb-2">
-                <span className="text-muted-foreground">Amount</span>
-                <span className={cn(privacyMode && 'privacy-blur')}>{selectedActivity.amount} {selectedActivity.sourceAsset}</span>
-              </div>
-              <div className="flex justify-between border-b border-border pb-2">
-                <span className="text-muted-foreground">Target asset</span>
-                <span>{selectedActivity.targetAsset}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Updated</span>
-                <span>{new Date(selectedActivity.updatedAt).toLocaleString()}</span>
-              </div>
-            </div>
-          )}
+          {selectedActivity && <IntentDetail intent={selectedActivity} userEmail={user?.email || null} privacyMode={privacyMode} onUpdate={load} />}
         </SheetContent>
       </Sheet>
+    </div>
+  );
+}
+
+// ─── Intent Detail (shown in sheet) ──────────────────────────────────────────
+
+function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
+  intent: OrchestratorIntent;
+  userEmail: string | null;
+  privacyMode: boolean;
+  onUpdate: () => void;
+}) {
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail.toLowerCase()) : false;
+  const canVerify = isAdmin && intent.state !== 'COMPLETE' && intent.state !== 'FAILED' && intent.state !== 'CANCELED';
+
+  const handleVerify = async () => {
+    try {
+      setVerifying(true);
+      setVerifyError(null);
+      await orchestratorApi.verifyAndRelease(intent.id);
+      onUpdate();
+    } catch (e) {
+      setVerifyError(e instanceof Error ? e.message : 'Verify failed');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div className="flex justify-between border-b border-border pb-2">
+      <span className="text-muted-foreground">{label}</span>
+      <span>{children}</span>
+    </div>
+  );
+
+  const TxLink = ({ hash }: { hash: string }) => (
+    <a
+      href={txUrl(hash)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-primary hover:underline font-mono text-xs"
+    >
+      {hash.slice(0, 8)}…{hash.slice(-6)}
+      <ExternalLink className="h-3 w-3" />
+    </a>
+  );
+
+  return (
+    <div className="mt-6 space-y-4 text-sm">
+      <Row label="Intent ID">
+        <span className="font-mono text-xs">{intent.id.slice(0, 12)}…</span>
+      </Row>
+      <Row label="Type">{formatType(intent.type)}</Row>
+      <Row label="State">
+        <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide', stateBadgeClass(intent.state))}>
+          {stateLabel(intent.state)}
+        </span>
+      </Row>
+      <Row label="Amount">
+        <span className={cn(privacyMode && 'privacy-blur')}>{intent.amount} {intent.sourceAsset}</span>
+      </Row>
+      <Row label="Target asset">{intent.targetAsset}</Row>
+      {intent.rail && <Row label="Rail">{intent.rail}</Row>}
+      {intent.paymentHandle && <Row label="Handle">{intent.paymentHandle}</Row>}
+      {intent.depositTxHash && (
+        <Row label="Deposit Tx"><TxLink hash={intent.depositTxHash} /></Row>
+      )}
+      {intent.releaseTxHash && (
+        <Row label="Release Tx"><TxLink hash={intent.releaseTxHash} /></Row>
+      )}
+      {intent.escrowId && <Row label="Escrow ID">{intent.escrowId}</Row>}
+      <Row label="Updated">{new Date(intent.updatedAt).toLocaleString()}</Row>
+      <Row label="Created">{new Date(intent.createdAt).toLocaleString()}</Row>
+
+      {/* Admin: Verify + Release */}
+      {canVerify && (
+        <div className="pt-4 border-t border-border space-y-2">
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+            Admin action
+          </p>
+          {verifyError && (
+            <div className="flex items-center gap-2 text-xs text-destructive">
+              <AlertCircle className="h-3.5 w-3.5" />
+              <span>{verifyError}</span>
+            </div>
+          )}
+          <Button
+            onClick={handleVerify}
+            disabled={verifying}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            {verifying ? 'Verifying & Releasing…' : 'Verify + Release Escrow'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

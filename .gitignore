@@ -23,3 +23,16 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Orchestrator
+orchestrator/.wrangler
+orchestrator/.data
+
+# Contracts
+contracts/artifacts
+contracts/cache
+contracts/typechain-types
+
+# Env (secrets)
+.env.local
+.env.production

@@ -96,6 +96,7 @@ export default function Sell() {
         sourceAsset: selectedCrypto,
         targetAsset: selectedCurrency,
         rail: payoutMethod ?? undefined,
+        paymentHandle: payoutHandle.trim() || undefined,
       });
 
       navigate('/sell/review', {

@@ -39,23 +39,110 @@ This repo contains the XRamp frontend built in Lovable and designed to stay mini
 - [ ] Add basic admin view (intent list + detail + logs)
 - [ ] Spike Chrome extension architecture and onboarding flow
 
-## Editing the app
+## Architecture
 
-### Option 1: Use Lovable
-Open the project in Lovable and prompt changes:
-(https://xramp.lovable.app/)
+```
+XRamp/
+├── src/                    # React frontend (Vite + Tailwind + shadcn/ui)
+│   ├── pages/              # Route pages: Home, Buy, Sell, Activity, etc.
+│   ├── components/         # UI components (shared, layout, deposits)
+│   ├── contexts/           # AuthContext (Privy), AppContext
+│   └── lib/
+│       ├── orchestratorApi.ts   # HTTP client for backend
+│       ├── fuji.ts              # Fuji chain utils (balance, escrow, explorer)
+│       └── fujiConfig.json      # Deployed contract addresses
+├── orchestrator/           # Cloudflare Worker + D1 backend
+│   ├── src/worker.ts       # Main Worker entry (all endpoints)
+│   ├── src/auth.ts         # Privy JWT verification
+│   ├── src/escrow.ts       # On-chain escrow release (ethers.js)
+│   ├── src/state.ts        # Intent state machine
+│   ├── schema.sql          # D1 tables: intents, event_log, proofs
+│   └── wrangler.toml       # Cloudflare config
+├── contracts/              # Hardhat project (Fuji testnet)
+│   ├── contracts/MockUSDC.sol      # Mintable test ERC20 (6 decimals)
+│   ├── contracts/XRampEscrow.sol   # Escrow: create → deposit → release/cancel
+│   └── scripts/deploy.ts          # Deploy script → writes deployed.json
+```
 
-Changes made in Lovable are committed automatically to this repo.
+## Local Development
 
-### Option 2: Work locally
-Requirements: Node.js + npm (nvm recommended)
+```bash
+# 1. Start the orchestrator backend
+cd orchestrator
+npm install
+npm run db:migrate:local
+npm run dev                  # → http://localhost:8787
 
+# 2. Start the frontend (separate terminal)
+cd ..
+npm install --legacy-peer-deps
+npm run dev                  # → http://localhost:5173
 
-Peer/ZkP2P Documentation - https://docs.peer.xyz/
-Trustware SDK Documentation - https://www.notion.so/trustware/Deposit-Widget-28671aae45df80c7b7bbeae1ff38848e
-https://github.com/zkp2p/zkp2p-contracts
-```sh
-git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_NAME>
-npm i
-npm run dev
+# 3. (Optional) Build Chrome extension
+cd ../xramp-extension
+npm install --legacy-peer-deps
+npm run build
+# Load build/ as unpacked extension in chrome://extensions
+```
+
+## Deploy
+
+```bash
+# Deploy contracts to Fuji (needs DEPLOYER_PRIVATE_KEY env var with AVAX)
+cd contracts && DEPLOYER_PRIVATE_KEY=0x... npx hardhat run scripts/deploy.ts --network fuji
+
+# Deploy orchestrator to Cloudflare
+cd orchestrator
+npx wrangler d1 create xramp-orchestrator-db  # one-time
+# Copy database_id into wrangler.toml
+npm run db:migrate
+npx wrangler secret put PRIVY_APP_SECRET
+npx wrangler secret put ARBITER_PRIVATE_KEY
+npm run deploy
+
+# Update .env with production worker URL, then push
+# Vercel auto-deploys from main branch
+```
+
+## Hackathon Demo Script
+
+### Prerequisites
+- Orchestrator running (local or deployed)
+- Privy account logged in
+- (For on-chain demo) Contracts deployed to Fuji, addresses in `fujiConfig.json`
+
+### Demo Flow
+
+1. **Open XRamp** → `https://xramp-app.vercel.app` or `localhost:5173`
+2. **Log in** → Click "Get Started" → Privy login (email or wallet)
+3. **Home page** → Shows delivery address, real ERC20 balance (if contracts deployed), recent activity from backend
+4. **Buy crypto**:
+   - Click "Buy" → Enter amount (e.g. `100`) → Select payment method (e.g. Venmo) → Enter handle (`@username`)
+   - Click "Continue" → Creates real intent in backend (state: `CREATED`)
+   - Review page shows intent details → Confirm
+   - Complete page shows order received
+5. **View Activity** → Click "View activity" or navigate to Activity tab
+   - Shows all intents from backend with real states
+   - Click any intent → Detail sheet shows Intent ID, state, rail, handle, tx hashes
+6. **Admin Verify + Release** (admin email: `rishig@umich.edu`):
+   - Open an intent detail → "Verify + Release Escrow" button appears for admin
+   - Click → Backend marks proofs verified, releases escrow on Fuji (if deployed), transitions to `COMPLETE`
+   - Release tx hash appears with Snowtrace explorer link
+7. **Sell crypto** → Same flow as Buy but creates OFFRAMP intent
+8. **Chrome Extension** → Open side panel → Same Buy/Sell/Send flows, all dropdowns working
+
+### Key URLs
+- **Frontend**: https://xramp-app.vercel.app
+- **Explorer**: https://testnet.snowtrace.io
+- **Orchestrator health**: `GET /health`
+
+### Verifiable On-Chain Artifacts
+- MockUSDC contract address → check `contracts/deployed.json`
+- XRampEscrow contract address → check `contracts/deployed.json`
+- Deposit tx hashes → visible in Activity detail sheet → clickable Snowtrace links
+- Release tx hashes → visible after admin verify
+
+## References
+- Peer/ZkP2P Documentation: https://docs.peer.xyz/
+- Trustware SDK: https://www.notion.so/trustware/Deposit-Widget-28671aae45df80c7b7bbeae1ff38848e
+- ZKP2P Contracts: https://github.com/zkp2p/zkp2p-contracts

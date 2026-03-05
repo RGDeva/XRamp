@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowDownToLine, ArrowUpFromLine, ArrowRight, Eye, EyeOff, Zap, DollarSign, Shield, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,35 +17,8 @@ import {
 import { DepositWidget } from '@/components/deposit';
 import xrampLogo from '@/assets/xramp-logo-full.png';
 import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
-const recentItems = [
-  {
-    id: '1',
-    type: 'buy' as const,
-    amount: '500',
-    crypto: 'USDC',
-    method: 'Venmo',
-    status: 'completed' as const,
-    timestamp: '2h ago',
-  },
-  {
-    id: '2',
-    type: 'sell' as const,
-    amount: '0.15',
-    crypto: 'ETH',
-    method: 'Cash App',
-    status: 'pending' as const,
-    timestamp: '5h ago',
-  },
-  {
-    id: '3',
-    type: 'buy' as const,
-    amount: '1,200',
-    crypto: 'USDC',
-    method: 'Zelle',
-    status: 'completed' as const,
-    timestamp: '1d ago',
-  },
-];
+import { orchestratorApi, type OrchestratorIntent } from '@/lib/orchestratorApi';
+import { getUsdcBalance, MOCK_USDC_ADDRESS } from '@/lib/fuji';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -52,6 +26,38 @@ export default function Home() {
   const { privacyMode, togglePrivacyMode } = useApp();
 
   const deliveryAddress = getDeliveryAddress(user);
+  const getUserId = () => user?.email || user?.walletAddress || user?.embeddedWalletAddress || 'guest';
+
+  // Real activity from orchestrator
+  const [recentItems, setRecentItems] = useState<OrchestratorIntent[]>([]);
+  const [balance, setBalance] = useState<string>('0.00');
+
+  const loadActivity = useCallback(async () => {
+    try {
+      const { intents } = await orchestratorApi.listIntents(getUserId());
+      setRecentItems(intents.slice(0, 3));
+    } catch {
+      // Silently fail — empty state is fine
+    }
+  }, [user]);
+
+  const loadBalance = useCallback(async () => {
+    if (!deliveryAddress || !MOCK_USDC_ADDRESS) return;
+    try {
+      const { formatted } = await getUsdcBalance(deliveryAddress);
+      setBalance(parseFloat(formatted).toFixed(2));
+    } catch {
+      // Silently fail — show $0.00
+    }
+  }, [deliveryAddress]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    loadActivity();
+    loadBalance();
+    const interval = setInterval(() => { loadActivity(); loadBalance(); }, 10000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, loadActivity, loadBalance]);
 
   if (isLoading) {
     return (
@@ -262,45 +268,49 @@ export default function Home() {
           ) : (
             <div className="relative bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
               <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-              {recentItems.slice(0, 3).map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => navigate('/activity')}
-                  className="flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
+              {recentItems.slice(0, 3).map((item) => {
+                const isBuy = item.type === 'ONRAMP';
+                const statusLabel = item.state === 'COMPLETE' ? 'completed' : item.state === 'FAILED' || item.state === 'CANCELED' ? 'failed' : 'pending';
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => navigate('/activity')}
+                    className="flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          'flex h-9 w-9 items-center justify-center rounded-lg',
+                          isBuy ? 'bg-success/10' : 'bg-primary/10'
+                        )}
+                      >
+                        {isBuy ? (
+                          <ArrowDownToLine className="h-4 w-4 text-success" />
+                        ) : (
+                          <ArrowUpFromLine className="h-4 w-4 text-primary" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {isBuy ? 'Buy' : 'Sell'} · {item.amount} {item.sourceAsset} → {item.targetAsset}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.rail || 'transfer'} · {new Date(item.updatedAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <span
                       className={cn(
-                        'flex h-9 w-9 items-center justify-center rounded-lg',
-                        item.type === 'buy' ? 'bg-success/10' : 'bg-primary/10'
+                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                        statusLabel === 'completed' && 'status-completed',
+                        statusLabel === 'pending' && 'status-pending'
                       )}
                     >
-                      {item.type === 'buy' ? (
-                        <ArrowDownToLine className="h-4 w-4 text-success" />
-                      ) : (
-                        <ArrowUpFromLine className="h-4 w-4 text-primary" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm capitalize">
-                        {item.type} • +{item.amount} {item.crypto}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.method} • {item.timestamp}
-                      </p>
-                    </div>
+                      {statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1)}
+                    </span>
                   </div>
-                  <span
-                    className={cn(
-                      'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
-                      item.status === 'completed' && 'status-completed',
-                      item.status === 'pending' && 'status-pending'
-                    )}
-                  >
-                    {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

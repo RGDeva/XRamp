@@ -1,24 +1,22 @@
 {
   "name": "xramp-orchestrator",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create xramp-orchestrator-db",
+    "db:migrate": "wrangler d1 execute xramp-orchestrator-db --file=./schema.sql",
+    "db:migrate:local": "wrangler d1 execute xramp-orchestrator-db --local --file=./schema.sql",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "zod": "^3.25.76"
+    "ethers": "^6.13.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.18",
-    "@types/express": "^4.17.23",
-    "@types/node": "^22.16.5",
-    "tsx": "^4.20.3",
-    "typescript": "^5.8.3"
+    "@cloudflare/workers-types": "^4.20241018.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^3.80.0"
   }
 }

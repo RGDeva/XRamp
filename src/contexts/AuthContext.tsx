@@ -1,5 +1,6 @@
-import { createContext, useContext, ReactNode, useMemo } from 'react';
+import { createContext, useContext, useEffect, ReactNode, useMemo } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { setAuthToken } from '@/lib/orchestratorApi';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -23,9 +24,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user, 
     login, 
     logout, 
-    connectWallet 
+    connectWallet,
+    getAccessToken,
   } = usePrivy();
   const { wallets } = useWallets();
+
+  // Sync Privy access token into the orchestrator API client
+  useEffect(() => {
+    if (authenticated) {
+      getAccessToken().then((token) => {
+        setAuthToken(token);
+      }).catch(() => {
+        setAuthToken(null);
+      });
+    } else {
+      setAuthToken(null);
+    }
+  }, [authenticated, getAccessToken]);
 
   const authState = useMemo<AuthState>(() => {
     const email = user?.email?.address;

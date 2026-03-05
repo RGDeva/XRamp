@@ -1,0 +1,21 @@
+name = "xramp-orchestrator"
+main = "src/worker.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+PRIVY_APP_ID = "cmkcshfa402kxi20ce4puhb3t"
+ADMIN_EMAILS = "rishig@umich.edu"
+ADMIN_WALLET_ADDRESSES = ""
+FUJI_RPC_URL = "https://api.avax-test.network/ext/bc/C/rpc"
+ESCROW_CONTRACT_ADDRESS = ""
+MOCK_USDC_ADDRESS = ""
+
+# Secrets (set via `wrangler secret put`):
+# PRIVY_APP_SECRET
+# ARBITER_PRIVATE_KEY
+
+[[d1_databases]]
+binding = "DB"
+database_name = "xramp-orchestrator-db"
+database_id = "placeholder-create-via-wrangler"

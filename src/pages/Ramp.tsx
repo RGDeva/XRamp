@@ -219,6 +219,7 @@ export default function Ramp() {
         userId: getUserId(), amount: buyAmount,
         sourceAsset: 'USD', targetAsset: buyToken.symbol,
         rail: buyMethod ?? undefined,
+        paymentHandle: buyHandle.trim() || undefined,
       });
       navigate('/buy/review', { state: {
         payAmount: buyAmount, receiveAmount: buyReceive,
@@ -239,6 +240,7 @@ export default function Ramp() {
         userId: getUserId(), amount: sellAmount,
         sourceAsset: sellToken.symbol, targetAsset: 'USD',
         rail: sellMethod ?? undefined,
+        paymentHandle: sellHandle.trim() || undefined,
       });
       navigate('/sell/review', { state: {
         sellAmount, receiveAmount: sellReceive,

@@ -1,0 +1,10 @@
+{
+  "chainId": 43113,
+  "chainName": "Avalanche Fuji Testnet",
+  "rpcUrl": "https://api.avax-test.network/ext/bc/C/rpc",
+  "explorerUrl": "https://testnet.snowtrace.io",
+  "mockUsdcAddress": "",
+  "escrowAddress": "",
+  "arbiterAddress": "",
+  "deployedAt": ""
+}

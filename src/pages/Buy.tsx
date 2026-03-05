@@ -77,6 +77,7 @@ export default function Buy() {
         amount: payAmount,
         sourceAsset: selectedCurrency,
         targetAsset: selectedCrypto,
+        rail: paymentMethod ?? undefined,
       });
 
       navigate('/buy/review', {
