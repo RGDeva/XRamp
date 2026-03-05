@@ -18,4 +18,4 @@ MOCK_USDC_ADDRESS = ""
 [[d1_databases]]
 binding = "DB"
 database_name = "xramp-orchestrator-db"
-database_id = "placeholder-create-via-wrangler"
+database_id = "0b1edf49-e99b-43c2-9fe3-9d983bbdcffa"
