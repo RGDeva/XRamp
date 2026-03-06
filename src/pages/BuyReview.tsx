@@ -15,8 +15,9 @@ export default function BuyReview() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const [confirming, setConfirming] = useState(false);
+  const [confirmStep, setConfirmStep] = useState<'idle' | 'transitioning' | 'funding_escrow'>('idle');
   const [confirmError, setConfirmError] = useState<string | null>(null);
+  const confirming = confirmStep !== 'idle';
   
   const state = location.state || {};
   const payAmount = state.payAmount || '100.00';
@@ -31,20 +32,34 @@ export default function BuyReview() {
 
   const handleConfirm = async () => {
     try {
-      setConfirming(true);
       setConfirmError(null);
+      let escrowId: string | undefined;
+      let depositTxHash: string | undefined;
+
       if (intentId) {
+        // Step 1: advance state to FUNDING
+        setConfirmStep('transitioning');
         await orchestratorApi.transitionIntent(intentId, 'FUNDING');
+
+        // Step 2: backend arbiter mints test USDC + creates + funds escrow
+        setConfirmStep('funding_escrow');
+        const payee = deliveryAddress || '0x0000000000000000000000000000000000000000';
+        const result = await orchestratorApi.fundEscrow(intentId, payee);
+        escrowId = result.escrowId;
+        depositTxHash = result.depositTxHash;
       }
+
       navigate('/buy/complete', {
         state: {
           ...state,
           paymentMethod: paymentMethodId,
+          escrowId,
+          depositTxHash,
         }
       });
     } catch (e) {
       setConfirmError(e instanceof Error ? e.message : 'Failed to confirm');
-      setConfirming(false);
+      setConfirmStep('idle');
     }
   };
 
@@ -135,9 +150,17 @@ export default function BuyReview() {
               <span>{confirmError}</span>
             </div>
           )}
-          {confirming && <KineticDotsLoader dots={3} className="py-0" />}
+          {confirming && (
+            <div className="flex items-center gap-2">
+              <KineticDotsLoader dots={3} className="py-0" />
+              <span className="text-xs text-muted-foreground">
+                {confirmStep === 'transitioning' && 'Confirming intent…'}
+                {confirmStep === 'funding_escrow' && 'Funding escrow on Fuji…'}
+              </span>
+            </div>
+          )}
           <InteractiveHoverButton
-            text={confirming ? 'Confirming…' : 'Confirm buy'}
+            text={confirming ? ' ' : 'Confirm buy'}
             onClick={handleConfirm}
             disabled={confirming}
             className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"

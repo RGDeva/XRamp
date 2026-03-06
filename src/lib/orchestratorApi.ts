@@ -41,6 +41,8 @@ export type OrchestratorIntentState =
   | 'CREATED'
   | 'FUNDING'
   | 'FUNDED'
+  | 'PROOF_SUBMITTED'
+  | 'VERIFIED'
   | 'SWAPPING'
   | 'READY_TO_WITHDRAW'
   | 'WITHDRAWING'
@@ -166,6 +168,21 @@ export const orchestratorApi = {
     return apiFetch(`/intents/${intentId}/proof`, {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Backend: arbiter mints test USDC, creates + funds escrow on Fuji.
+   * Transitions intent FUNDING → FUNDED. payee = user delivery address.
+   */
+  async fundEscrow(intentId: string, payee: string): Promise<{
+    intent: OrchestratorIntent;
+    escrowId: string;
+    depositTxHash: string;
+  }> {
+    return apiFetch(`/intents/${intentId}/fund-escrow`, {
+      method: 'POST',
+      body: JSON.stringify({ payee }),
     });
   },
 

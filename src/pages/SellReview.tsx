@@ -7,14 +7,17 @@ import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { ArrowLeft, Clock, AlertCircle } from 'lucide-react';
 import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 import { RailIcon } from '@/components/shared/RailIcon';
+import { useAuth, getDeliveryAddress } from '@/contexts/AuthContext';
 import { orchestratorApi } from '@/lib/orchestratorApi';
 import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
 
 export default function SellReview() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [confirming, setConfirming] = useState(false);
+  const { user } = useAuth();
+  const [confirmStep, setConfirmStep] = useState<'idle' | 'transitioning' | 'funding_escrow'>('idle');
   const [confirmError, setConfirmError] = useState<string | null>(null);
+  const confirming = confirmStep !== 'idle';
   
   const state = location.state || {};
   const sellAmount = state.sellAmount || '100';
@@ -27,22 +30,38 @@ export default function SellReview() {
   
   const payoutMethod = getPaymentMethodById(payoutMethodId);
 
+  const deliveryAddress = getDeliveryAddress(user);
+
   const handleConfirm = async () => {
     try {
-      setConfirming(true);
       setConfirmError(null);
+      let escrowId: string | undefined;
+      let depositTxHash: string | undefined;
+
       if (intentId) {
+        // Step 1: advance state to FUNDING
+        setConfirmStep('transitioning');
         await orchestratorApi.transitionIntent(intentId, 'FUNDING');
+
+        // Step 2: backend arbiter mints test USDC + creates + funds escrow
+        setConfirmStep('funding_escrow');
+        const payee = deliveryAddress || '0x0000000000000000000000000000000000000000';
+        const result = await orchestratorApi.fundEscrow(intentId, payee);
+        escrowId = result.escrowId;
+        depositTxHash = result.depositTxHash;
       }
+
       navigate('/sell/complete', {
         state: {
           ...state,
           payoutMethod: payoutMethodId,
+          escrowId,
+          depositTxHash,
         }
       });
     } catch (e) {
       setConfirmError(e instanceof Error ? e.message : 'Failed to confirm');
-      setConfirming(false);
+      setConfirmStep('idle');
     }
   };
 
@@ -128,9 +147,17 @@ export default function SellReview() {
               <span>{confirmError}</span>
             </div>
           )}
-          {confirming && <KineticDotsLoader dots={3} className="py-0" />}
+          {confirming && (
+            <div className="flex items-center gap-2">
+              <KineticDotsLoader dots={3} className="py-0" />
+              <span className="text-xs text-muted-foreground">
+                {confirmStep === 'transitioning' && 'Confirming intent…'}
+                {confirmStep === 'funding_escrow' && 'Funding escrow on Fuji…'}
+              </span>
+            </div>
+          )}
           <InteractiveHoverButton
-            text={confirming ? 'Confirming…' : 'Confirm sell'}
+            text={confirming ? ' ' : 'Confirm sell'}
             onClick={handleConfirm}
             disabled={confirming}
             className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"

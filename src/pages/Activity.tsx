@@ -15,7 +15,7 @@ const ADMIN_EMAILS = ['rishig@umich.edu'];
 
 type FilterType = 'all' | 'active' | 'completed';
 
-const ACTIVE_STATES = new Set(['CREATED', 'FUNDING', 'FUNDED', 'SWAPPING', 'READY_TO_WITHDRAW', 'WITHDRAWING']);
+const ACTIVE_STATES = new Set(['CREATED', 'FUNDING', 'FUNDED', 'PROOF_SUBMITTED', 'VERIFIED', 'SWAPPING', 'READY_TO_WITHDRAW', 'WITHDRAWING']);
 
 function formatType(type: OrchestratorIntent['type']) {
   return type === 'OFFRAMP' ? 'Sell' : type === 'ONRAMP' ? 'Buy' : type;
@@ -28,6 +28,9 @@ function stateLabel(state: string) {
 function stateBadgeClass(state: string) {
   if (state === 'COMPLETE') return 'bg-success/15 text-success border border-success/30';
   if (state === 'FAILED' || state === 'CANCELED' || state === 'EXPIRED') return 'bg-destructive/15 text-destructive border border-destructive/30';
+  if (state === 'PROOF_SUBMITTED') return 'bg-amber-500/15 text-amber-400 border border-amber-500/30 animate-pulse';
+  if (state === 'VERIFIED') return 'bg-success/10 text-success border border-success/20 animate-pulse';
+  if (state === 'FUNDED') return 'bg-primary/15 text-primary border border-primary/30 animate-pulse';
   return 'bg-primary/10 text-primary border border-primary/20 animate-pulse';
 }
 
@@ -259,7 +262,26 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
       {intent.releaseTxHash && (
         <Row label="Release Tx"><TxLink hash={intent.releaseTxHash} /></Row>
       )}
-      {intent.escrowId && <Row label="Escrow ID">{intent.escrowId}</Row>}
+      {intent.escrowId && <Row label="Escrow ID"><span className="font-mono text-xs">{intent.escrowId}</span></Row>}
+      {intent.escrowId && intent.depositTxHash && (
+        <Row label="Escrow Status">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-primary/15 text-primary border border-primary/30">
+            <ShieldCheck className="h-2.5 w-2.5" /> Funded
+          </span>
+        </Row>
+      )}
+      {(() => {
+        try {
+          const meta = JSON.parse(intent.metaJson || '{}');
+          if (!meta.payer && !meta.payee) return null;
+          return (
+            <>
+              {meta.payer && <Row label="Payer (LP)"><span className="font-mono text-xs">{(meta.payer as string).slice(0, 8)}…{(meta.payer as string).slice(-6)}</span></Row>}
+              {meta.payee && <Row label="Payee (You)"><span className="font-mono text-xs">{(meta.payee as string).slice(0, 8)}…{(meta.payee as string).slice(-6)}</span></Row>}
+            </>
+          );
+        } catch { return null; }
+      })()}
       {intent.proofHash && (
         <Row label="Proof Hash">
           <span className="inline-flex items-center gap-1">

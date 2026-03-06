@@ -10,6 +10,13 @@ export interface Intent {
   sourceAsset: string;
   targetAsset: string;
   state: IntentState;
+  rail?: string;
+  paymentHandle?: string;
+  escrowId?: string;
+  depositTxHash?: string;
+  releaseTxHash?: string;
+  proofHash?: string;
+  metaJson?: string;
   createdAt: string;
   updatedAt: string;
 }
