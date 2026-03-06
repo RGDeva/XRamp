@@ -10,7 +10,7 @@ import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 import { RailIcon } from '@/components/shared/RailIcon';
 import { useAuth, getDeliveryAddress } from '@/contexts/AuthContext';
 import { orchestratorApi } from '@/lib/orchestratorApi';
-import { createAndFundEscrow, mintTestUsdc, MOCK_USDC_ADDRESS, ESCROW_ADDRESS } from '@/lib/fuji';
+import { createAndFundEscrow, mintTestUsdc, MOCK_USDC_ADDRESS } from '@/lib/fuji';
 import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
 
 export default function SellReview() {
