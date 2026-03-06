@@ -150,6 +150,7 @@ export default {
     const proofMatch = url.pathname.match(/^\/intents\/([^/]+)\/proof$/);
     const verifyMatch = url.pathname.match(/^\/intents\/([^/]+)\/verify$/);
     const fundEscrowMatch = url.pathname.match(/^\/intents\/([^/]+)\/fund-escrow$/);
+    const reportFundingMatch = url.pathname.match(/^\/intents\/([^/]+)\/report-funding$/);
 
     // ── GET /intents/:id ─────────────────────────────────────────────────
     if (intentMatch && request.method === 'GET') {
@@ -249,6 +250,44 @@ export default {
         console.error('fundEscrow failed:', e);
         return cors(err(`Escrow funding failed: ${(e as Error).message}`, 500), origin);
       }
+    }
+
+    // ── POST /intents/:id/report-funding (user-wallet-signed) ───────────
+    if (reportFundingMatch && request.method === 'POST') {
+      const intentId = reportFundingMatch[1];
+      const body = await request.json<Record<string, unknown>>();
+      const escrowId = body.escrowId as string;
+      const depositTxHash = body.depositTxHash as string;
+      const payer = body.payer as string;
+      const payee = body.payee as string;
+
+      if (!escrowId || !depositTxHash) {
+        return cors(err('Missing escrowId or depositTxHash'), origin);
+      }
+
+      const intent = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first<Record<string, unknown>>();
+      if (!intent) return cors(err('Intent not found', 404), origin);
+
+      const currentState = intent.state as string;
+      if (currentState === 'FUNDED' || currentState === 'PROOF_SUBMITTED' || currentState === 'COMPLETE') {
+        return cors(json({ intent }), origin);
+      }
+
+      const now = iso();
+      const existingMeta = JSON.parse((intent.metaJson as string) || '{}');
+      const updatedMeta = JSON.stringify({ ...existingMeta, payer, payee, token: env.MOCK_USDC_ADDRESS, fundedBy: 'user-wallet' });
+
+      await env.DB.prepare(
+        `UPDATE intents SET state = 'FUNDED', escrowId = ?, depositTxHash = ?, metaJson = ?, updatedAt = ? WHERE id = ?`
+      ).bind(escrowId, depositTxHash, updatedMeta, now, intentId).run();
+
+      await env.DB.prepare(
+        `INSERT INTO event_log (id, intentId, ts, actor, fromState, toState, metaJson)
+         VALUES (?, ?, ?, 'user', ?, 'FUNDED', ?)`
+      ).bind(uid(), intentId, now, currentState, JSON.stringify({ escrowId, depositTxHash, payer })).run();
+
+      const updated = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first();
+      return cors(json({ intent: updated, escrowId, depositTxHash }, 200), origin);
     }
 
     // ── POST /intents/:id/proof ──────────────────────────────────────────

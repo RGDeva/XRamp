@@ -185,6 +185,26 @@ export const orchestratorApi = {
     });
   },
 
+  /**
+   * Frontend: report escrow funding after user wallet signed the on-chain tx.
+   * Transitions intent FUNDING → FUNDED. Used for Sell/offramp where user locks USDC.
+   */
+  async reportFunding(intentId: string, data: {
+    escrowId: string;
+    depositTxHash: string;
+    payer: string;
+    payee: string;
+  }): Promise<{
+    intent: OrchestratorIntent;
+    escrowId: string;
+    depositTxHash: string;
+  }> {
+    return apiFetch(`/intents/${intentId}/report-funding`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   /** Admin: verify proof and release escrow → COMPLETE */
   async verifyAndRelease(intentId: string): Promise<{
     intent: OrchestratorIntent;

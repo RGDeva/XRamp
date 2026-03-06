@@ -135,10 +135,13 @@ export default function BuyReview() {
           </div>
         )}
 
-        {/* Compliance note */}
-        <p className="text-xs text-muted-foreground text-center">
-          Minimal data. Proof-based settlement. Verification may be required depending on method, region, or limits.
-        </p>
+        {/* LP funding notice */}
+        <div className="flex items-center gap-2 p-3 bg-secondary/50 border border-border rounded-xl">
+          <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            <span className="text-foreground font-medium">XRamp LP funds escrow</span> — USDC is locked by the liquidity provider on Fuji. No wallet signature required from you.
+          </p>
+        </div>
       </div>
 
       {/* CTAs */}
@@ -155,7 +158,7 @@ export default function BuyReview() {
               <KineticDotsLoader dots={3} className="py-0" />
               <span className="text-xs text-muted-foreground">
                 {confirmStep === 'transitioning' && 'Confirming intent…'}
-                {confirmStep === 'funding_escrow' && 'Funding escrow on Fuji…'}
+                {confirmStep === 'funding_escrow' && 'XRamp LP funding escrow on Fuji…'}
               </span>
             </div>
           )}

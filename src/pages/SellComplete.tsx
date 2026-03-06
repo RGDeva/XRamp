@@ -32,9 +32,9 @@ export default function SellComplete() {
 
         {/* Title */}
         <div className="text-center space-y-2">
-          <h1 className="text-xl font-semibold">Escrow funded</h1>
+          <h1 className="text-xl font-semibold">Your USDC is locked</h1>
           <p className="text-muted-foreground text-sm">
-            USDC has been locked in escrow on Fuji. Awaiting buyer payment proof and admin verification before release.
+            Your wallet signed to lock USDC in escrow on Fuji. Awaiting buyer fiat payment proof and admin verification before release.
           </p>
         </div>
 

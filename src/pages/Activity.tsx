@@ -272,10 +272,13 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
         try {
           const meta = JSON.parse(intent.metaJson || '{}');
           if (!meta.payer && !meta.payee) return null;
+          const isUserFunded = meta.fundedBy === 'user-wallet';
           return (
             <>
-              {meta.payer && <Row label="Payer (LP)"><span className="font-mono text-xs">{(meta.payer as string).slice(0, 8)}…{(meta.payer as string).slice(-6)}</span></Row>}
-              {meta.payee && <Row label="Payee (You)"><span className="font-mono text-xs">{(meta.payee as string).slice(0, 8)}…{(meta.payee as string).slice(-6)}</span></Row>}
+              {meta.payer && <Row label={isUserFunded ? 'Payer (You)' : 'Payer (LP)'}><span className="font-mono text-xs">{(meta.payer as string).slice(0, 8)}…{(meta.payer as string).slice(-6)}</span></Row>}
+              {meta.payee && <Row label={isUserFunded ? 'Payee' : 'Payee (You)'}><span className="font-mono text-xs">{(meta.payee as string).slice(0, 8)}…{(meta.payee as string).slice(-6)}</span></Row>}
+              {isUserFunded && <Row label="Funded by"><span className="text-xs text-primary font-medium">Your wallet</span></Row>}
+              {!isUserFunded && meta.payer && <Row label="Funded by"><span className="text-xs text-muted-foreground font-medium">XRamp LP</span></Row>}
             </>
           );
         } catch { return null; }

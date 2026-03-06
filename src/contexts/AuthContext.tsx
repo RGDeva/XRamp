@@ -1,6 +1,8 @@
-import { createContext, useContext, useEffect, ReactNode, useMemo } from 'react';
-import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { createContext, useContext, useEffect, useCallback, ReactNode, useMemo } from 'react';
+import { usePrivy, useWallets, type ConnectedWallet } from '@privy-io/react-auth';
+import { ethers } from 'ethers';
 import { setAuthToken } from '@/lib/orchestratorApi';
+import { FUJI_CHAIN_ID } from '@/lib/fuji';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -13,6 +15,10 @@ interface AuthState {
   login: () => void;
   logout: () => Promise<void>;
   connectWallet: () => void;
+  /** Raw Privy wallets for on-chain signing */
+  wallets: ConnectedWallet[];
+  /** Get an ethers.js signer from the best available wallet, switched to Fuji */
+  getWalletSigner: () => Promise<ethers.Signer>;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -42,6 +48,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [authenticated, getAccessToken]);
 
+  const getWalletSigner = useCallback(async (): Promise<ethers.Signer> => {
+    // Prefer embedded wallet (always available for Privy users), fall back to external
+    const embedded = wallets.find(w => w.walletClientType === 'privy');
+    const external = wallets.find(w => w.walletClientType !== 'privy');
+    const wallet = embedded || external;
+    if (!wallet) throw new Error('No wallet connected');
+
+    // Switch to Fuji if not already
+    try {
+      await wallet.switchChain(FUJI_CHAIN_ID);
+    } catch {
+      // switchChain may throw if already on the right chain or unsupported — continue
+    }
+
+    const ethereumProvider = await wallet.getEthereumProvider();
+    const browserProvider = new ethers.BrowserProvider(ethereumProvider);
+    return browserProvider.getSigner();
+  }, [wallets]);
+
   const authState = useMemo<AuthState>(() => {
     const email = user?.email?.address;
     const embeddedWallet = user?.wallet;
@@ -58,8 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       connectWallet,
+      wallets,
+      getWalletSigner,
     };
-  }, [ready, authenticated, user, wallets, login, logout, connectWallet]);
+  }, [ready, authenticated, user, wallets, login, logout, connectWallet, getWalletSigner]);
 
   return (
     <AuthContext.Provider value={authState}>

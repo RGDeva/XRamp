@@ -1,21 +1,23 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { ethers } from 'ethers';
 import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { BorderBeam } from '@/components/ui/border-beam';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
-import { ArrowLeft, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Clock, AlertCircle, Wallet } from 'lucide-react';
 import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 import { RailIcon } from '@/components/shared/RailIcon';
 import { useAuth, getDeliveryAddress } from '@/contexts/AuthContext';
 import { orchestratorApi } from '@/lib/orchestratorApi';
+import { createAndFundEscrow, mintTestUsdc, MOCK_USDC_ADDRESS, ESCROW_ADDRESS } from '@/lib/fuji';
 import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
 
 export default function SellReview() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
-  const [confirmStep, setConfirmStep] = useState<'idle' | 'transitioning' | 'funding_escrow'>('idle');
+  const { user, getWalletSigner } = useAuth();
+  const [confirmStep, setConfirmStep] = useState<'idle' | 'transitioning' | 'minting' | 'signing' | 'reporting'>('idle');
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const confirming = confirmStep !== 'idle';
   
@@ -43,12 +45,38 @@ export default function SellReview() {
         setConfirmStep('transitioning');
         await orchestratorApi.transitionIntent(intentId, 'FUNDING');
 
-        // Step 2: backend arbiter mints test USDC + creates + funds escrow
-        setConfirmStep('funding_escrow');
-        const payee = deliveryAddress || '0x0000000000000000000000000000000000000000';
-        const result = await orchestratorApi.fundEscrow(intentId, payee);
+        // Step 2: get signer from connected Privy wallet (triggers wallet popup)
+        setConfirmStep('signing');
+        const signer = await getWalletSigner();
+        const signerAddress = await signer.getAddress();
+
+        // Step 3: mint test USDC to user wallet (testnet only — open mint)
+        setConfirmStep('minting');
+        const amount = ethers.parseUnits(sellAmount, 6);
+        await mintTestUsdc(signer, signerAddress, amount);
+
+        // Step 4: user wallet signs createEscrow + approve + deposit
+        // payer = user (seller locks USDC), payee = arbiter (who receives on release)
+        setConfirmStep('signing');
+        const payee = deliveryAddress || signerAddress;
+        const result = await createAndFundEscrow(
+          signer,
+          MOCK_USDC_ADDRESS,
+          amount,
+          signerAddress,
+          payee,
+        );
         escrowId = result.escrowId;
         depositTxHash = result.depositTxHash;
+
+        // Step 5: report funding to backend
+        setConfirmStep('reporting');
+        await orchestratorApi.reportFunding(intentId, {
+          escrowId,
+          depositTxHash,
+          payer: signerAddress,
+          payee,
+        });
       }
 
       navigate('/sell/complete', {
@@ -132,10 +160,13 @@ export default function SellReview() {
           </div>
         </div>
 
-        {/* Compliance note */}
-        <p className="text-xs text-muted-foreground text-center">
-          Minimal data. Proof-based settlement. Verification may be required depending on method, region, or limits.
-        </p>
+        {/* Wallet signing notice */}
+        <div className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-xl">
+          <Wallet className="h-4 w-4 text-primary flex-shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            <span className="text-foreground font-medium">Your wallet will sign</span> to lock {sellAmount} USDC into escrow on Fuji. You'll see wallet confirmation popups.
+          </p>
+        </div>
       </div>
 
       {/* CTAs */}
@@ -152,7 +183,9 @@ export default function SellReview() {
               <KineticDotsLoader dots={3} className="py-0" />
               <span className="text-xs text-muted-foreground">
                 {confirmStep === 'transitioning' && 'Confirming intent…'}
-                {confirmStep === 'funding_escrow' && 'Funding escrow on Fuji…'}
+                {confirmStep === 'minting' && 'Minting test USDC to your wallet…'}
+                {confirmStep === 'signing' && 'Approve wallet transaction…'}
+                {confirmStep === 'reporting' && 'Recording escrow on-chain…'}
               </span>
             </div>
           )}
