@@ -15,7 +15,7 @@
 | Admin verify + release (Activity page) | ✅ Real — transitions state to COMPLETE |
 | On-chain escrow `release()` call | ✅ Real **if** `ARBITER_PRIVATE_KEY` is set and intent has `escrowId` |
 | MockUSDC balance display (Home/Ramp) | ✅ Real — reads Fuji chain |
-| Escrow funding from user wallet | ⚠️ Not wired in UI — `createAndFundEscrow()` exists in `fuji.ts` but no button calls it. For demo, `releaseTxHash` will be null unless escrow is pre-funded manually. |
+| Escrow funding (arbiter/LP wallet) | ✅ Real — BuyReview/SellReview confirm calls `POST /intents/:id/fund-escrow`; arbiter mints test USDC + creates + deposits escrow on Fuji. `depositTxHash` stored in DB. |
 | AVAX auto-swap (LFJ) | ❌ Simulated only — no LFJ integration |
 | LP order book / matching | ❌ Simulated — demo LP pool in CommandMode |
 | Rate quotes | ❌ Hardcoded 1:1 ratios |
@@ -67,16 +67,17 @@ npx wrangler dev   # → http://localhost:8787
 ## 2 · State Machine
 
 ```
-CREATED → FUNDING → FUNDED → ... → COMPLETE
+CREATED → FUNDING → FUNDED → PROOF_SUBMITTED → COMPLETE
          ↘ CANCELED / EXPIRED / FAILED
 ```
 
-- **CREATED** — intent created in DB (web app Buy/Sell/Command UI)
-- **FUNDING** — user confirmed on Review page (web app transitions state)
-- **FUNDED** — escrow deposit confirmed (not yet wired from UI — see note above)
-- **COMPLETE** — admin verified proof and called `verifyAndRelease`
+- **CREATED** — intent created in DB (Buy/Sell/Command UI → `POST /intents`)
+- **FUNDING** — user clicks "Confirm" on Review page (`PATCH /intents/:id/state`)
+- **FUNDED** — arbiter mints test USDC + creates + funds escrow on Fuji (`POST /intents/:id/fund-escrow`); `escrowId` + `depositTxHash` stored
+- **PROOF_SUBMITTED** — extension submits Venmo proof (`POST /intents/:id/proof` auto-transitions)
+- **COMPLETE** — admin verifies proof + calls `escrow.release(escrowId)` on Fuji (`POST /intents/:id/verify`); `releaseTxHash` stored
 
-The admin `/verify` endpoint bypasses the state machine and sets `COMPLETE` directly from any state. This is intentional for hackathon demo.
+The admin `/verify` endpoint bypasses state checks and sets `COMPLETE` directly. The `VERIFIED` state exists as an intermediate if needed.
 
 ---
 
@@ -225,13 +226,17 @@ On API failure (not logged in / orchestrator down): falls back to full demo simu
 
 - [x] `npx tsc --noEmit` exits 0 (web app)
 - [x] `XRAMP_ENABLE_VENMO_PROOF=true npm run build` exits 0 (extension)
-- [x] Buy → Review → Complete transitions state CREATED → FUNDING
-- [x] Sell → Review → Complete transitions state CREATED → FUNDING
-- [x] Activity polls every 5s, shows proof hash + verified badge
-- [x] AppLayout proof listener: submitProof + admin verifyAndRelease + toast
+- [x] Buy → Review → Complete: CREATED → FUNDING → FUNDED (real escrow on Fuji) with `depositTxHash`
+- [x] Sell → Review → Complete: same escrow funding path
+- [x] Proof submission: `POST /proof` auto-transitions FUNDED → PROOF_SUBMITTED
+- [x] Activity polls every 5s; shows `depositTxHash` + Snowtrace link + "Escrow: Funded ✓" row
+- [x] Activity: shows `Payer (LP)` + `Payee (You)` from `metaJson`
+- [x] Activity: FUNDED (blue), PROOF_SUBMITTED (amber), VERIFIED (green), COMPLETE (success) badge colours
+- [x] AppLayout proof listener: submitProof + admin verifyAndRelease → COMPLETE with `releaseTxHash`
+- [x] Admin "Verify + Release Escrow" button: calls `escrow.release(escrowId)` on Fuji → real `releaseTxHash`
 - [x] CommandMode: real intents for logged-in users; demo simulation fallback
 - [x] CommandMode: no fake "✓ complete" messages for real intents
-- [x] Home balance reads live MockUSDC balance from Fuji
-- [x] Ramp sidebar reads live MockUSDC balance from Fuji
+- [x] Home/Ramp sidebar: live MockUSDC balance from Fuji chain
 - [x] Venmo proof: debit-only, no cookies in payload, sha256 hash
 - [x] Proof relay chain: extension → background → content script → AppLayout ✓
+- [x] Single intent can contain all three: `depositTxHash` + `proofHash` + `releaseTxHash`
