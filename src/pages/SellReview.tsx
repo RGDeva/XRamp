@@ -1,15 +1,20 @@
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { BorderBeam } from '@/components/ui/border-beam';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft, Clock, AlertCircle } from 'lucide-react';
 import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 import { RailIcon } from '@/components/shared/RailIcon';
+import { orchestratorApi } from '@/lib/orchestratorApi';
+import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
 
 export default function SellReview() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [confirming, setConfirming] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   
   const state = location.state || {};
   const sellAmount = state.sellAmount || '100';
@@ -18,16 +23,27 @@ export default function SellReview() {
   const payoutHandle = state.payoutHandle || '';
   const currency = state.currency || 'USD';
   const crypto = state.crypto || 'USDC';
+  const intentId: string | undefined = state.intentId;
   
   const payoutMethod = getPaymentMethodById(payoutMethodId);
 
-  const handleConfirm = () => {
-    navigate('/sell/complete', {
-      state: {
-        ...state,
-        payoutMethod: payoutMethodId,
+  const handleConfirm = async () => {
+    try {
+      setConfirming(true);
+      setConfirmError(null);
+      if (intentId) {
+        await orchestratorApi.transitionIntent(intentId, 'FUNDING');
       }
-    });
+      navigate('/sell/complete', {
+        state: {
+          ...state,
+          payoutMethod: payoutMethodId,
+        }
+      });
+    } catch (e) {
+      setConfirmError(e instanceof Error ? e.message : 'Failed to confirm');
+      setConfirming(false);
+    }
   };
 
   return (
@@ -106,9 +122,17 @@ export default function SellReview() {
       {/* CTAs */}
       <div className="fixed bottom-20 md:bottom-8 left-0 right-0 p-4 md:relative md:p-0 md:mt-6">
         <div className="max-w-md mx-auto space-y-2">
+          {confirmError && (
+            <div className="flex items-center gap-2 text-xs text-destructive">
+              <AlertCircle className="h-3.5 w-3.5" />
+              <span>{confirmError}</span>
+            </div>
+          )}
+          {confirming && <KineticDotsLoader dots={3} className="py-0" />}
           <InteractiveHoverButton
-            text="Confirm sell"
+            text={confirming ? 'Confirming…' : 'Confirm sell'}
             onClick={handleConfirm}
+            disabled={confirming}
             className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"
           />
           <Button

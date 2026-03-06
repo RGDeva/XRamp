@@ -1,6 +1,24 @@
-# XRamp — End-to-End Demo on Avalanche Fuji
+# XRamp — Hackathon Demo Guide (Fuji Testnet)
 
-> Full flow: fiat on-ramp via Venmo → payment proof via Chrome extension → escrow release on Fuji testnet.
+> **Honest scope**: intent creation + offchain Venmo payment proof + orchestrator state machine + admin escrow release on Avalanche Fuji. AVAX auto-swap and LP deposit funding are NOT wired — they are simulation/future work.
+
+---
+
+## What is REAL vs SIMULATED
+
+| Feature | Status |
+|---|---|
+| Intent creation (Buy/Sell/Command UI) | ✅ Real — stored in Cloudflare D1 |
+| Privy JWT authentication | ✅ Real |
+| Venmo payment proof (extension) | ✅ Real — fetches Venmo API, computes sha256 |
+| Proof stored in orchestrator DB | ✅ Real |
+| Admin verify + release (Activity page) | ✅ Real — transitions state to COMPLETE |
+| On-chain escrow `release()` call | ✅ Real **if** `ARBITER_PRIVATE_KEY` is set and intent has `escrowId` |
+| MockUSDC balance display (Home/Ramp) | ✅ Real — reads Fuji chain |
+| Escrow funding from user wallet | ⚠️ Not wired in UI — `createAndFundEscrow()` exists in `fuji.ts` but no button calls it. For demo, `releaseTxHash` will be null unless escrow is pre-funded manually. |
+| AVAX auto-swap (LFJ) | ❌ Simulated only — no LFJ integration |
+| LP order book / matching | ❌ Simulated — demo LP pool in CommandMode |
+| Rate quotes | ❌ Hardcoded 1:1 ratios |
 
 ---
 
@@ -8,12 +26,13 @@
 
 | Component | URL / Address |
 |---|---|
-| Web App | https://xramp-app.vercel.app |
-| Orchestrator | https://xramp-orchestrator.xramp.workers.dev |
+| Web App (deployed) | https://xramp-app.vercel.app |
+| Orchestrator (Cloudflare Worker) | https://xramp-orchestrator.xramp.workers.dev |
 | Extension repo | https://github.com/RGDeva/zkp2p-extension-v1 |
 | Fuji RPC | https://api.avax-test.network/ext/bc/C/rpc |
 | MockUSDC | `0xb2F4Ca689C54bCe4effcf8A12Cb02089C933C5c6` |
 | XRampEscrow | `0xe1189d9644Ba8546FB421c02fd28bf64CF74F821` |
+| Arbiter | `0xD2Ca31C1238c460F740bF75FaDF6354F95932e8c` |
 | Explorer | https://testnet.snowtrace.io |
 
 ---
@@ -27,15 +46,7 @@ npm install --legacy-peer-deps
 npm run dev        # → http://localhost:5173
 ```
 
-### Orchestrator (local dev)
-```bash
-cd XRamp/orchestrator
-npm install
-npx wrangler dev   # → http://localhost:8787
-# Validates Privy JWTs via PRIVY_APP_SECRET in .dev.vars
-```
-
-### Extension (Venmo proof ON)
+### Extension (Venmo proof enabled)
 ```bash
 cd xramp-extension
 npm install --legacy-peer-deps
@@ -43,181 +54,184 @@ XRAMP_ENABLE_VENMO_PROOF=true NODE_ENV=production npm run build
 # Load build/ unpacked at chrome://extensions
 ```
 
+### Orchestrator (local dev)
+```bash
+cd XRamp/orchestrator
+npm install
+# Create .dev.vars with PRIVY_APP_SECRET=... and ARBITER_PRIVATE_KEY=...
+npx wrangler dev   # → http://localhost:8787
+```
+
 ---
 
 ## 2 · State Machine
 
 ```
-CREATED → FUNDING → FUNDED → SWAPPING → READY_TO_WITHDRAW → WITHDRAWING → COMPLETE
-                                                                         ↘ FAILED / CANCELED / EXPIRED
+CREATED → FUNDING → FUNDED → ... → COMPLETE
+         ↘ CANCELED / EXPIRED / FAILED
 ```
 
-Aligned with peer-onramp flow:
-1. **CREATED** — intent registered in orchestrator DB
-2. **FUNDING** — user approves + escrow.deposit() on Fuji
-3. **FUNDED** — deposit tx confirmed; escrow holds USDC
-4. **SWAPPING** — admin verifies Venmo proof, calls escrow.release()
-5. **COMPLETE** — releaseTxHash recorded, USDC sent to payee
+- **CREATED** — intent created in DB (web app Buy/Sell/Command UI)
+- **FUNDING** — user confirmed on Review page (web app transitions state)
+- **FUNDED** — escrow deposit confirmed (not yet wired from UI — see note above)
+- **COMPLETE** — admin verified proof and called `verifyAndRelease`
+
+The admin `/verify` endpoint bypasses the state machine and sets `COMPLETE` directly from any state. This is intentional for hackathon demo.
 
 ---
 
-## 3 · Full On-Ramp Demo (Venmo proof)
+## 3 · Core Demo Flow (Venmo on-ramp)
 
 ### Prerequisites
-- Chrome with XRamp extension loaded (Venmo proof build)
+- Chrome with XRamp extension loaded (built with `XRAMP_ENABLE_VENMO_PROOF=true`)
 - Logged in to https://account.venmo.com in a Chrome tab
-- Logged in to XRamp web app as `rishig@umich.edu` (admin) for escrow release
+- Logged in to XRamp web app at https://xramp-app.vercel.app
 
 ---
 
-### Step 1 — Create intent (two ways)
+### Step 1 — Create an on-ramp intent
 
-**Via extension (recommended)**
+**Option A: Extension side panel**
 ```
-Open extension side panel → Buy Crypto
-Amount: $1.00
-Token: USDC
-Payment method: Venmo
-Venmo username: xramp_receiver  (or the test receiver handle)
+Open extension → Buy Crypto
+Amount: $1.00 | Token: USDC | Method: Venmo | Handle: @receiver
 → Continue
-→ Intent created: "Awaiting Payment" screen shows intent ID
+→ "Awaiting Payment" screen shows intent ID (e.g. XRAMP-a1b2c3d4)
 ```
 
-**Via Command UI (web app)**
+**Option B: Web app Ramp page**
+```
+https://xramp-app.vercel.app/ramp?tab=Buy
+Amount: $1 | Token: USDC | Method: Venmo | Handle: @receiver
+→ Continue → Review → Confirm buy
+→ Intent transitions CREATED → FUNDING; Activity tab shows it
+```
+
+**Option C: Command UI**
 ```
 Click "⚡ Command" button (bottom-right of any web app page)
 Type: "Buy $1 USDC with Venmo"
-→ Intent created on-chain: <id>… [CREATED]
-→ Shows: "Open the XRamp extension → Verify with Venmo (Beta)..."
+→ "Intent a1b2c3d4… is live and awaiting payment."
+→ "Pay $1 via Venmo, then open the XRamp extension → Verify with Venmo (Beta)"
 ```
 
-Both paths call `POST /intents` on the orchestrator.
+All paths call `POST /intents` on the Cloudflare orchestrator.
 
 ---
 
-### Step 2 — Send the Venmo payment
+### Step 2 — Send the real Venmo payment
 
 ```
-Venmo app / account.venmo.com
-Send $1.00 to @xramp_receiver
-Memo: XRAMP-<first 8 chars of intent ID shown in extension>
+Venmo app or account.venmo.com
+→ Send $1.00 to @receiver
+→ Memo: XRAMP-<shortId>  (shown on extension pending screen)
 ```
-
-> **Note**: The memo is displayed in the extension's "Awaiting Payment" screen as `XRAMP-<shortId>`.
 
 ---
 
 ### Step 3 — Venmo proof verification (extension)
 
 ```
-Extension → Buy Crypto → "Awaiting Payment" screen
-Click: "Verify with Venmo (Beta)"
+Extension → "Awaiting Payment" screen
+→ Click "Verify with Venmo (Beta)"
 ```
 
-What happens under the hood:
-1. Extension finds (or opens) the `account.venmo.com` tab
-2. `chrome.scripting.executeScript` fetches `/api/stories?feedType=me` with session cookies
-3. Matches transaction: receiver = `xramp_receiver`, amount = `$1.00`, within 30 min, **debit only** (matches zkp2p template `responseMatches` regex `"amount":"- $..."`)
-4. Builds `proofPayload` from `transactionJsonPathSelectors`: amount, date, paymentId, receiverUsername, receiverId, currency
-5. `secretHeaders: ["Cookie"]` are never included in the payload
-6. Computes `proofHash = sha256(JSON.stringify(proofPayload))`
-7. `POST /intents/:id/proof` → orchestrator stores proof + updates `intents.proofHash`
-8. `chrome.runtime.sendMessage('xramp_proof_to_tab')` → background → content script → `window.postMessage({ type: 'XRAMP_PROOF_RESULT', payload: { intentId, proofHash, verified: true, ... } })`
+What happens:
+1. Extension finds the open `account.venmo.com` tab
+2. `chrome.scripting.executeScript` fetches `/api/stories?feedType=me` (uses existing session cookies — **never stored**)
+3. Matches transaction: receiver handle + amount + within 30 min window + **debit only** (per zkp2p template `"amount":"- $..."`)
+4. Extracts proof fields: `amount`, `date`, `paymentId`, `receiverUsername`, `currency`
+5. Computes `proofHash = sha256(JSON.stringify(proofPayload))` — cookies/headers never in payload
+6. Calls `POST /intents/:id/proof` → orchestrator stores proof row + updates `intents.proofHash`
+7. Sends `chrome.runtime.sendMessage('xramp_proof_to_tab')` → background → content script → `window.postMessage(XRAMP_PROOF_RESULT)`
 
-Extension shows:
-```
-✓ Payment confirmed!
-Proof Hash: abcd1234ef56…78901234
-Submitted to orchestrator · Intent a1b2c3d4
-[View in XRamp App ↗]
-```
+Extension shows: `✓ Payment confirmed! · Proof Hash: abcd…5678`
 
 ---
 
 ### Step 4 — Web app receives proof
 
-The `useProofMessageListener` hook in `AppLayout.tsx` picks up the `XRAMP_PROOF_RESULT` message:
+`AppLayout.tsx` `useProofMessageListener` hook receives `XRAMP_PROOF_RESULT`:
 
 ```
-→ POST /intents/:id/proof  (idempotent — stores/updates the proof)
-→ If verified=true AND user is admin (rishig@umich.edu):
-     POST /intents/:id/verify  → escrow.release() on Fuji → state = COMPLETE
-     toast: "Proof verified — escrow released!"
-→ Else:
+→ POST /intents/:id/proof  (stores proof, idempotent)
+→ If admin (rishig@umich.edu):
+     POST /intents/:id/verify
+     → marks proofs.verified = 1
+     → if escrowId set: calls escrow.release(escrowId) on Fuji
+     → sets state = COMPLETE, releaseTxHash (if escrow existed)
+     → toast: "Proof verified — escrow released!"
+→ If not admin:
      toast: "Payment proof submitted — Awaiting admin release"
 ```
 
 ---
 
-### Step 5 — Activity tab confirms completion
+### Step 5 — Activity confirms state
 
 ```
-Web app → Activity tab
-Select the intent
-→ Proof Hash: abcd1234… ✓ Verified
-→ Proof Status: ✅ Verified  (or "Pending admin review" for non-admin)
-→ Release Tx: 0x1a2b3c…  ↗ (Snowtrace link)
-→ State badge: COMPLETE
+Web app → Activity
+→ State badge: COMPLETE (pulsing blue while active)
+→ Proof Hash: abcd… · ✓ Verified
+→ Release Tx: 0x… ↗ Snowtrace  ← only if escrow was pre-funded
+→ Admin sees "Verify + Release Escrow" button (manual fallback)
 ```
 
-Non-admin users see "Verify + Release Escrow" button hidden; admin sees it and can trigger manually.
+> **Note on `releaseTxHash`**: For a real on-chain tx hash, an escrow must first be created and funded (via `createAndFundEscrow()` in `fuji.ts`). Without that, `releaseTxHash` is null but state still advances to COMPLETE. The proof verification flow is fully real regardless.
 
 ---
 
 ## 4 · Off-Ramp Demo (Sell)
 
 ```
-Web app → Sell tab
-Amount: $5 USDC
-Rail: Cash App
-CashTag: $receiver
-→ Confirm → Intent OFFRAMP created
-→ Escrow funded from user wallet
-→ LP sends $5 via Cash App to $receiver
-→ Admin: Activity → Verify + Release Escrow
-→ USDC released to LP
+Web app → Ramp → Sell tab
+Amount: $5 USDC | Rail: Cash App | $cashtag: $receiver
+→ Confirm → Intent OFFRAMP created → state: FUNDING
+Admin: Activity → "Verify + Release Escrow"
+→ state: COMPLETE
 ```
 
+Note: There is no automated LP payout wired. The admin release simulates the escrow unlock; actual fiat payout to `$receiver` is manual in the demo.
+
 ---
 
-## 5 · Command UI
+## 5 · Command UI Reference
 
-| Command | Action |
+| Command | What happens |
 |---|---|
-| `Buy $100 USDC with Venmo` | Creates ONRAMP intent, shows Venmo extension prompt |
-| `Sell $250 USDC to CashApp` | Creates OFFRAMP intent |
-| `On-ramp $500 and swap to AVAX` | ONRAMP + simulated LFJ swap |
-| `Express buy $200 USDC` | Express routing (LP_A, +0.5% fee) |
+| `Buy $100 USDC with Venmo` | Creates real ONRAMP intent; guides to extension |
+| `Sell $250 USDC to CashApp` | Creates real OFFRAMP intent; guides to Activity |
+| `On-ramp $500 and swap to AVAX` | Creates real intent; **swap is simulated** |
+| `Express buy $200 USDC` | Creates real intent; express routing is simulated |
 
-On API failure, falls back to simulation automatically — never crashes.
+On API failure (not logged in / orchestrator down): falls back to full demo simulation — never crashes.
 
 ---
 
-## 6 · zkp2p Provider Alignment
+## 6 · zkp2p / Peer Alignment
 
-Our `venmoProofRunner.ts` mirrors the `@zkp2p/providers/venmo/transfer_venmo.json` template:
+`venmoProofRunner.ts` mirrors `@zkp2p/providers/venmo/transfer_venmo.json`:
 
-| Template field | Our implementation |
+| Template field | Implementation |
 |---|---|
-| `actionType: "transfer_venmo"` | `base.actionType = venmoTemplate.actionType` |
-| `authLink` | Used to open/find Venmo tab |
-| `url` with `{{SENDER_ID}}` | `fetchVenmoStories(tabId, senderId?)` |
-| `$.stories` list selector | `raw.stories` array |
-| `transactionJsonPathSelectors` | `amount`, `date`, `paymentId`, `title.receiver.username/id`, `currency` |
-| `responseMatches: "amount":"- $..."` | `isDebitTransaction()` — only matches outgoing payments |
-| `secretHeaders: ["Cookie"]` | Never included in `proofPayload` |
-| `responseRedactions` | Only selected fields in `proofPayload`, no raw response |
+| `responseMatches: "amount":"- $..."` | `isDebitTransaction()` — outgoing payments only |
+| `transactionJsonPathSelectors` | `amount`, `date`, `paymentId`, `receiverUsername`, `currency` |
+| `secretHeaders: ["Cookie"]` | Never in `proofPayload` |
+| `url` with `{{SENDER_ID}}` | `fetchVenmoStories(tabId)` via scripting |
 
 ---
 
-## 7 · Regression Checklist
+## 7 · Verified Checklist
 
-- [x] `npx tsc --noEmit` exits 0 on web app (zero errors)
-- [x] `XRAMP_ENABLE_VENMO_PROOF=true npm run build` exits 0 on extension (only size warnings)
-- [x] Buy flow: `createOnrampIntent` → escrow → `depositTxHash` in Activity
-- [x] Sell flow: `createOfframpIntent` → escrow → `releaseTxHash` in Activity  
-- [x] Activity: `proofHash` + verified badge rendered; `getIntent` fetches proofs
-- [x] CommandMode: opens, minimizes, quick commands, real API + graceful fallback
-- [x] Venmo proof: debit-only filter, secretHeaders excluded, sha256 hash
-- [x] AppLayout proof listener: `submitProof` + admin `verifyAndRelease` + toast
-- [x] No new pages/routes/tabs added; feature flag gates only the Verify button
+- [x] `npx tsc --noEmit` exits 0 (web app)
+- [x] `XRAMP_ENABLE_VENMO_PROOF=true npm run build` exits 0 (extension)
+- [x] Buy → Review → Complete transitions state CREATED → FUNDING
+- [x] Sell → Review → Complete transitions state CREATED → FUNDING
+- [x] Activity polls every 5s, shows proof hash + verified badge
+- [x] AppLayout proof listener: submitProof + admin verifyAndRelease + toast
+- [x] CommandMode: real intents for logged-in users; demo simulation fallback
+- [x] CommandMode: no fake "✓ complete" messages for real intents
+- [x] Home balance reads live MockUSDC balance from Fuji
+- [x] Ramp sidebar reads live MockUSDC balance from Fuji
+- [x] Venmo proof: debit-only, no cookies in payload, sha256 hash
+- [x] Proof relay chain: extension → background → content script → AppLayout ✓

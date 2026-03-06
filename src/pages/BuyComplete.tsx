@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Clock } from 'lucide-react';
 import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
 
 export default function BuyComplete() {
@@ -56,11 +56,17 @@ export default function BuyComplete() {
               <span className="font-mono text-sm">{truncateAddress(deliveryAddress)}</span>
             </div>
           )}
+          {state.intentId && (
+            <div className="flex justify-between py-2">
+              <span className="text-muted-foreground text-sm">Intent ID</span>
+              <span className="font-mono text-xs text-primary">{(state.intentId as string).slice(0, 12)}…</span>
+            </div>
+          )}
           <div className="flex justify-between py-2">
             <span className="text-muted-foreground text-sm">Status</span>
             <div className="flex items-center gap-2">
-              <Loader2 className="h-3 w-3 animate-spin text-primary" />
-              <span className="text-sm text-primary font-medium">Processing</span>
+              <Clock className="h-3 w-3 text-primary" />
+              <span className="text-sm text-primary font-medium">Awaiting payment</span>
             </div>
           </div>
         </div>

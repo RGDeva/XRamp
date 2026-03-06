@@ -15,6 +15,8 @@ import { PaymentMethodPicker, getPaymentMethodById } from '@/components/shared/P
 import { QuotesCard } from '@/components/shared/QuotesCard';
 import { SendSheet } from '@/components/deposits/SendSheet';
 import { orchestratorApi } from '@/lib/orchestratorApi';
+import { getUsdcBalance } from '@/lib/fuji';
+import { getDeliveryAddress } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 type RampTab = 'Buy' | 'Sell' | 'Send';
@@ -171,6 +173,20 @@ export default function Ramp() {
 
   const getUserId = () => user?.email || user?.walletAddress || user?.embeddedWalletAddress || 'guest';
 
+  const [sidebarBalance, setSidebarBalance] = useState<string>('—');
+
+  useEffect(() => {
+    const addr = getDeliveryAddress(user ? {
+      email: user?.email || undefined,
+      walletAddress: user?.walletAddress || undefined,
+      embeddedWalletAddress: user?.embeddedWalletAddress || undefined,
+    } : null);
+    if (!addr) { setSidebarBalance('—'); return; }
+    getUsdcBalance(addr)
+      .then(({ formatted }) => setSidebarBalance(parseFloat(formatted).toFixed(2)))
+      .catch(() => setSidebarBalance('0.00'));
+  }, [user]);
+
   // Listen for postMessage from XRamp Chrome extension to prefill state
   useEffect(() => {
     const handleExtensionMessage = (event: MessageEvent) => {
@@ -272,7 +288,7 @@ export default function Ramp() {
               </div>
               <div className="flex items-center gap-2">
                 <CryptoIcon symbol="USDC" size={24} />
-                <span className="text-2xl font-bold text-foreground">0.00</span>
+                <span className="text-2xl font-bold text-foreground">{sidebarBalance}</span>
                 <span className="text-muted-foreground font-medium">USDC</span>
               </div>
               <button className="mt-3 w-full text-xs text-primary border border-primary/30 rounded-lg py-2 hover:bg-primary/10 transition-colors font-medium">+ Add Funds</button>

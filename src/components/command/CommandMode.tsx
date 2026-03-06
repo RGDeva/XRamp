@@ -185,32 +185,40 @@ export function CommandMode() {
     await delay(4000);
     setSlaActive(false);
 
-    if (parsed.rail.toLowerCase() === 'venmo') {
-      push('info',
-        createdIntentId
-          ? `Open the XRamp extension → "Verify with Venmo (Beta)" to submit proof for intent ${createdIntentId.slice(0, 10)}…`
-          : 'Open the XRamp extension → "Verify with Venmo (Beta)" to submit payment proof.'
-      );
-      await delay(600);
+    if (createdIntentId) {
+      // ── Real intent was created — guide user, do NOT fake completion ──────
+      const rail = parsed.rail.toLowerCase();
+      push('info', `Intent ${createdIntentId.slice(0, 10)}… is live and awaiting payment.`);
+      await delay(400);
+      if (rail === 'venmo') {
+        push('info', `Pay $${parsed.amount} via Venmo, then open the XRamp extension → "Verify with Venmo (Beta)" to submit your proof.`);
+      } else {
+        push('info', `Pay $${parsed.amount} via ${parsed.rail}, then ask admin to verify and release escrow.`);
+      }
+      await delay(400);
+      push('system', 'Check the Activity tab to track this intent. Admin will release after proof is verified.');
+    } else {
+      // ── Demo / API unreachable — keep simulation ───────────────────────────
+      if (parsed.rail.toLowerCase() === 'venmo') {
+        push('info', 'Open the XRamp extension → "Verify with Venmo (Beta)" to submit payment proof.');
+        await delay(600);
+      }
+      push('success', '✓ Fiat received (demo)');
+      await delay(700);
+      push('success', '✓ Escrow released (demo)');
+      await delay(700);
+      push('success', '✓ Swap executed on Avalanche (LFJ — demo)');
+
+      if (parsed.swapToAvax) {
+        await delay(800);
+        push('info', 'Executing swap via LFJ router…');
+        await delay(1200);
+        const avaxOut = ((parsed.amount * 1.01 * 0.995) / 28.5).toFixed(4);
+        push('success', `✓ Received ${avaxOut} AVAX (demo)`);
+      }
+      await delay(300);
+      push('system', `Demo complete. ${parsed.action === 'sell' ? 'Fiat payout' : 'Crypto'} simulated — connect to see real intents.`);
     }
-
-    push('success', '✓ Fiat received');
-    await delay(700);
-    push('success', '✓ Escrow released');
-    await delay(700);
-    push('success', '✓ Swap executed on Avalanche (LFJ simulated)');
-
-    if (parsed.swapToAvax) {
-      await delay(800);
-      push('info', 'Executing swap via LFJ router…');
-      await delay(1200);
-      push('info', 'Transaction confirmed');
-      const avaxOut = ((parsed.amount * 1.01 * 0.995) / 28.5).toFixed(4);
-      push('success', `✓ Received ${avaxOut} AVAX`);
-    }
-
-    await delay(300);
-    push('system', `Order complete. ${parsed.action === 'sell' ? 'Fiat payout' : 'Crypto'} delivered successfully.`);
     setBusy(false);
   }, [busy, push]);
 
