@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
-import { ArrowDownToLine, ArrowUpFromLine, Eye, RefreshCw, ExternalLink, ShieldCheck, AlertCircle } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Eye, RefreshCw, ExternalLink, ShieldCheck, AlertCircle, Hash } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
@@ -189,7 +189,19 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
 }) {
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [proofVerified, setProofVerified] = useState<boolean | null>(null);
   const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail.toLowerCase()) : false;
+
+  useEffect(() => {
+    if (!intent.proofHash) return;
+    orchestratorApi.getIntent(intent.id)
+      .then(({ proofs }) => {
+        if (proofs && proofs.length > 0) {
+          setProofVerified(proofs.some(p => p.verified));
+        }
+      })
+      .catch(() => null);
+  }, [intent.id, intent.proofHash]);
   const canVerify = isAdmin && intent.state !== 'COMPLETE' && intent.state !== 'FAILED' && intent.state !== 'CANCELED';
 
   const handleVerify = async () => {
@@ -248,6 +260,30 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
         <Row label="Release Tx"><TxLink hash={intent.releaseTxHash} /></Row>
       )}
       {intent.escrowId && <Row label="Escrow ID">{intent.escrowId}</Row>}
+      {intent.proofHash && (
+        <Row label="Proof Hash">
+          <span className="inline-flex items-center gap-1">
+            {proofVerified === true && <ShieldCheck className="h-3.5 w-3.5 text-success" />}
+            {proofVerified === false && <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />}
+            <span className="font-mono text-xs text-primary">
+              {intent.proofHash.slice(0, 10)}…{intent.proofHash.slice(-6)}
+            </span>
+          </span>
+        </Row>
+      )}
+      {intent.proofHash && proofVerified !== null && (
+        <Row label="Proof Status">
+          <span className={cn(
+            'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase',
+            proofVerified
+              ? 'bg-success/15 text-success border border-success/30'
+              : 'bg-muted/30 text-muted-foreground border border-border',
+          )}>
+            <Hash className="h-2.5 w-2.5" />
+            {proofVerified ? 'Verified' : 'Pending admin review'}
+          </span>
+        </Row>
+      )}
       <Row label="Updated">{new Date(intent.updatedAt).toLocaleString()}</Row>
       <Row label="Created">{new Date(intent.createdAt).toLocaleString()}</Row>
 

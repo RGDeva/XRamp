@@ -1,14 +1,64 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { TopNav } from './TopNav';
 import { BottomNav } from './BottomNav';
 import { StarsBackground } from '@/components/animate-ui/components/backgrounds/stars';
 import { CommandMode } from '@/components/command/CommandMode';
+import { useAuth } from '@/contexts/AuthContext';
+import { orchestratorApi } from '@/lib/orchestratorApi';
+import { toast } from 'sonner';
+
+const ADMIN_EMAILS = ['rishig@umich.edu'];
+
+function useProofMessageListener() {
+  const { user } = useAuth();
+  const userEmail = user?.email || null;
+  const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail.toLowerCase()) : false;
+
+  useEffect(() => {
+    const handler = async (event: MessageEvent) => {
+      if (event.data?.type !== 'XRAMP_PROOF_RESULT') return;
+      const payload = event.data.payload;
+      if (!payload?.intentId) return;
+
+      const { intentId, providerId, proofHash, proofPayload, verified } = payload;
+
+      try {
+        await orchestratorApi.submitProof(intentId, {
+          providerId: providerId ?? 'venmo',
+          proofHash,
+          payload: proofPayload,
+        });
+
+        if (verified && isAdmin) {
+          await orchestratorApi.verifyAndRelease(intentId);
+          toast.success('Proof verified — escrow released!', {
+            description: `Intent ${intentId.slice(0, 8)}… is now COMPLETE`,
+          });
+        } else if (verified) {
+          toast.success('Payment proof submitted', {
+            description: 'Awaiting admin release. Check Activity for updates.',
+          });
+        } else {
+          toast.error('Proof submission recorded', {
+            description: payload.reason ?? 'Verification returned false.',
+          });
+        }
+      } catch {
+        // Non-fatal — proof may already exist
+      }
+    };
+
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [isAdmin]);
+}
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  useProofMessageListener();
   return (
     <div className="min-h-screen bg-background">
       {/* Stars background — fixed, full-screen, behind everything */}
