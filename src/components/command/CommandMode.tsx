@@ -51,10 +51,9 @@ function uid() {
 // ─── Quick Commands ──────────────────────────────────────────────────────────
 
 const QUICK_COMMANDS = [
-  'Buy $100 USDC with Venmo',
-  'Sell $250 USDC to CashApp',
-  'On-ramp $500 and swap to AVAX',
-  'Express buy $200 USDC',
+  'Buy $1 USDC with Venmo',
+  'Sell $5 USDC to Venmo',
+  'Buy $10 USDC with CashApp',
 ];
 
 // ─── Parse intent from command string ────────────────────────────────────────
@@ -149,12 +148,7 @@ export function CommandMode() {
     push('user', text);
     await delay(400);
 
-    if (parsed.express) {
-      push('info', '⚡ Express routing enabled (+0.5% fee) — matching with top-tier liquidity provider…');
-      await delay(600);
-    }
-
-    push('info', `Matched with ${lp.name} (${lp.reliability}% reliability, avg ${lp.avgTime})`);
+    push('info', `Creating ${parsed.action} intent for $${parsed.amount} via ${parsed.rail}…`);
     await delay(400);
 
     // ── Real orchestrator intent creation ─────────────────────────────────────
@@ -171,53 +165,35 @@ export function CommandMode() {
         ? await orchestratorApi.createOfframpIntent(payload)
         : await orchestratorApi.createOnrampIntent(payload);
       createdIntentId = created.id;
-      push('info', `Intent created on-chain: ${created.id.slice(0, 12)}… [${created.state}]`);
+      push('info', `Intent created: ${created.id.slice(0, 12)}… [${created.state}]`);
     } catch {
       push('info', '⚠ Orchestrator unreachable — running demo simulation');
     }
     await delay(300);
-    // ─────────────────────────────────────────────────────────────────────────
-
-    push('info', 'SLA: 5 minutes');
-    await delay(300);
-
-    setSlaActive(true);
-    await delay(4000);
-    setSlaActive(false);
 
     if (createdIntentId) {
-      // ── Real intent was created — guide user, do NOT fake completion ──────
+      // ── Real intent — guide user to next steps ──────────────────────────
+      push('info', 'Next: go to Buy or Sell page → Review → Confirm to fund escrow on Fuji.');
+      await delay(400);
       const rail = parsed.rail.toLowerCase();
-      push('info', `Intent ${createdIntentId.slice(0, 10)}… is live and awaiting payment.`);
-      await delay(400);
       if (rail === 'venmo') {
-        push('info', `Pay $${parsed.amount} via Venmo, then open the XRamp extension → "Verify with Venmo (Beta)" to submit your proof.`);
+        push('info', `After escrow is funded, pay $${parsed.amount} via Venmo, then use the XRamp extension → "Verify with Venmo (Beta)" to submit proof.`);
       } else {
-        push('info', `Pay $${parsed.amount} via ${parsed.rail}, then ask admin to verify and release escrow.`);
+        push('info', `After escrow is funded, pay $${parsed.amount} via ${parsed.rail}, then ask admin to verify and release escrow.`);
       }
       await delay(400);
-      push('system', 'Check the Activity tab to track this intent. Admin will release after proof is verified.');
+      push('system', 'Track this intent on the Activity tab. Admin will release escrow after proof verification.');
     } else {
-      // ── Demo / API unreachable — keep simulation ───────────────────────────
-      if (parsed.rail.toLowerCase() === 'venmo') {
-        push('info', 'Open the XRamp extension → "Verify with Venmo (Beta)" to submit payment proof.');
-        await delay(600);
-      }
+      // ── Demo / API unreachable — simulation only ───────────────────────
+      setSlaActive(true);
+      await delay(3000);
+      setSlaActive(false);
+
       push('success', '✓ Fiat received (demo)');
       await delay(700);
       push('success', '✓ Escrow released (demo)');
-      await delay(700);
-      push('success', '✓ Swap executed on Avalanche (LFJ — demo)');
-
-      if (parsed.swapToAvax) {
-        await delay(800);
-        push('info', 'Executing swap via LFJ router…');
-        await delay(1200);
-        const avaxOut = ((parsed.amount * 1.01 * 0.995) / 28.5).toFixed(4);
-        push('success', `✓ Received ${avaxOut} AVAX (demo)`);
-      }
       await delay(300);
-      push('system', `Demo complete. ${parsed.action === 'sell' ? 'Fiat payout' : 'Crypto'} simulated — connect to see real intents.`);
+      push('system', `Demo complete. ${parsed.action === 'sell' ? 'Fiat payout' : 'Crypto delivery'} simulated — log in to create real intents.`);
     }
     setBusy(false);
   }, [busy, push]);

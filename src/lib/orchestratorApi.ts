@@ -132,10 +132,9 @@ export const orchestratorApi = {
     return this.createIntent({ ...payload, type: 'OFFRAMP' });
   },
 
-  /** List intents for a user (activity feed) */
-  async listIntents(userId?: string): Promise<{ intents: OrchestratorIntent[] }> {
-    const qs = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-    return apiFetch(`/intents${qs}`);
+  /** List intents for the authenticated user (activity feed) */
+  async listIntents(): Promise<{ intents: OrchestratorIntent[] }> {
+    return apiFetch('/intents');
   },
 
   /** Get single intent with timeline and proofs */

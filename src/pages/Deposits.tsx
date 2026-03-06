@@ -1,256 +1,73 @@
-import { useState } from 'react';
-import { Plus, RotateCcw, TrendingUp, BarChart2, Target, ChevronDown, ChevronRight, Pause, X, Share2 } from 'lucide-react';
+import { Target, Clock } from 'lucide-react';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
-import { NewDepositWizard } from '@/components/deposits/NewDepositWizard';
-import { SendSheet } from '@/components/deposits/SendSheet';
 import { RailIcon } from '@/components/shared/RailIcon';
-import { cn } from '@/lib/utils';
 
-type DepositStatus = 'ACTIVE' | 'PAUSED' | 'CLOSED';
-type TabFilter = 'Active' | 'Paused' | 'History';
-
-interface Deposit {
-  id: number;
-  remaining: string;
-  locked: string | null;
-  taken: string;
-  platform: string;
-  railId: string;
-  currency: string;
-  status: DepositStatus;
-  token: string;
-  handle: string;
-}
-
-const MOCK_DEPOSITS: Deposit[] = [
-  { id: 2441, remaining: '0.00', locked: null, taken: '18.69', platform: 'Venmo',    railId: 'venmo',   currency: 'USD', status: 'PAUSED', token: 'USDC', handle: '@xramp-seller' },
-  { id: 2428, remaining: '0.00', locked: null, taken: '6.69',  platform: 'Venmo',    railId: 'venmo',   currency: 'USD', status: 'ACTIVE', token: 'USDC', handle: '@xramp-seller' },
-  { id: 2426, remaining: '0.00', locked: null, taken: '10.00', platform: 'Venmo',    railId: 'venmo',   currency: 'USD', status: 'PAUSED', token: 'USDC', handle: '@xramp-seller' },
-  { id: 2310, remaining: '5.00', locked: null, taken: '25.00', platform: 'Cash App', railId: 'cashapp', currency: 'USD', status: 'CLOSED', token: 'USDC', handle: '$xramp' },
+const SUPPORTED_RAILS = [
+  { id: 'venmo', name: 'Venmo' },
+  { id: 'cashapp', name: 'Cash App' },
+  { id: 'zelle', name: 'Zelle' },
+  { id: 'revolut', name: 'Revolut' },
+  { id: 'wise', name: 'Wise' },
 ];
 
-const RAIL_NAMES = ['Venmo', 'Cash App', 'Zelle', 'Revolut', 'Wise'];
-const RAIL_IDS   = ['venmo', 'cashapp',  'zelle', 'revolut', 'wise'];
-
-const STATUS_STYLES: Record<DepositStatus, string> = {
-  ACTIVE: 'bg-green-500/15 text-green-400 border border-green-500/30',
-  PAUSED: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30',
-  CLOSED: 'bg-muted text-muted-foreground border border-border',
-};
-
 export default function Deposits() {
-  const [tab, setTab] = useState<TabFilter>('Active');
-  const [showWizard, setShowWizard] = useState(false);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [sendDeposit, setSendDeposit] = useState<Deposit | null>(null);
-
-  const filtered = MOCK_DEPOSITS.filter(d => {
-    if (tab === 'Active')  return d.status === 'ACTIVE';
-    if (tab === 'Paused')  return d.status === 'PAUSED';
-    if (tab === 'History') return d.status === 'CLOSED';
-    return true;
-  });
-
-  const totalReceived = 25.38;
-  const totalFills = 4;
-  const totalSold = 35.38;
-
   return (
     <div className="min-h-[calc(100vh-4rem)] px-4 py-8 pb-32 md:pb-12 max-w-3xl mx-auto">
 
       {/* Page header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Deposits</h1>
-          <p className="text-sm text-muted-foreground mt-1">Create and manage USDC liquidity deposits for fiat off-ramp orders.</p>
-        </div>
-        <button
-          onClick={() => setShowWizard(true)}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors flex-shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          New Deposit
-        </button>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Deposits</h1>
+        <p className="text-sm text-muted-foreground mt-1">USDC liquidity deposits for fiat off-ramp orders.</p>
       </div>
 
-      {/* Rail icons strip */}
+      {/* Supported rails */}
       <div className="flex items-center gap-3 mb-6">
-        {RAIL_IDS.map((id, i) => (
-          <div key={id} className="h-9 w-9 rounded-full bg-card border border-border flex items-center justify-center overflow-hidden shadow-sm" title={RAIL_NAMES[i]}>
+        {SUPPORTED_RAILS.map(({ id, name }) => (
+          <div key={id} className="h-9 w-9 rounded-full bg-card border border-border flex items-center justify-center overflow-hidden shadow-sm" title={name}>
             <RailIcon rail={id} size={26} />
           </div>
         ))}
       </div>
 
-      {/* Tabs + sort */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-1 bg-secondary/40 rounded-xl p-1">
-          {(['Active', 'Paused', 'History'] as TabFilter[]).map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={cn(
-                'px-4 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                tab === t ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-        <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-          <RotateCcw className="h-3.5 w-3.5" />
-          Newest first
-        </button>
-      </div>
-
-      {/* Deposit rows */}
-      <div className="space-y-2 mb-6">
-        {filtered.length === 0 ? (
-          <div className="relative bg-card border border-border rounded-2xl p-10 text-center">
-            <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-            <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center mx-auto mb-3">
-              <Target className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <p className="font-semibold text-foreground mb-1">No deposit history</p>
-            <p className="text-sm text-muted-foreground mb-4">When you close deposits, they will appear here for your records.</p>
-            <button
-              onClick={() => setTab('Active')}
-              className="text-sm border border-border rounded-full px-4 py-1.5 hover:bg-secondary transition-colors"
-            >
-              View active deposits
-            </button>
-          </div>
-        ) : (
-          filtered.map(dep => (
-            <div key={dep.id} className="relative bg-card border border-border rounded-2xl overflow-hidden">
-              <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-
-              {/* Main row */}
-              <button
-                className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-secondary/20 transition-colors"
-                onClick={() => setExpandedId(expandedId === dep.id ? null : dep.id)}
-              >
-                {/* Token icon */}
-                <div className="h-9 w-9 rounded-full bg-[#2775CA] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">$</div>
-
-                {/* Amount info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground">{dep.remaining} {dep.token}</span>
-                    <span className="text-xs text-muted-foreground">· {dep.taken} sold</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <RailIcon rail={dep.railId} size={14} />
-                    <span className="text-xs text-muted-foreground">{dep.platform}</span>
-                    <span className="text-xs text-muted-foreground">·</span>
-                    <span className="text-xs text-muted-foreground">🇺🇸 {dep.currency} · 1.000</span>
-                  </div>
-                </div>
-
-                {/* ID + status */}
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className="text-xs text-muted-foreground">#{dep.id}</span>
-                  <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', STATUS_STYLES[dep.status])}>
-                    {dep.status}
-                  </span>
-                  <ChevronRight className={cn('h-4 w-4 text-muted-foreground transition-transform', expandedId === dep.id && 'rotate-90')} />
-                </div>
-              </button>
-
-              {/* Expanded actions */}
-              {expandedId === dep.id && (
-                <div className="border-t border-border px-5 py-3 flex items-center gap-3 bg-secondary/20">
-                  <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-secondary">
-                    <Plus className="h-3.5 w-3.5" /> Add
-                  </button>
-                  <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-secondary">
-                    <Pause className="h-3.5 w-3.5" /> {dep.status === 'PAUSED' ? 'Resume' : 'Pause'}
-                  </button>
-                  <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-secondary">
-                    <TrendingUp className="h-3.5 w-3.5" /> Rate
-                  </button>
-                  <button className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 transition-colors px-3 py-1.5 rounded-lg hover:bg-destructive/10 ml-auto">
-                    <X className="h-3.5 w-3.5" /> Close
-                  </button>
-                  <button
-                    onClick={() => setSendDeposit(dep)}
-                    className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors px-3 py-1.5 rounded-lg hover:bg-primary/10"
-                  >
-                    <Share2 className="h-3.5 w-3.5" /> Send
-                  </button>
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Earnings card */}
-      <div className="relative bg-card border border-border rounded-2xl p-5 mb-3 shadow-elevated">
+      {/* Honest empty state */}
+      <div className="relative bg-card border border-border rounded-2xl p-10 text-center">
         <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold text-sm">Earnings</span>
-          </div>
-          <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-border rounded-lg px-2.5 py-1">
-            Export ({totalFills})
-          </button>
+        <div className="h-14 w-14 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
+          <Target className="h-7 w-7 text-muted-foreground" />
         </div>
-
-        <div className="mb-3">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-xs text-green-400 font-medium">↑ Received</span>
-            <span className="text-xs text-muted-foreground">· {totalFills} fills</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🇺🇸</span>
-            <span className="text-3xl font-bold text-foreground">{totalReceived.toFixed(2)}</span>
-            <span className="text-lg font-semibold text-muted-foreground">USD</span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">$ {totalSold} USDC sold · 0.0000 avg</p>
+        <p className="font-semibold text-foreground mb-2">LP Deposits — Coming Soon</p>
+        <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
+          The LP deposit system is not yet implemented. When available, liquidity providers will be able to deposit USDC and accept fiat off-ramp orders via supported payment rails.
+        </p>
+        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <Clock className="h-3.5 w-3.5" />
+          <span>Currently, escrow funding is handled by the arbiter wallet during the demo flow.</span>
         </div>
-
-        <button className="w-full flex items-center justify-between py-3 border-t border-border text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            <span>Set an earnings goal</span>
-          </div>
-          <span className="text-xs">Track your progress towards a target</span>
-        </button>
       </div>
 
-      {/* Performance insights */}
-      <div className="relative bg-card border border-border rounded-2xl px-5 py-4 shadow-elevated">
+      {/* What will be here */}
+      <div className="mt-6 relative bg-card border border-border rounded-2xl p-5">
         <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BarChart2 className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold text-sm">Performance Insights</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-green-400 font-medium">100% fill rate</span>
-            <span className="text-xs text-muted-foreground">· {totalFills} fills (30 days)</span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </div>
-        </div>
+        <p className="text-sm font-medium text-foreground mb-3">Planned features</p>
+        <ul className="space-y-2 text-sm text-muted-foreground">
+          <li className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            Create USDC liquidity deposits with configurable rate and payment rail
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            Order matching against buyer intents
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            Earnings tracking, fill rate analytics, and deposit management
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            Multi-rail support: Venmo, Cash App, Zelle, Revolut, Wise
+          </li>
+        </ul>
       </div>
-
-      {/* New Deposit Wizard */}
-      {showWizard && <NewDepositWizard onClose={() => setShowWizard(false)} />}
-
-      {/* Send Sheet */}
-      <SendSheet
-        open={!!sendDeposit}
-        onClose={() => setSendDeposit(null)}
-        depositId={sendDeposit?.id ?? 0}
-        amount={sendDeposit?.taken ?? '0'}
-        token={sendDeposit?.token ?? 'USDC'}
-        railId={sendDeposit?.railId ?? 'venmo'}
-        railName={sendDeposit?.platform ?? 'Venmo'}
-        handle={sendDeposit?.handle ?? ''}
-      />
     </div>
   );
 }

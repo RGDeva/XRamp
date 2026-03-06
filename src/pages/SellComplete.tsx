@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
-import { Check, Clock } from 'lucide-react';
+import { ShieldCheck, Clock, ExternalLink } from 'lucide-react';
 import { getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
+import { txUrl } from '@/lib/fuji';
 
 export default function SellComplete() {
   const navigate = useNavigate();
@@ -25,15 +26,15 @@ export default function SellComplete() {
       <div className="relative bg-card border border-border rounded-2xl p-6 space-y-6 animate-fade-in">
         <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
         {/* Success icon */}
-        <div className="h-16 w-16 mx-auto rounded-2xl bg-success/10 flex items-center justify-center animate-success-pop">
-          <Check className="h-8 w-8 text-success" />
+        <div className="h-16 w-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center animate-success-pop">
+          <ShieldCheck className="h-8 w-8 text-primary" />
         </div>
 
         {/* Title */}
         <div className="text-center space-y-2">
-          <h1 className="text-xl font-semibold">Order received</h1>
+          <h1 className="text-xl font-semibold">Escrow funded</h1>
           <p className="text-muted-foreground text-sm">
-            Your payout is being processed.
+            USDC has been locked in escrow on Fuji. Awaiting buyer payment proof and admin verification before release.
           </p>
         </div>
 
@@ -66,13 +67,36 @@ export default function SellComplete() {
               <span className="font-mono text-xs text-primary">{(state.intentId as string).slice(0, 12)}…</span>
             </div>
           )}
+          {state.depositTxHash && (
+            <div className="flex justify-between py-2">
+              <span className="text-muted-foreground text-sm">Deposit Tx</span>
+              <a
+                href={txUrl(state.depositTxHash as string)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-primary hover:underline font-mono text-xs"
+              >
+                {(state.depositTxHash as string).slice(0, 8)}…{(state.depositTxHash as string).slice(-6)}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          )}
+          {state.escrowId && (
+            <div className="flex justify-between py-2">
+              <span className="text-muted-foreground text-sm">Escrow ID</span>
+              <span className="font-mono text-xs">{state.escrowId as string}</span>
+            </div>
+          )}
           <div className="flex justify-between py-2">
             <span className="text-muted-foreground text-sm">Status</span>
             <div className="flex items-center gap-2">
               <Clock className="h-3 w-3 text-primary" />
-              <span className="text-sm text-primary font-medium">Awaiting verification</span>
+              <span className="text-sm text-primary font-medium">Awaiting proof + verification</span>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            After fiat payment is verified via the XRamp extension, admin will release USDC from escrow.
+          </p>
         </div>
       </div>
 

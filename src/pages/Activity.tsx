@@ -44,20 +44,18 @@ export default function Activity() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const userId = user?.email || user?.walletAddress || user?.embeddedWalletAddress || 'guest';
-
   const load = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       setError(null);
-      const { intents } = await orchestratorApi.listIntents(userId);
+      const { intents } = await orchestratorApi.listIntents();
       setActivities(intents);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load activity');
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;

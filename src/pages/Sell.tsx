@@ -254,7 +254,7 @@ export default function Sell() {
         )}
         <div className="mt-4">
           <InteractiveHoverButton
-            text={isSubmitting ? 'Matching LP…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
+            text={isSubmitting ? 'Creating intent…' : isAuthenticated ? 'Continue' : 'Log in to continue'}
             onClick={handleContinue}
             disabled={isSubmitting || (!canContinue && isAuthenticated)}
             className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"

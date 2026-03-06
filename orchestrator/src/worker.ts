@@ -137,10 +137,10 @@ export default {
 
     // ── GET /intents ─────────────────────────────────────────────────────
     if (url.pathname === '/intents' && request.method === 'GET') {
-      const filterUserId = url.searchParams.get('userId') || userId;
+      // Always use the JWT-authenticated userId (Privy DID) — never trust query param
       const rows = await env.DB.prepare(
         'SELECT * FROM intents WHERE userId = ? ORDER BY updatedAt DESC LIMIT 100'
-      ).bind(filterUserId).all();
+      ).bind(userId).all();
       return cors(json({ intents: rows.results }), origin);
     }
 
