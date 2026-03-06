@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Send, X, Zap, CheckCircle2, Clock, TrendingUp, Wifi, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { orchestratorApi } from '@/lib/orchestratorApi';
 
 // ─── Simulated LP Engine ────────────────────────────────────────────────────
 
@@ -104,6 +106,13 @@ function SLATimer({ seconds, onComplete }: { seconds: number; onComplete: () => 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function CommandMode() {
+  const { user } = useAuth();
+  // Keep userId in a ref so runSimulation always reads the latest value
+  const userIdRef = useRef<string>('guest');
+  useEffect(() => {
+    userIdRef.current = user?.email || user?.walletAddress || user?.embeddedWalletAddress || 'guest';
+  }, [user]);
+
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
@@ -133,20 +142,42 @@ export function CommandMode() {
     setBusy(true);
     setMinimized(false);
 
-    const intent = parseIntent(text);
-    const lp = routeLP(intent.express);
+    const parsed = parseIntent(text);
+    const lp = routeLP(parsed.express);
     setMatchedLP(lp);
 
     push('user', text);
     await delay(400);
 
-    if (intent.express) {
+    if (parsed.express) {
       push('info', '⚡ Express routing enabled (+0.5% fee) — matching with top-tier liquidity provider…');
       await delay(600);
     }
 
     push('info', `Matched with ${lp.name} (${lp.reliability}% reliability, avg ${lp.avgTime})`);
     await delay(400);
+
+    // ── Real orchestrator intent creation ─────────────────────────────────────
+    let createdIntentId: string | null = null;
+    try {
+      const payload = {
+        userId: userIdRef.current,
+        amount: String(parsed.amount),
+        sourceAsset: parsed.action === 'sell' ? 'USDC' : 'USD',
+        targetAsset: parsed.action === 'sell' ? 'USD' : 'USDC',
+        rail: parsed.rail,
+      };
+      const { intent: created } = parsed.action === 'sell'
+        ? await orchestratorApi.createOfframpIntent(payload)
+        : await orchestratorApi.createOnrampIntent(payload);
+      createdIntentId = created.id;
+      push('info', `Intent created on-chain: ${created.id.slice(0, 12)}… [${created.state}]`);
+    } catch {
+      push('info', '⚠ Orchestrator unreachable — running demo simulation');
+    }
+    await delay(300);
+    // ─────────────────────────────────────────────────────────────────────────
+
     push('info', 'SLA: 5 minutes');
     await delay(300);
 
@@ -154,23 +185,32 @@ export function CommandMode() {
     await delay(4000);
     setSlaActive(false);
 
+    if (parsed.rail.toLowerCase() === 'venmo') {
+      push('info',
+        createdIntentId
+          ? `Open the XRamp extension → "Verify with Venmo (Beta)" to submit proof for intent ${createdIntentId.slice(0, 10)}…`
+          : 'Open the XRamp extension → "Verify with Venmo (Beta)" to submit payment proof.'
+      );
+      await delay(600);
+    }
+
     push('success', '✓ Fiat received');
     await delay(700);
     push('success', '✓ Escrow released');
     await delay(700);
     push('success', '✓ Swap executed on Avalanche (LFJ simulated)');
 
-    if (intent.swapToAvax) {
+    if (parsed.swapToAvax) {
       await delay(800);
       push('info', 'Executing swap via LFJ router…');
       await delay(1200);
       push('info', 'Transaction confirmed');
-      const avaxOut = ((intent.amount * 1.01 * 0.995) / 28.5).toFixed(4);
+      const avaxOut = ((parsed.amount * 1.01 * 0.995) / 28.5).toFixed(4);
       push('success', `✓ Received ${avaxOut} AVAX`);
     }
 
     await delay(300);
-    push('system', `Order complete. ${intent.action === 'sell' ? 'Fiat payout' : 'Crypto'} delivered successfully.`);
+    push('system', `Order complete. ${parsed.action === 'sell' ? 'Fiat payout' : 'Crypto'} delivered successfully.`);
     setBusy(false);
   }, [busy, push]);
 
