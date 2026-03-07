@@ -27,11 +27,6 @@ const CHAIN_LABELS: Record<string, string> = {
 };
 const CHAIN_ORDER = ['avalanche', 'ethereum', 'base', 'arbitrum', 'solana', 'other'];
 
-const TOKEN_PRICES: Record<string, number> = {
-  AVAX: 28.5, WAVAX: 28.5, ETH: 2650, WETH: 2650, SOL: 145,
-  BASE: 2650, ARB: 0.92, USDC: 1, USDT: 1, 'BTC.b': 62000,
-  BTC: 62000, JOE: 0.45, LINK: 14.5, AAVE: 92, GMX: 28,
-};
 
 const HANDLE_META: Record<string, { label: string; placeholder: string; prefix?: string }> = {
   venmo:   { label: 'Venmo username',         placeholder: 'yourname',     prefix: '@' },
@@ -173,6 +168,37 @@ export default function Ramp() {
 
   const getUserId = () => user?.email || user?.walletAddress || user?.embeddedWalletAddress || 'guest';
 
+  const [savedHandles, setSavedHandles] = useState<Record<string, string>>({});
+
+  // Load saved handles once on auth
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    orchestratorApi.getPreferences()
+      .then(({ preferences }) => {
+        const map: Record<string, string> = {};
+        if (preferences.venmoHandle)   map['venmo']   = preferences.venmoHandle;
+        if (preferences.cashappHandle) map['cashapp'] = preferences.cashappHandle;
+        if (preferences.paypalHandle)  map['paypal']  = preferences.paypalHandle;
+        if (preferences.zelleHandle)   map['zelle']   = preferences.zelleHandle;
+        setSavedHandles(map);
+      })
+      .catch(() => null);
+  }, [isAuthenticated]);
+
+  // Prefill buy handle when method selected
+  useEffect(() => {
+    if (!buyMethod) return;
+    const saved = savedHandles[buyMethod];
+    if (saved) setBuyHandle(h => h || saved);
+  }, [buyMethod, savedHandles]);
+
+  // Prefill sell handle when method selected
+  useEffect(() => {
+    if (!sellMethod) return;
+    const saved = savedHandles[sellMethod];
+    if (saved) setSellHandle(h => h || saved);
+  }, [sellMethod, savedHandles]);
+
   const [sidebarBalance, setSidebarBalance] = useState<string>('—');
 
   useEffect(() => {
@@ -205,9 +231,8 @@ export default function Ramp() {
   }, []);
 
   const buyNum = parseFloat(buyAmount) || 0;
-  const buyPrice = TOKEN_PRICES[buyToken.symbol] ?? 1;
-  const buyReceive = buyNum > 0 ? (buyNum / buyPrice).toFixed(6) : '';
   const buyFee = (buyNum * 0.005).toFixed(2);
+  const buyReceive = buyNum > 0 ? (buyNum - buyNum * 0.005).toFixed(2) : '';
   const buySelectedMethod = buyMethod ? getPaymentMethodById(buyMethod) : null;
   const buyHandleMeta = buyMethod ? (HANDLE_META[buyMethod] ?? null) : null;
   const buyRequiresHandle = !!buyMethod && buyMethod !== 'bank';
@@ -215,8 +240,7 @@ export default function Ramp() {
   const buyCanContinue = buyNum > 0 && !!buyMethod && buyHasHandle;
 
   const sellNum = parseFloat(sellAmount) || 0;
-  const sellPrice = TOKEN_PRICES[sellToken.symbol] ?? 1;
-  const sellReceive = sellNum > 0 ? (sellNum * sellPrice * 0.99).toFixed(2) : '';
+  const sellReceive = sellNum > 0 ? (sellNum * (1 - 0.01)).toFixed(2) : '';
   const sellSelectedMethod = sellMethod ? getPaymentMethodById(sellMethod) : null;
   const sellHandleMeta = sellMethod ? (HANDLE_META[sellMethod] ?? null) : null;
   const sellRequiresHandle = !!sellMethod && sellMethod !== 'bank';
@@ -231,6 +255,10 @@ export default function Ramp() {
     if (!buyCanContinue) return;
     try {
       setBuySubmitting(true); setBuyError(null);
+      if (buyHandle.trim() && buyMethod) {
+        const key = (buyMethod + 'Handle') as 'venmoHandle' | 'cashappHandle' | 'paypalHandle' | 'zelleHandle';
+        orchestratorApi.savePreferences({ [key]: buyHandle.trim() }).catch(() => null);
+      }
       const { intent } = await orchestratorApi.createOnrampIntent({
         userId: getUserId(), amount: buyAmount,
         sourceAsset: 'USD', targetAsset: buyToken.symbol,
@@ -252,6 +280,10 @@ export default function Ramp() {
     if (!sellCanContinue) return;
     try {
       setSellSubmitting(true); setSellError(null);
+      if (sellHandle.trim() && sellMethod) {
+        const key = (sellMethod + 'Handle') as 'venmoHandle' | 'cashappHandle' | 'paypalHandle' | 'zelleHandle';
+        orchestratorApi.savePreferences({ [key]: sellHandle.trim() }).catch(() => null);
+      }
       const { intent } = await orchestratorApi.createOfframpIntent({
         userId: getUserId(), amount: sellAmount,
         sourceAsset: sellToken.symbol, targetAsset: 'USD',
@@ -377,7 +409,7 @@ export default function Ramp() {
                     </button>
                   </div>
                   {buyNum > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1.5">1 {buyToken.symbol} ≈ ${buyPrice.toLocaleString()} · Fee: ${buyFee}</p>
+                    <p className="text-xs text-muted-foreground mt-1.5">Demo rate: 1 USD = 1 MockUSDC · Fee: ${buyFee}</p>
                   )}
                 </div>
                 {buyNum > 0 && <QuotesCard payAmount={buyAmount} payCurrency="USD" receiveCrypto={buyToken.symbol} />}
@@ -474,7 +506,7 @@ export default function Ramp() {
                     <span className="flex items-center px-3.5 bg-secondary border border-border rounded-xl text-sm font-medium text-muted-foreground">USD</span>
                   </div>
                   {sellNum > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1.5">1 {sellToken.symbol} ≈ ${sellPrice.toLocaleString()} · 1% fee</p>
+                    <p className="text-xs text-muted-foreground mt-1.5">Demo rate: 1 MockUSDC = 1 USD · 1% fee</p>
                   )}
                 </div>
                 <div>

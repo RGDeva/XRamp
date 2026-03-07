@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
@@ -31,6 +31,30 @@ export default function Sell() {
   const [showDetails, setShowDetails] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const [savedHandles, setSavedHandles] = useState<Record<string, string>>({});
+
+  // Load saved handles once on auth
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    orchestratorApi.getPreferences()
+      .then(({ preferences }) => {
+        const map: Record<string, string> = {};
+        if (preferences.venmoHandle)   map['venmo']   = preferences.venmoHandle;
+        if (preferences.cashappHandle) map['cashapp'] = preferences.cashappHandle;
+        if (preferences.paypalHandle)  map['paypal']  = preferences.paypalHandle;
+        if (preferences.zelleHandle)   map['zelle']   = preferences.zelleHandle;
+        setSavedHandles(map);
+      })
+      .catch(() => null);
+  }, [isAuthenticated]);
+
+  // Prefill handle when method is selected and user hasn't typed
+  useEffect(() => {
+    if (!payoutMethod) return;
+    const saved = savedHandles[payoutMethod];
+    if (saved) setPayoutHandle(h => h || saved);
+  }, [payoutMethod, savedHandles]);
 
   const selectedMethod = payoutMethod ? getPaymentMethodById(payoutMethod) : null;
 
@@ -89,6 +113,11 @@ export default function Sell() {
     try {
       setIsSubmitting(true);
       setSubmitError(null);
+
+      if (payoutHandle.trim() && payoutMethod) {
+        const key = (payoutMethod + 'Handle') as 'venmoHandle' | 'cashappHandle' | 'paypalHandle' | 'zelleHandle';
+        orchestratorApi.savePreferences({ [key]: payoutHandle.trim() }).catch(() => null);
+      }
 
       const { intent } = await orchestratorApi.createOfframpIntent({
         userId: getUserId(),

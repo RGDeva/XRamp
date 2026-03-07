@@ -47,3 +47,12 @@ CREATE TABLE IF NOT EXISTS proofs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_proofs_intentId ON proofs(intentId);
+
+CREATE TABLE IF NOT EXISTS user_preferences (
+  userId TEXT PRIMARY KEY,
+  venmoHandle TEXT DEFAULT '',
+  cashappHandle TEXT DEFAULT '',
+  paypalHandle TEXT DEFAULT '',
+  zelleHandle TEXT DEFAULT '',
+  updatedAt TEXT NOT NULL
+);

@@ -77,6 +77,7 @@ export async function createAndFundEscrow(
   amount: bigint,
   payerAddress: string,
   payeeAddress: string,
+  onProgress?: (step: 'creating' | 'approving' | 'depositing') => void,
 ): Promise<{ escrowId: string; depositTxHash: string }> {
   if (!ESCROW_ADDRESS) throw new Error('Escrow contract not deployed');
 
@@ -84,6 +85,7 @@ export async function createAndFundEscrow(
   const escrow = new ethers.Contract(ESCROW_ADDRESS, ESCROW_ABI, signer);
 
   // 1. Create escrow
+  onProgress?.('creating');
   const createTx = await escrow.createEscrow(tokenAddress, amount, payerAddress, payeeAddress);
   const createReceipt = await createTx.wait();
 
@@ -98,10 +100,12 @@ export async function createAndFundEscrow(
   const escrowId = createdEvent?.args?.escrowId?.toString() || '0';
 
   // 2. Approve escrow to spend tokens
+  onProgress?.('approving');
   const approveTx = await token.approve(ESCROW_ADDRESS, amount);
   await approveTx.wait();
 
   // 3. Deposit into escrow
+  onProgress?.('depositing');
   const depositTx = await escrow.deposit(BigInt(escrowId));
   const depositReceipt = await depositTx.wait();
 

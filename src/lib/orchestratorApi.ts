@@ -220,6 +220,32 @@ export const orchestratorApi = {
     });
   },
 
+  /** Get saved payment handles for the authenticated user */
+  async getPreferences(): Promise<{
+    preferences: {
+      userId?: string;
+      venmoHandle?: string;
+      cashappHandle?: string;
+      paypalHandle?: string;
+      zelleHandle?: string;
+    };
+  }> {
+    return apiFetch('/preferences');
+  },
+
+  /** Save (upsert) one or more payment handles for the authenticated user */
+  async savePreferences(data: {
+    venmoHandle?: string;
+    cashappHandle?: string;
+    paypalHandle?: string;
+    zelleHandle?: string;
+  }): Promise<void> {
+    await apiFetch('/preferences', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
   /** Admin: verify proof and release escrow → COMPLETE */
   async verifyAndRelease(intentId: string): Promise<{
     intent: OrchestratorIntent;

@@ -17,7 +17,7 @@ export default function SellReview() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, getWalletSigner } = useAuth();
-  const [confirmStep, setConfirmStep] = useState<'idle' | 'transitioning' | 'minting' | 'signing' | 'reporting'>('idle');
+  const [confirmStep, setConfirmStep] = useState<'idle' | 'transitioning' | 'minting' | 'creating_escrow' | 'approving' | 'depositing' | 'reporting'>('idle');
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const confirming = confirmStep !== 'idle';
   
@@ -45,26 +45,29 @@ export default function SellReview() {
         setConfirmStep('transitioning');
         await orchestratorApi.transitionIntent(intentId, 'FUNDING');
 
-        // Step 2: get signer from connected Privy wallet (triggers wallet popup)
-        setConfirmStep('signing');
+        // Step 2: get signer (resolves wallet, switches to Fuji — no popup yet)
         const signer = await getWalletSigner();
         const signerAddress = await signer.getAddress();
-
-        // Step 3: mint test USDC to user wallet (testnet only — open mint)
-        setConfirmStep('minting');
         const amount = ethers.parseUnits(sellAmount, 6);
+        const payee = deliveryAddress || signerAddress;
+
+        // Step 3: mint test USDC → wallet popup #1
+        setConfirmStep('minting');
         await mintTestUsdc(signer, signerAddress, amount);
 
-        // Step 4: user wallet signs createEscrow + approve + deposit
-        // payer = user (seller locks USDC), payee = arbiter (who receives on release)
-        setConfirmStep('signing');
-        const payee = deliveryAddress || signerAddress;
+        // Step 4: createEscrow → wallet popup #2
+        setConfirmStep('creating_escrow');
         const result = await createAndFundEscrow(
           signer,
           MOCK_USDC_ADDRESS,
           amount,
           signerAddress,
           payee,
+          (step) => {
+            if (step === 'creating') setConfirmStep('creating_escrow');
+            if (step === 'approving') setConfirmStep('approving');
+            if (step === 'depositing') setConfirmStep('depositing');
+          },
         );
         escrowId = result.escrowId;
         depositTxHash = result.depositTxHash;
@@ -164,7 +167,7 @@ export default function SellReview() {
         <div className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-xl">
           <Wallet className="h-4 w-4 text-primary flex-shrink-0" />
           <p className="text-xs text-muted-foreground">
-            <span className="text-foreground font-medium">Your wallet will sign</span> to lock {sellAmount} MockUSDC into escrow on Avalanche Fuji testnet. You'll see wallet confirmation popups.
+            <span className="text-foreground font-medium">Your wallet will show 4 popups</span> — mint MockUSDC, create escrow, approve spend, deposit. All required to lock {sellAmount} MockUSDC on Fuji testnet. Approve each in order.
           </p>
         </div>
       </div>
@@ -183,9 +186,11 @@ export default function SellReview() {
               <KineticDotsLoader dots={3} className="py-0" />
               <span className="text-xs text-muted-foreground">
                 {confirmStep === 'transitioning' && 'Confirming intent…'}
-                {confirmStep === 'minting' && 'Minting test USDC to your wallet…'}
-                {confirmStep === 'signing' && 'Approve wallet transaction…'}
-                {confirmStep === 'reporting' && 'Recording escrow on-chain…'}
+                {confirmStep === 'minting' && 'Wallet popup 1/4 — Minting test MockUSDC…'}
+                {confirmStep === 'creating_escrow' && 'Wallet popup 2/4 — Creating escrow…'}
+                {confirmStep === 'approving' && 'Wallet popup 3/4 — Approving MockUSDC spend…'}
+                {confirmStep === 'depositing' && 'Wallet popup 4/4 — Depositing into escrow…'}
+                {confirmStep === 'reporting' && 'Recording on-chain…'}
               </span>
             </div>
           )}

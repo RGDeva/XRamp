@@ -93,8 +93,8 @@ export default {
     let userEmail: string | null = null;
     let userWallet: string | null = null;
 
-    // All /intents routes require auth
-    if (url.pathname.startsWith('/intents')) {
+    // All /intents and /preferences routes require auth
+    if (url.pathname.startsWith('/intents') || url.pathname.startsWith('/preferences')) {
       const authResult = await verifyAuth(request, env);
       if (!authResult.ok) {
         return cors(err(authResult.error || 'Unauthorized', 401), origin);
@@ -143,6 +143,39 @@ export default {
         'SELECT * FROM intents WHERE userId = ? ORDER BY updatedAt DESC LIMIT 100'
       ).bind(userId).all();
       return cors(json({ intents: rows.results }), origin);
+    }
+
+    // ── GET /preferences ─────────────────────────────────────────────────
+    if (url.pathname === '/preferences' && request.method === 'GET') {
+      const row = await env.DB.prepare(
+        'SELECT * FROM user_preferences WHERE userId = ?'
+      ).bind(userId).first();
+      return cors(json({ preferences: row || { userId, venmoHandle: '', cashappHandle: '', paypalHandle: '', zelleHandle: '' } }), origin);
+    }
+
+    // ── PUT /preferences ──────────────────────────────────────────────────
+    if (url.pathname === '/preferences' && request.method === 'PUT') {
+      const body = await request.json<Record<string, string>>();
+      const now = iso();
+      await env.DB.prepare(
+        `INSERT INTO user_preferences (userId, venmoHandle, cashappHandle, paypalHandle, zelleHandle, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(userId) DO UPDATE SET
+           venmoHandle   = COALESCE(excluded.venmoHandle,   venmoHandle),
+           cashappHandle = COALESCE(excluded.cashappHandle, cashappHandle),
+           paypalHandle  = COALESCE(excluded.paypalHandle,  paypalHandle),
+           zelleHandle   = COALESCE(excluded.zelleHandle,   zelleHandle),
+           updatedAt     = excluded.updatedAt`
+      ).bind(
+        userId,
+        body.venmoHandle   ?? null,
+        body.cashappHandle ?? null,
+        body.paypalHandle  ?? null,
+        body.zelleHandle   ?? null,
+        now,
+      ).run();
+      const updated = await env.DB.prepare('SELECT * FROM user_preferences WHERE userId = ?').bind(userId).first();
+      return cors(json({ preferences: updated }), origin);
     }
 
     // ── Routes with :id ──────────────────────────────────────────────────
