@@ -154,7 +154,7 @@ export function CommandMode() {
       createdIntentId = created.id;
       push('info', `Intent created: ${created.id.slice(0, 12)}… [${created.state}]`);
     } catch {
-      push('info', '⚠ Orchestrator unreachable — running demo simulation');
+      push('info', '⚠ Orchestrator unreachable — intent not created');
     }
     await delay(300);
 
