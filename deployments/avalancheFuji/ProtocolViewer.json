@@ -1,0 +1,1165 @@
+{
+  "address": "0xb4FC066cC33aeA58448d5C7317fB67E9e1E0Ca20",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_escrow",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_orchestrator",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "escrowContract",
+      "outputs": [
+        {
+          "internalType": "contract IEscrow",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        }
+      ],
+      "name": "getAccountIntents",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "intentHash",
+              "type": "bytes32"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "to",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "escrow",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "depositId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "timestamp",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "paymentMethod",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "fiatCurrency",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "conversionRate",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "payeeId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "referrer",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "referrerFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "contract IPostIntentHook",
+                  "name": "postIntentHook",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ],
+              "internalType": "struct IOrchestrator.Intent",
+              "name": "intent",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "depositId",
+                  "type": "uint256"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "depositor",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "delegate",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "contract IERC20",
+                      "name": "token",
+                      "type": "address"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "uint256",
+                          "name": "min",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "max",
+                          "type": "uint256"
+                        }
+                      ],
+                      "internalType": "struct IEscrow.Range",
+                      "name": "intentAmountRange",
+                      "type": "tuple"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "acceptingIntents",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "remainingDeposits",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "outstandingIntentAmount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "intentGuardian",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "retainOnEmpty",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct IEscrow.Deposit",
+                  "name": "deposit",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "availableLiquidity",
+                  "type": "uint256"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "paymentMethod",
+                      "type": "bytes32"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "address",
+                          "name": "intentGatingService",
+                          "type": "address"
+                        },
+                        {
+                          "internalType": "bytes32",
+                          "name": "payeeDetails",
+                          "type": "bytes32"
+                        },
+                        {
+                          "internalType": "bytes",
+                          "name": "data",
+                          "type": "bytes"
+                        }
+                      ],
+                      "internalType": "struct IEscrow.DepositPaymentMethodData",
+                      "name": "verificationData",
+                      "type": "tuple"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "bytes32",
+                          "name": "code",
+                          "type": "bytes32"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "minConversionRate",
+                          "type": "uint256"
+                        }
+                      ],
+                      "internalType": "struct IEscrow.Currency[]",
+                      "name": "currencies",
+                      "type": "tuple[]"
+                    }
+                  ],
+                  "internalType": "struct IProtocolViewer.PaymentMethodDataView[]",
+                  "name": "paymentMethods",
+                  "type": "tuple[]"
+                },
+                {
+                  "internalType": "bytes32[]",
+                  "name": "intentHashes",
+                  "type": "bytes32[]"
+                }
+              ],
+              "internalType": "struct IProtocolViewer.DepositView",
+              "name": "deposit",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct IProtocolViewer.IntentView[]",
+          "name": "intentViews",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_depositId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getDeposit",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "depositId",
+              "type": "uint256"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "depositor",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "delegate",
+                  "type": "address"
+                },
+                {
+                  "internalType": "contract IERC20",
+                  "name": "token",
+                  "type": "address"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "min",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "max",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IEscrow.Range",
+                  "name": "intentAmountRange",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "acceptingIntents",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "remainingDeposits",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "outstandingIntentAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "intentGuardian",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "retainOnEmpty",
+                  "type": "bool"
+                }
+              ],
+              "internalType": "struct IEscrow.Deposit",
+              "name": "deposit",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "availableLiquidity",
+              "type": "uint256"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "paymentMethod",
+                  "type": "bytes32"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "intentGatingService",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "payeeDetails",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                    }
+                  ],
+                  "internalType": "struct IEscrow.DepositPaymentMethodData",
+                  "name": "verificationData",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "code",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minConversionRate",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IEscrow.Currency[]",
+                  "name": "currencies",
+                  "type": "tuple[]"
+                }
+              ],
+              "internalType": "struct IProtocolViewer.PaymentMethodDataView[]",
+              "name": "paymentMethods",
+              "type": "tuple[]"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "intentHashes",
+              "type": "bytes32[]"
+            }
+          ],
+          "internalType": "struct IProtocolViewer.DepositView",
+          "name": "depositView",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "_depositIds",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "getDepositFromIds",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "depositId",
+              "type": "uint256"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "depositor",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "delegate",
+                  "type": "address"
+                },
+                {
+                  "internalType": "contract IERC20",
+                  "name": "token",
+                  "type": "address"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "min",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "max",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IEscrow.Range",
+                  "name": "intentAmountRange",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "acceptingIntents",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "remainingDeposits",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "outstandingIntentAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "intentGuardian",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "retainOnEmpty",
+                  "type": "bool"
+                }
+              ],
+              "internalType": "struct IEscrow.Deposit",
+              "name": "deposit",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "availableLiquidity",
+              "type": "uint256"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "bytes32",
+                  "name": "paymentMethod",
+                  "type": "bytes32"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "intentGatingService",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "payeeDetails",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                    }
+                  ],
+                  "internalType": "struct IEscrow.DepositPaymentMethodData",
+                  "name": "verificationData",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "code",
+                      "type": "bytes32"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "minConversionRate",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct IEscrow.Currency[]",
+                  "name": "currencies",
+                  "type": "tuple[]"
+                }
+              ],
+              "internalType": "struct IProtocolViewer.PaymentMethodDataView[]",
+              "name": "paymentMethods",
+              "type": "tuple[]"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "intentHashes",
+              "type": "bytes32[]"
+            }
+          ],
+          "internalType": "struct IProtocolViewer.DepositView[]",
+          "name": "depositArray",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "_intentHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getIntent",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "intentHash",
+              "type": "bytes32"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "to",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "escrow",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "depositId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "timestamp",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "paymentMethod",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "fiatCurrency",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "conversionRate",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "payeeId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "referrer",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "referrerFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "contract IPostIntentHook",
+                  "name": "postIntentHook",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ],
+              "internalType": "struct IOrchestrator.Intent",
+              "name": "intent",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "depositId",
+                  "type": "uint256"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "depositor",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "delegate",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "contract IERC20",
+                      "name": "token",
+                      "type": "address"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "uint256",
+                          "name": "min",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "max",
+                          "type": "uint256"
+                        }
+                      ],
+                      "internalType": "struct IEscrow.Range",
+                      "name": "intentAmountRange",
+                      "type": "tuple"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "acceptingIntents",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "remainingDeposits",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "outstandingIntentAmount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "intentGuardian",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "retainOnEmpty",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct IEscrow.Deposit",
+                  "name": "deposit",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "availableLiquidity",
+                  "type": "uint256"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "paymentMethod",
+                      "type": "bytes32"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "address",
+                          "name": "intentGatingService",
+                          "type": "address"
+                        },
+                        {
+                          "internalType": "bytes32",
+                          "name": "payeeDetails",
+                          "type": "bytes32"
+                        },
+                        {
+                          "internalType": "bytes",
+                          "name": "data",
+                          "type": "bytes"
+                        }
+                      ],
+                      "internalType": "struct IEscrow.DepositPaymentMethodData",
+                      "name": "verificationData",
+                      "type": "tuple"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "bytes32",
+                          "name": "code",
+                          "type": "bytes32"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "minConversionRate",
+                          "type": "uint256"
+                        }
+                      ],
+                      "internalType": "struct IEscrow.Currency[]",
+                      "name": "currencies",
+                      "type": "tuple[]"
+                    }
+                  ],
+                  "internalType": "struct IProtocolViewer.PaymentMethodDataView[]",
+                  "name": "paymentMethods",
+                  "type": "tuple[]"
+                },
+                {
+                  "internalType": "bytes32[]",
+                  "name": "intentHashes",
+                  "type": "bytes32[]"
+                }
+              ],
+              "internalType": "struct IProtocolViewer.DepositView",
+              "name": "deposit",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct IProtocolViewer.IntentView",
+          "name": "intentView",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "_intentHashes",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "getIntents",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "intentHash",
+              "type": "bytes32"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "to",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "escrow",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "depositId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "timestamp",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "paymentMethod",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "fiatCurrency",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "conversionRate",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "payeeId",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "address",
+                  "name": "referrer",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "referrerFee",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "contract IPostIntentHook",
+                  "name": "postIntentHook",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ],
+              "internalType": "struct IOrchestrator.Intent",
+              "name": "intent",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "depositId",
+                  "type": "uint256"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "depositor",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "delegate",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "contract IERC20",
+                      "name": "token",
+                      "type": "address"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "uint256",
+                          "name": "min",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "max",
+                          "type": "uint256"
+                        }
+                      ],
+                      "internalType": "struct IEscrow.Range",
+                      "name": "intentAmountRange",
+                      "type": "tuple"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "acceptingIntents",
+                      "type": "bool"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "remainingDeposits",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "outstandingIntentAmount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "intentGuardian",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "retainOnEmpty",
+                      "type": "bool"
+                    }
+                  ],
+                  "internalType": "struct IEscrow.Deposit",
+                  "name": "deposit",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "availableLiquidity",
+                  "type": "uint256"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "bytes32",
+                      "name": "paymentMethod",
+                      "type": "bytes32"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "address",
+                          "name": "intentGatingService",
+                          "type": "address"
+                        },
+                        {
+                          "internalType": "bytes32",
+                          "name": "payeeDetails",
+                          "type": "bytes32"
+                        },
+                        {
+                          "internalType": "bytes",
+                          "name": "data",
+                          "type": "bytes"
+                        }
+                      ],
+                      "internalType": "struct IEscrow.DepositPaymentMethodData",
+                      "name": "verificationData",
+                      "type": "tuple"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "bytes32",
+                          "name": "code",
+                          "type": "bytes32"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "minConversionRate",
+                          "type": "uint256"
+                        }
+                      ],
+                      "internalType": "struct IEscrow.Currency[]",
+                      "name": "currencies",
+                      "type": "tuple[]"
+                    }
+                  ],
+                  "internalType": "struct IProtocolViewer.PaymentMethodDataView[]",
+                  "name": "paymentMethods",
+                  "type": "tuple[]"
+                },
+                {
+                  "internalType": "bytes32[]",
+                  "name": "intentHashes",
+                  "type": "bytes32[]"
+                }
+              ],
+              "internalType": "struct IProtocolViewer.DepositView",
+              "name": "deposit",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct IProtocolViewer.IntentView[]",
+          "name": "intentArray",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "orchestrator",
+      "outputs": [
+        {
+          "internalType": "contract IOrchestrator",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x103db4b43333156c4e78a4816cd88af1f0c7bdb1dc5bbf0789f92cbfb7a9e82c",
+  "receipt": {
+    "to": null,
+    "from": "0x5a464110468193bf482CA17e3A1233A2cDde2CeE",
+    "contractAddress": "0xb4FC066cC33aeA58448d5C7317fB67E9e1E0Ca20",
+    "transactionIndex": 0,
+    "gasUsed": "1166267",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x8eea139b63fedf018a539f6ec642daa70d18674ef1d4abcbc3ae9e6a055962c9",
+    "transactionHash": "0x103db4b43333156c4e78a4816cd88af1f0c7bdb1dc5bbf0789f92cbfb7a9e82c",
+    "logs": [],
+    "blockNumber": 52466844,
+    "cumulativeGasUsed": "1166267",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x1f746fF86837f147DcE147D707d187477572413F",
+    "0xC3622240A7B4c1B828F1997f662264e002fE93Bf"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "9bb21bead5a3e99d95c24941f8e62f2c",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.18+commit.87f61d96\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_escrow\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_orchestrator\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"escrowContract\",\"outputs\":[{\"internalType\":\"contract IEscrow\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_account\",\"type\":\"address\"}],\"name\":\"getAccountIntents\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"intentHash\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"escrow\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"depositId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"paymentMethod\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"fiatCurrency\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"conversionRate\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"payeeId\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"referrer\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"referrerFee\",\"type\":\"uint256\"},{\"internalType\":\"contract IPostIntentHook\",\"name\":\"postIntentHook\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"struct IOrchestrator.Intent\",\"name\":\"intent\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"depositId\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"depositor\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"delegate\",\"type\":\"address\"},{\"internalType\":\"contract IERC20\",\"name\":\"token\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"min\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"max\",\"type\":\"uint256\"}],\"internalType\":\"struct IEscrow.Range\",\"name\":\"intentAmountRange\",\"type\":\"tuple\"},{\"internalType\":\"bool\",\"name\":\"acceptingIntents\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"remainingDeposits\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"outstandingIntentAmount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"intentGuardian\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"retainOnEmpty\",\"type\":\"bool\"}],\"internalType\":\"struct IEscrow.Deposit\",\"name\":\"deposit\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"availableLiquidity\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"paymentMethod\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"intentGatingService\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"payeeDetails\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"struct IEscrow.DepositPaymentMethodData\",\"name\":\"verificationData\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"code\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"minConversionRate\",\"type\":\"uint256\"}],\"internalType\":\"struct IEscrow.Currency[]\",\"name\":\"currencies\",\"type\":\"tuple[]\"}],\"internalType\":\"struct IProtocolViewer.PaymentMethodDataView[]\",\"name\":\"paymentMethods\",\"type\":\"tuple[]\"},{\"internalType\":\"bytes32[]\",\"name\":\"intentHashes\",\"type\":\"bytes32[]\"}],\"internalType\":\"struct IProtocolViewer.DepositView\",\"name\":\"deposit\",\"type\":\"tuple\"}],\"internalType\":\"struct IProtocolViewer.IntentView[]\",\"name\":\"intentViews\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_depositId\",\"type\":\"uint256\"}],\"name\":\"getDeposit\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"depositId\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"depositor\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"delegate\",\"type\":\"address\"},{\"internalType\":\"contract IERC20\",\"name\":\"token\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"min\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"max\",\"type\":\"uint256\"}],\"internalType\":\"struct IEscrow.Range\",\"name\":\"intentAmountRange\",\"type\":\"tuple\"},{\"internalType\":\"bool\",\"name\":\"acceptingIntents\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"remainingDeposits\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"outstandingIntentAmount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"intentGuardian\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"retainOnEmpty\",\"type\":\"bool\"}],\"internalType\":\"struct IEscrow.Deposit\",\"name\":\"deposit\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"availableLiquidity\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"paymentMethod\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"intentGatingService\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"payeeDetails\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"struct IEscrow.DepositPaymentMethodData\",\"name\":\"verificationData\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"code\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"minConversionRate\",\"type\":\"uint256\"}],\"internalType\":\"struct IEscrow.Currency[]\",\"name\":\"currencies\",\"type\":\"tuple[]\"}],\"internalType\":\"struct IProtocolViewer.PaymentMethodDataView[]\",\"name\":\"paymentMethods\",\"type\":\"tuple[]\"},{\"internalType\":\"bytes32[]\",\"name\":\"intentHashes\",\"type\":\"bytes32[]\"}],\"internalType\":\"struct IProtocolViewer.DepositView\",\"name\":\"depositView\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256[]\",\"name\":\"_depositIds\",\"type\":\"uint256[]\"}],\"name\":\"getDepositFromIds\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"depositId\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"depositor\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"delegate\",\"type\":\"address\"},{\"internalType\":\"contract IERC20\",\"name\":\"token\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"min\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"max\",\"type\":\"uint256\"}],\"internalType\":\"struct IEscrow.Range\",\"name\":\"intentAmountRange\",\"type\":\"tuple\"},{\"internalType\":\"bool\",\"name\":\"acceptingIntents\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"remainingDeposits\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"outstandingIntentAmount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"intentGuardian\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"retainOnEmpty\",\"type\":\"bool\"}],\"internalType\":\"struct IEscrow.Deposit\",\"name\":\"deposit\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"availableLiquidity\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"paymentMethod\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"intentGatingService\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"payeeDetails\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"struct IEscrow.DepositPaymentMethodData\",\"name\":\"verificationData\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"code\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"minConversionRate\",\"type\":\"uint256\"}],\"internalType\":\"struct IEscrow.Currency[]\",\"name\":\"currencies\",\"type\":\"tuple[]\"}],\"internalType\":\"struct IProtocolViewer.PaymentMethodDataView[]\",\"name\":\"paymentMethods\",\"type\":\"tuple[]\"},{\"internalType\":\"bytes32[]\",\"name\":\"intentHashes\",\"type\":\"bytes32[]\"}],\"internalType\":\"struct IProtocolViewer.DepositView[]\",\"name\":\"depositArray\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_intentHash\",\"type\":\"bytes32\"}],\"name\":\"getIntent\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"intentHash\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"escrow\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"depositId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"paymentMethod\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"fiatCurrency\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"conversionRate\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"payeeId\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"referrer\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"referrerFee\",\"type\":\"uint256\"},{\"internalType\":\"contract IPostIntentHook\",\"name\":\"postIntentHook\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"struct IOrchestrator.Intent\",\"name\":\"intent\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"depositId\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"depositor\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"delegate\",\"type\":\"address\"},{\"internalType\":\"contract IERC20\",\"name\":\"token\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"min\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"max\",\"type\":\"uint256\"}],\"internalType\":\"struct IEscrow.Range\",\"name\":\"intentAmountRange\",\"type\":\"tuple\"},{\"internalType\":\"bool\",\"name\":\"acceptingIntents\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"remainingDeposits\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"outstandingIntentAmount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"intentGuardian\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"retainOnEmpty\",\"type\":\"bool\"}],\"internalType\":\"struct IEscrow.Deposit\",\"name\":\"deposit\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"availableLiquidity\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"paymentMethod\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"intentGatingService\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"payeeDetails\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"struct IEscrow.DepositPaymentMethodData\",\"name\":\"verificationData\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"code\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"minConversionRate\",\"type\":\"uint256\"}],\"internalType\":\"struct IEscrow.Currency[]\",\"name\":\"currencies\",\"type\":\"tuple[]\"}],\"internalType\":\"struct IProtocolViewer.PaymentMethodDataView[]\",\"name\":\"paymentMethods\",\"type\":\"tuple[]\"},{\"internalType\":\"bytes32[]\",\"name\":\"intentHashes\",\"type\":\"bytes32[]\"}],\"internalType\":\"struct IProtocolViewer.DepositView\",\"name\":\"deposit\",\"type\":\"tuple\"}],\"internalType\":\"struct IProtocolViewer.IntentView\",\"name\":\"intentView\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"_intentHashes\",\"type\":\"bytes32[]\"}],\"name\":\"getIntents\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"intentHash\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"escrow\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"depositId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"paymentMethod\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"fiatCurrency\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"conversionRate\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"payeeId\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"referrer\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"referrerFee\",\"type\":\"uint256\"},{\"internalType\":\"contract IPostIntentHook\",\"name\":\"postIntentHook\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"struct IOrchestrator.Intent\",\"name\":\"intent\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"depositId\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"depositor\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"delegate\",\"type\":\"address\"},{\"internalType\":\"contract IERC20\",\"name\":\"token\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"min\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"max\",\"type\":\"uint256\"}],\"internalType\":\"struct IEscrow.Range\",\"name\":\"intentAmountRange\",\"type\":\"tuple\"},{\"internalType\":\"bool\",\"name\":\"acceptingIntents\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"remainingDeposits\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"outstandingIntentAmount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"intentGuardian\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"retainOnEmpty\",\"type\":\"bool\"}],\"internalType\":\"struct IEscrow.Deposit\",\"name\":\"deposit\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"availableLiquidity\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"paymentMethod\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"intentGatingService\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"payeeDetails\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"struct IEscrow.DepositPaymentMethodData\",\"name\":\"verificationData\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"code\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"minConversionRate\",\"type\":\"uint256\"}],\"internalType\":\"struct IEscrow.Currency[]\",\"name\":\"currencies\",\"type\":\"tuple[]\"}],\"internalType\":\"struct IProtocolViewer.PaymentMethodDataView[]\",\"name\":\"paymentMethods\",\"type\":\"tuple[]\"},{\"internalType\":\"bytes32[]\",\"name\":\"intentHashes\",\"type\":\"bytes32[]\"}],\"internalType\":\"struct IProtocolViewer.DepositView\",\"name\":\"deposit\",\"type\":\"tuple\"}],\"internalType\":\"struct IProtocolViewer.IntentView[]\",\"name\":\"intentArray\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"orchestrator\",\"outputs\":[{\"internalType\":\"contract IOrchestrator\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"getAccountIntents(address)\":{\"params\":{\"_account\":\"The account address.\"},\"returns\":{\"intentViews\":\"Array of IntentView structs.\"}},\"getDeposit(uint256)\":{\"params\":{\"_depositId\":\"The ID of the deposit.\"},\"returns\":{\"depositView\":\"The DepositView struct.\"}},\"getDepositFromIds(uint256[])\":{\"params\":{\"_depositIds\":\"Array of deposit IDs.\"},\"returns\":{\"depositArray\":\"Array of DepositView structs.\"}},\"getIntent(bytes32)\":{\"params\":{\"_intentHash\":\"The hash of the intent.\"},\"returns\":{\"intentView\":\"The IntentView struct.\"}},\"getIntents(bytes32[])\":{\"params\":{\"_intentHashes\":\"Array of intent hashes.\"},\"returns\":{\"intentArray\":\"Array of IntentView structs.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"getAccountIntents(address)\":{\"notice\":\"Gets the active intents for a specific account.\"},\"getDeposit(uint256)\":{\"notice\":\"Gets details for a single deposit.\"},\"getDepositFromIds(uint256[])\":{\"notice\":\"Gets deposit details for a list of deposit IDs.\"},\"getIntent(bytes32)\":{\"notice\":\"Gets details for a single intent.\"},\"getIntents(bytes32[])\":{\"notice\":\"Gets details for a list of intent hashes.\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/ProtocolViewer.sol\":\"ProtocolViewer\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[],\"viaIR\":true},\"sources\":{\"@openzeppelin/contracts/token/ERC20/IERC20.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v4.9.0) (token/ERC20/IERC20.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Interface of the ERC20 standard as defined in the EIP.\\n */\\ninterface IERC20 {\\n    /**\\n     * @dev Emitted when `value` tokens are moved from one account (`from`) to\\n     * another (`to`).\\n     *\\n     * Note that `value` may be zero.\\n     */\\n    event Transfer(address indexed from, address indexed to, uint256 value);\\n\\n    /**\\n     * @dev Emitted when the allowance of a `spender` for an `owner` is set by\\n     * a call to {approve}. `value` is the new allowance.\\n     */\\n    event Approval(address indexed owner, address indexed spender, uint256 value);\\n\\n    /**\\n     * @dev Returns the amount of tokens in existence.\\n     */\\n    function totalSupply() external view returns (uint256);\\n\\n    /**\\n     * @dev Returns the amount of tokens owned by `account`.\\n     */\\n    function balanceOf(address account) external view returns (uint256);\\n\\n    /**\\n     * @dev Moves `amount` tokens from the caller's account to `to`.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transfer(address to, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Returns the remaining number of tokens that `spender` will be\\n     * allowed to spend on behalf of `owner` through {transferFrom}. This is\\n     * zero by default.\\n     *\\n     * This value changes when {approve} or {transferFrom} are called.\\n     */\\n    function allowance(address owner, address spender) external view returns (uint256);\\n\\n    /**\\n     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * IMPORTANT: Beware that changing an allowance with this method brings the risk\\n     * that someone may use both the old and the new allowance by unfortunate\\n     * transaction ordering. One possible solution to mitigate this race\\n     * condition is to first reduce the spender's allowance to 0 and set the\\n     * desired value afterwards:\\n     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729\\n     *\\n     * Emits an {Approval} event.\\n     */\\n    function approve(address spender, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Moves `amount` tokens from `from` to `to` using the\\n     * allowance mechanism. `amount` is then deducted from the caller's\\n     * allowance.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transferFrom(address from, address to, uint256 amount) external returns (bool);\\n}\\n\",\"keccak256\":\"0x287b55befed2961a7eabd7d7b1b2839cbca8a5b80ef8dcbb25ed3d4c2002c305\",\"license\":\"MIT\"},\"contracts/ProtocolViewer.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.18;\\n\\nimport { IEscrow } from \\\"./interfaces/IEscrow.sol\\\";\\nimport { IProtocolViewer } from \\\"./interfaces/IProtocolViewer.sol\\\";\\nimport { IOrchestrator } from \\\"./interfaces/IOrchestrator.sol\\\";\\n\\ncontract ProtocolViewer is IProtocolViewer {\\n\\n    /* ============ State Variables ============ */\\n    IEscrow public immutable escrowContract;\\n    IOrchestrator public immutable orchestrator;\\n\\n    /* ============ Constructor ============ */\\n\\n    constructor(address _escrow, address _orchestrator) {\\n        require(_escrow != address(0), \\\"ProtocolViewer: invalid escrow\\\");\\n        require(_orchestrator != address(0), \\\"ProtocolViewer: invalid orchestrator\\\");\\n        escrowContract = IEscrow(_escrow);\\n        orchestrator = IOrchestrator(_orchestrator);\\n    }\\n\\n    /* ============ View Functions ============ */\\n\\n    /**\\n     * @notice Gets details for a single deposit.\\n     * @param _depositId The ID of the deposit.\\n     * @return depositView The DepositView struct.\\n     */\\n    function getDeposit(uint256 _depositId) public view returns (IProtocolViewer.DepositView memory depositView) {\\n        IEscrow.Deposit memory deposit = escrowContract.getDeposit(_depositId);\\n        ( , uint256 reclaimableAmount) = escrowContract.getExpiredIntents(_depositId);\\n        bytes32[] memory intentHashes = escrowContract.getDepositIntentHashes(_depositId);\\n\\n        bytes32[] memory paymentMethods = escrowContract.getDepositPaymentMethods(_depositId);\\n        PaymentMethodDataView[] memory paymentMethodViews = new PaymentMethodDataView[](paymentMethods.length);\\n        for (uint256 i = 0; i < paymentMethods.length; ++i) {\\n            bytes32 paymentMethod = paymentMethods[i];\\n            IEscrow.Currency[] memory currencies = new IEscrow.Currency[](escrowContract.getDepositCurrencies(_depositId, paymentMethod).length);\\n            for (uint256 j = 0; j < currencies.length; ++j) {\\n                bytes32 code = escrowContract.getDepositCurrencies(_depositId, paymentMethod)[j];\\n                currencies[j] = IEscrow.Currency({\\n                    code: code,\\n                    minConversionRate: escrowContract.getDepositCurrencyMinRate(_depositId, paymentMethod, code)\\n                });\\n            }\\n            paymentMethodViews[i] = PaymentMethodDataView({\\n                paymentMethod: paymentMethod,\\n                verificationData: escrowContract.getDepositPaymentMethodData(_depositId, paymentMethod),\\n                currencies: currencies\\n            });\\n        }\\n\\n        depositView = DepositView({\\n            depositId: _depositId,\\n            deposit: deposit,\\n            availableLiquidity: deposit.remainingDeposits + reclaimableAmount,\\n            paymentMethods: paymentMethodViews,\\n            intentHashes: intentHashes\\n        });\\n    }\\n\\n    /**\\n     * @notice Gets deposit details for a list of deposit IDs.\\n     * @param _depositIds Array of deposit IDs.\\n     * @return depositArray Array of DepositView structs.\\n     */\\n    function getDepositFromIds(\\n        uint256[] memory _depositIds\\n    ) external view override returns (IProtocolViewer.DepositView[] memory depositArray) {\\n        depositArray = new DepositView[](_depositIds.length);\\n\\n        for (uint256 i = 0; i < _depositIds.length; ++i) {\\n            uint256 depositId = _depositIds[i];\\n            depositArray[i] = getDeposit(depositId);\\n        }\\n    }\\n\\n    /**\\n     * @notice Gets details for a single intent.\\n     * @param _intentHash The hash of the intent.\\n     * @return intentView The IntentView struct.\\n     */\\n    function getIntent(bytes32 _intentHash) public view returns (IProtocolViewer.IntentView memory intentView) {\\n        IOrchestrator.Intent memory intent = orchestrator.getIntent(_intentHash);\\n        DepositView memory deposit = getDeposit(intent.depositId);\\n        intentView = IntentView({\\n            intentHash: _intentHash,\\n            intent: intent,\\n            deposit: deposit\\n        });\\n    }\\n\\n    /**\\n     * @notice Gets details for a list of intent hashes.\\n     * @param _intentHashes Array of intent hashes.\\n     * @return intentArray Array of IntentView structs.\\n     */\\n    function getIntents(bytes32[] calldata _intentHashes) external view returns (IProtocolViewer.IntentView[] memory intentArray) {\\n        intentArray = new IntentView[](_intentHashes.length);\\n\\n        for (uint256 i = 0; i < _intentHashes.length; ++i) {\\n            intentArray[i] = getIntent(_intentHashes[i]);\\n        }\\n    }\\n\\n    /**\\n     * @notice Gets the active intents for a specific account.\\n     * @param _account The account address.\\n     * @return intentViews Array of IntentView structs.\\n     */\\n    function getAccountIntents(address _account) external view returns (IProtocolViewer.IntentView[] memory intentViews) {\\n        bytes32[] memory intentHashes = orchestrator.getAccountIntents(_account);\\n        intentViews = new IntentView[](intentHashes.length);\\n        \\n        for (uint256 i = 0; i < intentHashes.length; ++i) {\\n            intentViews[i] = getIntent(intentHashes[i]);\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0xf4ae79ea55919bc651dfc6eddb791f4d7af9159f26de9e7184b0ce561d770774\",\"license\":\"MIT\"},\"contracts/interfaces/IEscrow.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity ^0.8.18;\\n\\nimport { IERC20 } from \\\"@openzeppelin/contracts/token/ERC20/IERC20.sol\\\";\\nimport { IPostIntentHook } from \\\"./IPostIntentHook.sol\\\";\\n\\ninterface IEscrow {\\n    \\n    /* ============ Structs ============ */\\n\\n    struct Intent {\\n        bytes32 intentHash;                        // Unique identifier for the intent\\n        uint256 amount;                            // Amount locked\\n        uint256 timestamp;                         // When this intent was created\\n        uint256 expiryTime;                        // When this intent expires\\n    }\\n\\n    struct Range {\\n        uint256 min;                                // Minimum value\\n        uint256 max;                                // Maximum value\\n    }\\n\\n    struct Deposit {\\n        address depositor;                          // Address of depositor\\n        address delegate;                           // Address that can manage this deposit (address(0) if no delegate)\\n        IERC20 token;                               // Address of deposit token\\n        Range intentAmountRange;                    // Range of take amount per intent\\n        // Deposit state\\n        bool acceptingIntents;                      // State: True if the deposit is accepting intents, False otherwise\\n        uint256 remainingDeposits;                  // State: Amount of liquidity immediately available to lock\\n        uint256 outstandingIntentAmount;            // State: Amount of outstanding intents (may include expired intents)\\n        // Intent guardian\\n        address intentGuardian;                     // Address that can extend intent expiry times (address(0) if no guardian)\\n        // Retention behavior\\n        bool retainOnEmpty;                         // If true, do not auto-close/sweep when empty; keep config for reuse\\n    }\\n\\n    struct Currency {\\n        bytes32 code;                               // Currency code (keccak256 hash of the currency code)\\n        uint256 minConversionRate;                  // Minimum rate of deposit token to fiat currency (in preciseUnits)\\n    }\\n\\n    struct DepositPaymentMethodData {\\n        address intentGatingService;                // Public key of gating service that will be used to verify intents\\n        bytes32 payeeDetails;                       // Payee details, has to be hash of payee details\\n        bytes data;                                 // Verification Data: Additional data used for payment verification; Can hold attester address\\n                                                    // in case of TLS proofs, domain key hash in case of zkEmail proofs, currency code etc.\\n    }\\n\\n    struct CreateDepositParams {\\n        IERC20 token;                                // The token to be deposited\\n        uint256 amount;                              // The amount of token to deposit\\n        Range intentAmountRange;                     // The max and min take amount for each intent\\n        bytes32[] paymentMethods;                    // The payment methods that deposit supports\\n        DepositPaymentMethodData[] paymentMethodData;// The payment verification data for each payment method that deposit supports\\n        Currency[][] currencies;                     // The currencies for each payment method that deposit supports\\n        address delegate;                            // Optional delegate address that can manage this deposit (address(0) for no delegate)\\n        address intentGuardian;                      // Optional intent guardian address that can extend intent expiry times (address(0) for no guardian)\\n        bool retainOnEmpty;                          // Opt-in: keep deposit and config when empty\\n    }\\n\\n    /* ============ Events ============ */\\n\\n    event DepositReceived(uint256 indexed depositId, address indexed depositor, IERC20 indexed token, uint256 amount, Range intentAmountRange, address delegate, address intentGuardian);\\n\\n    event DepositPaymentMethodAdded(uint256 indexed depositId, bytes32 indexed paymentMethod, bytes32 indexed payeeDetails, address intentGatingService);\\n    event DepositPaymentMethodActiveUpdated(uint256 indexed depositId, bytes32 indexed paymentMethod, bool active);\\n\\n    event DepositCurrencyAdded(uint256 indexed depositId, bytes32 indexed paymentMethod, bytes32 indexed currency, uint256 minConversionRate);\\n    event DepositMinConversionRateUpdated(uint256 indexed depositId, bytes32 indexed paymentMethod, bytes32 indexed currency, uint256 newMinConversionRate);\\n    \\n    event DepositFundsAdded(uint256 indexed depositId, address indexed depositor, uint256 amount);\\n    event DepositWithdrawn(uint256 indexed depositId, address indexed depositor, uint256 amount);\\n    event DepositClosed(uint256 depositId, address depositor);\\n    event DepositAcceptingIntentsUpdated(uint256 indexed depositId, bool acceptingIntents);\\n\\n    event DepositIntentAmountRangeUpdated(uint256 indexed depositId, Range intentAmountRange);\\n    event DepositRetainOnEmptyUpdated(uint256 indexed depositId, bool retainOnEmpty);\\n\\n    event DepositDelegateSet(uint256 indexed depositId, address indexed depositor, address indexed delegate);\\n    event DepositDelegateRemoved(uint256 indexed depositId, address indexed depositor);\\n\\n    event MinDepositAmountSet(uint256 minDepositAmount);\\n\\n    event OrchestratorUpdated(address indexed orchestrator);\\n    event PaymentVerifierRegistryUpdated(address indexed paymentVerifierRegistry);\\n\\n    event FundsLocked(uint256 indexed depositId, bytes32 indexed intentHash, uint256 amount, uint256 expiryTime);\\n    event FundsUnlocked(uint256 indexed depositId, bytes32 indexed intentHash, uint256 amount);\\n    event FundsUnlockedAndTransferred(\\n        uint256 indexed depositId, \\n        bytes32 indexed intentHash, \\n        uint256 unlockedAmount, \\n        uint256 transferredAmount, \\n        address to\\n    );\\n    event IntentExpiryExtended(uint256 indexed depositId, bytes32 indexed intentHash, uint256 newExpiryTime);\\n\\n    event DustRecipientUpdated(address indexed dustRecipient);\\n    event DustCollected(uint256 indexed depositId, uint256 dustAmount, address indexed dustRecipient);\\n    event DustThresholdUpdated(uint256 dustThreshold);\\n    event MaxIntentsPerDepositUpdated(uint256 maxIntentsPerDeposit);\\n    event IntentExpirationPeriodUpdated(uint256 intentExpirationPeriod);\\n\\n    /* ============ Standardized Custom Errors ============ */\\n    \\n    // Zero value errors\\n    error ZeroAddress();\\n    error ZeroValue();\\n    error ZeroMinValue();\\n    error ZeroConversionRate();\\n\\n    // Authorization errors\\n    error UnauthorizedCaller(address caller, address authorized);\\n    error UnauthorizedCallerOrDelegate(address caller, address owner, address delegate);\\n    error CannotDelegateToSelf(address depositor);\\n\\n    // Range and amount errors\\n    error InvalidRange(uint256 min, uint256 max);\\n    error AmountBelowMin(uint256 amount, uint256 min);\\n    error AmountAboveMax(uint256 amount, uint256 max);\\n    error AmountExceedsAvailable(uint256 requested, uint256 available);\\n\\n    // Not found errors\\n    error DepositNotFound(uint256 depositId);\\n    error IntentNotFound(bytes32 intentHash);\\n    error PaymentMethodNotActive(uint256 depositId, bytes32 paymentMethod);\\n    error PaymentMethodNotListed(uint256 depositId, bytes32 paymentMethod);\\n    error CurrencyNotFound(bytes32 paymentMethod, bytes32 currency);\\n    error DelegateNotFound(uint256 depositId);\\n\\n    // Already exists errors\\n    error PaymentMethodAlreadyExists(uint256 depositId, bytes32 paymentMethod);\\n    error CurrencyAlreadyExists(bytes32 paymentMethod, bytes32 currency);\\n    error IntentAlreadyExists(uint256 depositId, bytes32 intentHash);\\n\\n    // State errors\\n    error DepositNotAcceptingIntents(uint256 depositId);\\n    error DepositAlreadyInState(uint256 depositId, bool currentState);\\n    error InsufficientDepositLiquidity(uint256 depositId, uint256 available, uint256 required);\\n    error MaxIntentsExceeded(uint256 depositId, uint256 current, uint256 max);\\n\\n    // Validation errors\\n    error EmptyPayeeDetails();\\n    error ArrayLengthMismatch(uint256 length1, uint256 length2);\\n\\n    // Payment method errors\\n    error PaymentMethodNotWhitelisted(bytes32 paymentMethod);\\n    error CurrencyNotSupported(bytes32 paymentMethod, bytes32 currency);\\n\\n    \\n    /* ============ External Functions for Orchestrator ============ */\\n\\n    function lockFunds(uint256 _depositId, bytes32 _intentHash, uint256 _amount) external;\\n    function unlockFunds(uint256 _depositId, bytes32 _intentHash) external;\\n    function unlockAndTransferFunds(uint256 _depositId, bytes32 _intentHash, uint256 _transferAmount, address _to) external;\\n    function extendIntentExpiry(uint256 _depositId, bytes32 _intentHash, uint256 _additionalTime) external;\\n\\n    /* ============ View Functions ============ */\\n\\n    function getDeposit(uint256 _depositId) external view returns (Deposit memory);\\n    function getDepositIntent(uint256 _depositId, bytes32 _intentHash) external view returns (Intent memory);\\n    function getDepositPaymentMethods(uint256 _depositId) external view returns (bytes32[] memory);\\n    function getDepositCurrencies(uint256 _depositId, bytes32 _paymentMethod) external view returns (bytes32[] memory);\\n    function getDepositCurrencyMinRate(uint256 _depositId, bytes32 _paymentMethod, bytes32 _currencyCode) external view returns (uint256);\\n    function getDepositPaymentMethodData(uint256 _depositId, bytes32 _paymentMethod) external view returns (DepositPaymentMethodData memory);\\n    function getDepositPaymentMethodActive(uint256 _depositId, bytes32 _paymentMethod) external view returns (bool);\\n    function getDepositGatingService(uint256 _depositId, bytes32 _paymentMethod) external view returns (address);\\n    function getDepositIntentHashes(uint256 _depositId) external view returns (bytes32[] memory);\\n    function getExpiredIntents(uint256 _depositId) external view returns (bytes32[] memory expiredIntents, uint256 reclaimableAmount);\\n}\\n\",\"keccak256\":\"0x02077e75865a2db8887a3d4b3f4c0c398c0d2589f05506f489fb8189b223d60c\",\"license\":\"MIT\"},\"contracts/interfaces/IOrchestrator.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity ^0.8.18;\\n\\nimport { IERC20 } from \\\"@openzeppelin/contracts/token/ERC20/IERC20.sol\\\";\\nimport { IPostIntentHook } from \\\"./IPostIntentHook.sol\\\";\\n\\ninterface IOrchestrator {\\n    \\n    /* ============ Structs ============ */\\n\\n    struct Intent {\\n        address owner;                              // Address of the intent owner  \\n        address to;                                 // Address to forward funds to (can be same as owner)\\n        address escrow;                             // Address of the escrow contract holding the deposit\\n        uint256 depositId;                          // ID of the deposit the intent is associated with\\n        uint256 amount;                             // Amount of the deposit.token the owner wants to take\\n        uint256 timestamp;                          // Timestamp of the intent\\n        bytes32 paymentMethod;                      // The payment method to be used for the offchain payment\\n        bytes32 fiatCurrency;                       // Currency code that the owner is paying in offchain (keccak256 hash of the currency code)\\n        uint256 conversionRate;                     // Conversion rate of deposit token to fiat currency at the time of intent\\n        bytes32 payeeId;                            // Hashed payee identifier to whom the owner will pay offchain\\n        address referrer;                           // Address of the referrer who brought this intent (if any)\\n        uint256 referrerFee;                        // Fee to be paid to the referrer in preciseUnits (1e16 = 1%)\\n        IPostIntentHook postIntentHook;             // Address of the post-intent hook that will execute any post-intent actions\\n        bytes data;                                 // Additional data to be passed to the post-intent hook contract\\n    }\\n\\n    struct SignalIntentParams {\\n        address escrow;                             // The escrow contract where the deposit is held\\n        uint256 depositId;                          // The ID of the deposit the taker intends to use\\n        uint256 amount;                             // The amount of deposit.token the user wants to take\\n        address to;                                 // Address to forward funds to\\n        bytes32 paymentMethod;                      // The payment method to be used for the offchain payment\\n        bytes32 fiatCurrency;                       // The currency code for offchain payment\\n        uint256 conversionRate;                     // The conversion rate agreed offchain\\n        address referrer;                           // Address of the referrer (address(0) if no referrer)\\n        uint256 referrerFee;                        // Fee to be paid to the referrer\\n        bytes gatingServiceSignature;               // Signature from the deposit's gating service\\n        uint256 signatureExpiration;                // Timestamp when the gating service signature expires\\n        IPostIntentHook postIntentHook;             // Optional post-intent hook (address(0) for no hook)\\n        bytes data;                                 // Additional data for the intent\\n    }\\n\\n    struct FulfillIntentParams {\\n        bytes paymentProof;                         // Payment proof. Can be Groth16 Proof, TLSNotary proof, TLSProxy proof, attestation etc.\\n        bytes32 intentHash;                         // Identifier of intent being fulfilled\\n        bytes verificationData;                     // Additional data for payment verifier\\n        bytes postIntentHookData;                   // Additional data for post intent hook\\n    }\\n\\n    /* ============ Events ============ */\\n\\n    event IntentSignaled(\\n        bytes32 indexed intentHash, \\n        address indexed escrow,\\n        uint256 indexed depositId, \\n        bytes32 paymentMethod, \\n        address owner, \\n        address to, \\n        uint256 amount, \\n        bytes32 fiatCurrency, \\n        uint256 conversionRate, \\n        uint256 timestamp\\n    );\\n\\n    event IntentPruned(\\n        bytes32 indexed intentHash\\n    );\\n\\n    event IntentFulfilled(\\n        bytes32 indexed intentHash,\\n        address indexed fundsTransferredTo,   // Address that funds were transferred to; can be intent.to or postIntentHook address\\n        uint256 amount,\\n        bool isManualRelease\\n    );\\n\\n    event AllowMultipleIntentsUpdated(bool allowMultiple);\\n\\n    event PaymentVerifierRegistryUpdated(address indexed paymentVerifierRegistry);\\n    event PostIntentHookRegistryUpdated(address indexed postIntentHookRegistry);\\n    event RelayerRegistryUpdated(address indexed relayerRegistry);\\n    event EscrowRegistryUpdated(address indexed escrowRegistry);\\n\\n    event ProtocolFeeUpdated(uint256 protocolFee);\\n    event ProtocolFeeRecipientUpdated(address indexed protocolFeeRecipient);\\n    event PartialManualReleaseDelayUpdated(uint256 partialManualReleaseDelay);\\n\\n    /* ============ Standardized Custom Errors ============ */\\n    \\n    // Zero value errors\\n    error ZeroAddress();\\n    error ZeroValue();\\n    \\n    // Authorization errors\\n    error UnauthorizedEscrowCaller(address caller);\\n    error UnauthorizedCaller(address caller, address authorized);\\n    \\n    // Not found errors\\n    error IntentNotFound(bytes32 intentHash);\\n    error PaymentMethodDoesNotExist(bytes32 paymentMethod);\\n    error PaymentMethodNotSupported(bytes32 paymentMethod);\\n    error CurrencyNotSupported(bytes32 paymentMethod, bytes32 currency);\\n    \\n    // Whitelist errors\\n    error PaymentMethodNotWhitelisted(bytes32 paymentMethod);\\n    error PostIntentHookNotWhitelisted(address hook);\\n    error EscrowNotWhitelisted(address escrow);\\n    \\n    // Amount and fee errors\\n    error AmountBelowMin(uint256 amount, uint256 min);\\n    error AmountAboveMax(uint256 amount, uint256 max);\\n    error AmountExceedsLimit(uint256 amount, uint256 limit);\\n    error FeeExceedsMaximum(uint256 fee, uint256 maximum);\\n    error RateBelowMinimum(uint256 rate, uint256 minRate);\\n    \\n    // Validation errors\\n    error AccountHasActiveIntent(address account, bytes32 existingIntent);\\n    error InvalidReferrerFeeConfiguration();\\n    error InvalidSignature();\\n    error SignatureExpired(uint256 expiration, uint256 currentTime);\\n    error PartialReleaseNotAllowedYet(uint256 currentTime, uint256 allowedTime);\\n\\n    // Verification errors\\n    error PaymentVerificationFailed();\\n    error HashMismatch(bytes32 expected, bytes32 actual);\\n     \\n    // Transfer errors\\n    error TransferFailed(address recipient, uint256 amount);\\n    error EscrowLockFailed();\\n\\n    /* ============ View Functions ============ */\\n\\n    function getIntent(bytes32 intentHash) external view returns (Intent memory);\\n    function getAccountIntents(address account) external view returns (bytes32[] memory);\\n    \\n    /* ============ External Functions for Users ============ */\\n\\n    function signalIntent(SignalIntentParams calldata params) external;\\n\\n    function cancelIntent(bytes32 intentHash) external;\\n\\n    function fulfillIntent(FulfillIntentParams calldata params) external;\\n\\n    function releaseFundsToPayer(bytes32 intentHash) external;\\n\\n    /* ============ External Functions for Escrow ============ */\\n\\n    function pruneIntents(bytes32[] calldata intentIds) external;\\n}\",\"keccak256\":\"0xcf8db7a4c1481049dbdc2516f47cc0a4ea3a6e71093ee7c637a51294096accbf\",\"license\":\"MIT\"},\"contracts/interfaces/IPostIntentHook.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity ^0.8.18;\\n\\nimport { IOrchestrator } from \\\"./IOrchestrator.sol\\\";\\n\\n/**\\n * @title IPostIntentHook\\n * @notice Interface for post-intent hooks\\n */\\ninterface IPostIntentHook {\\n\\n    /**\\n     * @notice Post-intent hook\\n     * @param _intent The intent data structure containing all intent information\\n     * @param _fulfillIntentData The data passed to fulfillIntent\\n     */\\n    function execute(\\n        IOrchestrator.Intent memory _intent,\\n        uint256 _amountNetFees,\\n        bytes calldata _fulfillIntentData\\n    ) external;\\n}\\n\",\"keccak256\":\"0x72ae0d60c98f89eb2363f455445466c1dfaddfb338a63d65d3eb8469cbd9484d\",\"license\":\"MIT\"},\"contracts/interfaces/IProtocolViewer.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity ^0.8.18;\\n\\nimport { IEscrow } from \\\"./IEscrow.sol\\\";\\nimport { IOrchestrator } from \\\"./IOrchestrator.sol\\\";\\n\\ninterface IProtocolViewer {\\n\\n    /* ============ Structs ============ */\\n\\n    struct PaymentMethodDataView {\\n        bytes32 paymentMethod;\\n        IEscrow.DepositPaymentMethodData verificationData;\\n        IEscrow.Currency[] currencies;\\n    }\\n\\n    struct DepositView {\\n        uint256 depositId;\\n        IEscrow.Deposit deposit;\\n        uint256 availableLiquidity;                 // Amount of liquidity available to signal intents (net of expired intents)\\n        PaymentMethodDataView[] paymentMethods;\\n        bytes32[] intentHashes;\\n    }\\n\\n    struct IntentView {\\n        bytes32 intentHash;\\n        IOrchestrator.Intent intent;\\n        DepositView deposit;\\n    }\\n\\n    /* ============ Functions ============ */\\n\\n    function getDepositFromIds(\\n        uint256[] memory _depositIds\\n    ) external view returns (DepositView[] memory);\\n\\n    function getAccountIntents(\\n        address _account\\n    ) external view returns (IntentView[] memory intentViews);\\n}\\n\",\"keccak256\":\"0xfee290b4bf44ab74fdb3bed836947897d66eccbed6144949858eaee4ebac61ff\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x60c03461016f57601f6115b038819003918201601f19168301916001600160401b0383118484101761017457808492604094855283398101031261016f57610052602061004b8361018a565b920161018a565b6001600160a01b039182169190821561012a57169081156100d95760805260a052604051611411908161019f823960805181818160bf01528181610a8c01528181610add01528181610b2d01528181610b7d01528181610c2501528181610cba01528181610d250152610e15015260a0518181816101b3015281816103c4015261120e0152f35b60405162461bcd60e51b8152602060048201526024808201527f50726f746f636f6c5669657765723a20696e76616c6964206f7263686573747260448201526330ba37b960e11b6064820152608490fd5b60405162461bcd60e51b815260206004820152601e60248201527f50726f746f636f6c5669657765723a20696e76616c696420657363726f7700006044820152606490fd5b600080fd5b634e487b7160e01b600052604160045260246000fd5b51906001600160a01b038216820361016f5756fe608060408181526004918236101561001657600080fd5b600090813560e01c90816356510510146103815750806371a28f69146102155780639f9fb968146101e2578063b74795d91461019e578063ba7ae4af146100f2578063e42a96e7146100aa5763f13c46aa1461007157600080fd5b346100a75760203660031901126100a757506100906100a392356111de565b905191829160208352602083019061067c565b0390f35b80fd5b5090346100ee57816003193601126100ee57517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b5080fd5b5090346100ee5760203660031901126100ee578235926001600160401b039081851161019a573660238601121561019a57840135908111610196576024936005368684831b84010111610192576101488361138b565b945b83811061015e578451806100a3888261075e565b806101728861018d93851b860101356111de565b61017c82896109e1565b5261018781886109e1565b506109bc565b61014a565b8480fd5b8280fd5b8380fd5b5090346100ee57816003193601126100ee57517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b50346100a75760203660031901126100a757506102026100a39235610a5c565b90519182916020835260208301906104bc565b5090346100ee5760209081600319360112610196578335936001600160401b03851161019a573660238601121561019a578401359361025385610880565b946102608351968761085f565b80865260248487019160051b8301019136831161037d576024859101915b83831061036d575050505083519161029583610880565b926102a28351948561085f565b8084526102b1601f1991610880565b0181855b82811061035757505050835b85518110156102fb57806102e16102db6102f693896109e1565b51610a5c565b6102eb82876109e1565b5261018781866109e1565b6102c1565b50828483519280840190808552835180925280868601968360051b870101940192955b82871061032b5785850386f35b909192938280610347600193603f198a820301865288516104bc565b960192019601959291909261031e565b61035f610897565b8282880101520182906102b5565b823581529181019185910161027e565b8580fd5b90508334610196576020366003190112610196576001600160a01b03908035828116919082900361019257630565105160e41b84528301528290829060249082907f0000000000000000000000000000000000000000000000000000000000000000165afa90811561046a578291610448575b506103ff815161138b565b915b815181101561043b578061042161041b61043693856109e1565b516111de565b61042b82866109e1565b5261018781856109e1565b610401565b8351806100a3858261075e565b61046491503d8084833e61045c818361085f565b810190610997565b836103f4565b83513d84823e3d90fd5b60005b8381106104875750506000910152565b8181015183820152602001610477565b906020916104b081518092818552858086019101610474565b601f01601f1916010190565b6101c0808301825184526020928381015160018060a01b039283825116868801528386830151166040908189015284818401511690606091828a0152818401519588875197608098898d015201519160a092838c01528a8887015115159660c097888301528481015160e083015287810151610100809301528c6101208560e084015116910152015115156101408c0152808701516101608c015283870151986101808c015288518095526101e0928a848d01948d8860051b01019a01966000955b8d8888106105cd57505050505050505050500151926101a081830391015281808451928381520193019160005b8281106105b9575050505090565b8351855293810193928101926001016105ab565b9c8b858b9f839f9495969780999a9b9c9d61061c926101df19908803018d52519384518752858501519088878901528c8251168989015286820151908801520151868987015287860190610497565b91015192878183039101528180845192838152019301906000905b8881831061065b57509e9f939e50505090810198976001019601949392919061057e565b839585600194969395518051835201518382015201940192018e9291610637565b61075b9181518152604061074a60208401516060602085015260018060a01b0380825116606086015280602083015116608086015280848301511660a0860152606082015160c0860152608082015160e086015260a082015191610100928387015260c08101519161012092838801528060e08301519461014095868a01528301519361016094858a01528301519461018095868a015283015116926101a09384890152820151936101c09485890152820151166101e0870152015190610200850152610220840190610497565b9201519060408184039101526104bc565b90565b602080820190808352835180925260408301928160408460051b8301019501936000915b8483106107925750505050505090565b90919293949584806107b0600193603f198682030187528a5161067c565b9801930193019194939290610782565b604081019081106001600160401b038211176107db57604052565b634e487b7160e01b600052604160045260246000fd5b60a081019081106001600160401b038211176107db57604052565b61012081019081106001600160401b038211176107db57604052565b606081019081106001600160401b038211176107db57604052565b6101c081019081106001600160401b038211176107db57604052565b90601f801991011681019081106001600160401b038211176107db57604052565b6001600160401b0381116107db5760051b60200190565b604051906108a4826107f1565b606060808360008082526040516108ba8161080c565b8181528160208201528160408201526040516108d5816107c0565b8281528260208201528582015281848201528160a08201528160c08201528160e0820152816101008201526020830152604082015282808201520152565b51906001600160a01b038216820361092757565b600080fd5b5190811515820361092757565b81601f820112156109275780519161095083610880565b9261095e604051948561085f565b808452602092838086019260051b820101928311610927578301905b828210610988575050505090565b8151815290830190830161097a565b906020828203126109275781516001600160401b0381116109275761075b9201610939565b60001981146109cb5760010190565b634e487b7160e01b600052601160045260246000fd5b80518210156109f55760209160051b010190565b634e487b7160e01b600052603260045260246000fd5b81601f820112156109275780516001600160401b0381116107db5760405192610a3e601f8301601f19166020018561085f565b818452602082840101116109275761075b9160208085019101610474565b610a64610897565b506040516313f3f72d60e31b815260048101829052906001600160a01b0361014080846024817f000000000000000000000000000000000000000000000000000000000000000086165afa938415610dc55760009461106f575b50506040516360e70e6f60e11b815260048101839052936000856024817f000000000000000000000000000000000000000000000000000000000000000086165afa948515610dc557600095611026575b5060405163345cb23760e11b815260048101849052906000826024817f000000000000000000000000000000000000000000000000000000000000000087165afa918215610dc55760009261100b575b506040516373a19db760e11b815260048101859052916000836024817f000000000000000000000000000000000000000000000000000000000000000088165afa928315610dc557600093610ff0575b5095829591925191610bc083610880565b92610bce604051948561085f565b808452610bdd601f1991610880565b0160005b818110610f9a5750506000965b8051881015610f5c57610c0188826109e1565b51946040516356c02a4160e11b81528860048201528660248201526000816044818b7f0000000000000000000000000000000000000000000000000000000000000000165afa908115610dc557600091610f43575b505199610c628b610880565b9a610c706040519c8d61085f565b808c52610c7f601f1991610880565b0160005b818110610f1e57505060005b8b51811015610dea576040516356c02a4160e11b81528a60048201528860248201526000816044818d7f0000000000000000000000000000000000000000000000000000000000000000165afa8015610dc55760208a6064610cff8f948f96908891600091610dd1575b506109e1565b5193604051958693849263106c002d60e11b8452600484015260248301528560448301527f0000000000000000000000000000000000000000000000000000000000000000165afa8015610dc5578e92600091610d8c575b5092809261018792610d879560405191610d70836107c0565b82526020820152610d8183836109e1565b526109e1565b610c8f565b9192506020823d602011610dbd575b81610da86020938361085f565b810103126100a75750518d9190610d87610d57565b3d9150610d9b565b6040513d6000823e3d90fd5b610de4913d8091833e61045c818361085f565b38610cf9565b5093929891959094996040516317192c2960e01b81528960048201528260248201526000816044818c7f0000000000000000000000000000000000000000000000000000000000000000165afa908115610dc557600091610e87575b5090610e7c93929160405192610e5b84610828565b835260208301526040820152610e71828c6109e1565b52610187818b6109e1565b969091979293610bee565b3d918281833e610e97838361085f565b602092838382810103126100ee578251906001600160401b03928383116100a757606083860183870103126100a75760405195610ed387610828565b610ede848701610913565b875280848701015190870152604083860101519384116100a75750610e7c9796959493610f1093918101920101610a0b565b604082015290919293610e46565b6020908d60405190610f2f826107c0565b600080835284830152820183015201610c83565b610f56913d8091833e61045c818361085f565b38610c56565b50919350919593945060a08101519182018092116109cb5760405194610f81866107f1565b8552602085015260408401526060830152608082015290565b60209060409a94939996959a51610fb081610828565b60008152604051610fc081610828565b600081528390600082820152606090816040820152828401526040830152828d0101520198939497919298610be1565b61100491933d8091833e61045c818361085f565b9138610baf565b61101f91923d8091833e61045c818361085f565b9038610b5f565b90943d8082843e611037818461085f565b8201906040838303126100a7578251906001600160401b0382116100a7575082916110659160209401610939565b5001519338610b0f565b90919381833d851161114c575b611086818361085f565b8101039283126100a7576040519261109d8461080c565b6110a683610913565b84526110b460208401610913565b602085015260408301518681168103610196579060409182860152605f1901126100a757506040516110e5816107c0565b6060820151815260808201516020820152606083015261110760a0820161092c565b608083015260c081015160a083015260e081015160c083015261114061012061010092611135848201610913565b60e08601520161092c565b90820152913880610abe565b503d61107c565b6040519061116082610828565b8160008082526040519061117382610843565b8082528060208301528060408301528060608301528060808301528060a08301528060c08301528060e08301528061010083015280610120830152806101408301528061016083015261018082015260606101a0820152602082015260406111d9610897565b910152565b6111e6611153565b506040805163789e235560e11b815260048101839052906001600160a01b03600080846024817f000000000000000000000000000000000000000000000000000000000000000086165afa93841561137f578194611269575b50505061124f6060830151610a5c565b9181519361125c85610828565b8452602084015282015290565b90919293503d8083833e61127d818361085f565b8101906020818303126101965780516001600160401b039182821161019257016101c08184031261019a578551946112b486610843565b6112bd82610913565b86526112cb60208301610913565b60208701526112db878301610913565b87870152606082015160608701526080820151608087015260a082015160a087015260c082015160c087015260e082015160e087015261010080830151908701526101208083015190870152610140611335818401610913565b90870152610160808301519087015261018080830151918216820361037d578601526101a093848201519283116100a75750611372929101610a0b565b908201529038808061123f565b508251903d90823e3d90fd5b9061139582610880565b6113a2604051918261085f565b82815280926113b3601f1991610880565b019060005b8281106113c457505050565b6020906113cf611153565b828285010152016113b856fea2646970667358221220c776f68813840a42c19d7b5f7366093e1d3fd8578d66a1f7c7b57fd890b5028664736f6c63430008120033",
+  "deployedBytecode": "0x608060408181526004918236101561001657600080fd5b600090813560e01c90816356510510146103815750806371a28f69146102155780639f9fb968146101e2578063b74795d91461019e578063ba7ae4af146100f2578063e42a96e7146100aa5763f13c46aa1461007157600080fd5b346100a75760203660031901126100a757506100906100a392356111de565b905191829160208352602083019061067c565b0390f35b80fd5b5090346100ee57816003193601126100ee57517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b5080fd5b5090346100ee5760203660031901126100ee578235926001600160401b039081851161019a573660238601121561019a57840135908111610196576024936005368684831b84010111610192576101488361138b565b945b83811061015e578451806100a3888261075e565b806101728861018d93851b860101356111de565b61017c82896109e1565b5261018781886109e1565b506109bc565b61014a565b8480fd5b8280fd5b8380fd5b5090346100ee57816003193601126100ee57517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b50346100a75760203660031901126100a757506102026100a39235610a5c565b90519182916020835260208301906104bc565b5090346100ee5760209081600319360112610196578335936001600160401b03851161019a573660238601121561019a578401359361025385610880565b946102608351968761085f565b80865260248487019160051b8301019136831161037d576024859101915b83831061036d575050505083519161029583610880565b926102a28351948561085f565b8084526102b1601f1991610880565b0181855b82811061035757505050835b85518110156102fb57806102e16102db6102f693896109e1565b51610a5c565b6102eb82876109e1565b5261018781866109e1565b6102c1565b50828483519280840190808552835180925280868601968360051b870101940192955b82871061032b5785850386f35b909192938280610347600193603f198a820301865288516104bc565b960192019601959291909261031e565b61035f610897565b8282880101520182906102b5565b823581529181019185910161027e565b8580fd5b90508334610196576020366003190112610196576001600160a01b03908035828116919082900361019257630565105160e41b84528301528290829060249082907f0000000000000000000000000000000000000000000000000000000000000000165afa90811561046a578291610448575b506103ff815161138b565b915b815181101561043b578061042161041b61043693856109e1565b516111de565b61042b82866109e1565b5261018781856109e1565b610401565b8351806100a3858261075e565b61046491503d8084833e61045c818361085f565b810190610997565b836103f4565b83513d84823e3d90fd5b60005b8381106104875750506000910152565b8181015183820152602001610477565b906020916104b081518092818552858086019101610474565b601f01601f1916010190565b6101c0808301825184526020928381015160018060a01b039283825116868801528386830151166040908189015284818401511690606091828a0152818401519588875197608098898d015201519160a092838c01528a8887015115159660c097888301528481015160e083015287810151610100809301528c6101208560e084015116910152015115156101408c0152808701516101608c015283870151986101808c015288518095526101e0928a848d01948d8860051b01019a01966000955b8d8888106105cd57505050505050505050500151926101a081830391015281808451928381520193019160005b8281106105b9575050505090565b8351855293810193928101926001016105ab565b9c8b858b9f839f9495969780999a9b9c9d61061c926101df19908803018d52519384518752858501519088878901528c8251168989015286820151908801520151868987015287860190610497565b91015192878183039101528180845192838152019301906000905b8881831061065b57509e9f939e50505090810198976001019601949392919061057e565b839585600194969395518051835201518382015201940192018e9291610637565b61075b9181518152604061074a60208401516060602085015260018060a01b0380825116606086015280602083015116608086015280848301511660a0860152606082015160c0860152608082015160e086015260a082015191610100928387015260c08101519161012092838801528060e08301519461014095868a01528301519361016094858a01528301519461018095868a015283015116926101a09384890152820151936101c09485890152820151166101e0870152015190610200850152610220840190610497565b9201519060408184039101526104bc565b90565b602080820190808352835180925260408301928160408460051b8301019501936000915b8483106107925750505050505090565b90919293949584806107b0600193603f198682030187528a5161067c565b9801930193019194939290610782565b604081019081106001600160401b038211176107db57604052565b634e487b7160e01b600052604160045260246000fd5b60a081019081106001600160401b038211176107db57604052565b61012081019081106001600160401b038211176107db57604052565b606081019081106001600160401b038211176107db57604052565b6101c081019081106001600160401b038211176107db57604052565b90601f801991011681019081106001600160401b038211176107db57604052565b6001600160401b0381116107db5760051b60200190565b604051906108a4826107f1565b606060808360008082526040516108ba8161080c565b8181528160208201528160408201526040516108d5816107c0565b8281528260208201528582015281848201528160a08201528160c08201528160e0820152816101008201526020830152604082015282808201520152565b51906001600160a01b038216820361092757565b600080fd5b5190811515820361092757565b81601f820112156109275780519161095083610880565b9261095e604051948561085f565b808452602092838086019260051b820101928311610927578301905b828210610988575050505090565b8151815290830190830161097a565b906020828203126109275781516001600160401b0381116109275761075b9201610939565b60001981146109cb5760010190565b634e487b7160e01b600052601160045260246000fd5b80518210156109f55760209160051b010190565b634e487b7160e01b600052603260045260246000fd5b81601f820112156109275780516001600160401b0381116107db5760405192610a3e601f8301601f19166020018561085f565b818452602082840101116109275761075b9160208085019101610474565b610a64610897565b506040516313f3f72d60e31b815260048101829052906001600160a01b0361014080846024817f000000000000000000000000000000000000000000000000000000000000000086165afa938415610dc55760009461106f575b50506040516360e70e6f60e11b815260048101839052936000856024817f000000000000000000000000000000000000000000000000000000000000000086165afa948515610dc557600095611026575b5060405163345cb23760e11b815260048101849052906000826024817f000000000000000000000000000000000000000000000000000000000000000087165afa918215610dc55760009261100b575b506040516373a19db760e11b815260048101859052916000836024817f000000000000000000000000000000000000000000000000000000000000000088165afa928315610dc557600093610ff0575b5095829591925191610bc083610880565b92610bce604051948561085f565b808452610bdd601f1991610880565b0160005b818110610f9a5750506000965b8051881015610f5c57610c0188826109e1565b51946040516356c02a4160e11b81528860048201528660248201526000816044818b7f0000000000000000000000000000000000000000000000000000000000000000165afa908115610dc557600091610f43575b505199610c628b610880565b9a610c706040519c8d61085f565b808c52610c7f601f1991610880565b0160005b818110610f1e57505060005b8b51811015610dea576040516356c02a4160e11b81528a60048201528860248201526000816044818d7f0000000000000000000000000000000000000000000000000000000000000000165afa8015610dc55760208a6064610cff8f948f96908891600091610dd1575b506109e1565b5193604051958693849263106c002d60e11b8452600484015260248301528560448301527f0000000000000000000000000000000000000000000000000000000000000000165afa8015610dc5578e92600091610d8c575b5092809261018792610d879560405191610d70836107c0565b82526020820152610d8183836109e1565b526109e1565b610c8f565b9192506020823d602011610dbd575b81610da86020938361085f565b810103126100a75750518d9190610d87610d57565b3d9150610d9b565b6040513d6000823e3d90fd5b610de4913d8091833e61045c818361085f565b38610cf9565b5093929891959094996040516317192c2960e01b81528960048201528260248201526000816044818c7f0000000000000000000000000000000000000000000000000000000000000000165afa908115610dc557600091610e87575b5090610e7c93929160405192610e5b84610828565b835260208301526040820152610e71828c6109e1565b52610187818b6109e1565b969091979293610bee565b3d918281833e610e97838361085f565b602092838382810103126100ee578251906001600160401b03928383116100a757606083860183870103126100a75760405195610ed387610828565b610ede848701610913565b875280848701015190870152604083860101519384116100a75750610e7c9796959493610f1093918101920101610a0b565b604082015290919293610e46565b6020908d60405190610f2f826107c0565b600080835284830152820183015201610c83565b610f56913d8091833e61045c818361085f565b38610c56565b50919350919593945060a08101519182018092116109cb5760405194610f81866107f1565b8552602085015260408401526060830152608082015290565b60209060409a94939996959a51610fb081610828565b60008152604051610fc081610828565b600081528390600082820152606090816040820152828401526040830152828d0101520198939497919298610be1565b61100491933d8091833e61045c818361085f565b9138610baf565b61101f91923d8091833e61045c818361085f565b9038610b5f565b90943d8082843e611037818461085f565b8201906040838303126100a7578251906001600160401b0382116100a7575082916110659160209401610939565b5001519338610b0f565b90919381833d851161114c575b611086818361085f565b8101039283126100a7576040519261109d8461080c565b6110a683610913565b84526110b460208401610913565b602085015260408301518681168103610196579060409182860152605f1901126100a757506040516110e5816107c0565b6060820151815260808201516020820152606083015261110760a0820161092c565b608083015260c081015160a083015260e081015160c083015261114061012061010092611135848201610913565b60e08601520161092c565b90820152913880610abe565b503d61107c565b6040519061116082610828565b8160008082526040519061117382610843565b8082528060208301528060408301528060608301528060808301528060a08301528060c08301528060e08301528061010083015280610120830152806101408301528061016083015261018082015260606101a0820152602082015260406111d9610897565b910152565b6111e6611153565b506040805163789e235560e11b815260048101839052906001600160a01b03600080846024817f000000000000000000000000000000000000000000000000000000000000000086165afa93841561137f578194611269575b50505061124f6060830151610a5c565b9181519361125c85610828565b8452602084015282015290565b90919293503d8083833e61127d818361085f565b8101906020818303126101965780516001600160401b039182821161019257016101c08184031261019a578551946112b486610843565b6112bd82610913565b86526112cb60208301610913565b60208701526112db878301610913565b87870152606082015160608701526080820151608087015260a082015160a087015260c082015160c087015260e082015160e087015261010080830151908701526101208083015190870152610140611335818401610913565b90870152610160808301519087015261018080830151918216820361037d578601526101a093848201519283116100a75750611372929101610a0b565b908201529038808061123f565b508251903d90823e3d90fd5b9061139582610880565b6113a2604051918261085f565b82815280926113b3601f1991610880565b019060005b8281106113c457505050565b6020906113cf611153565b828285010152016113b856fea2646970667358221220c776f68813840a42c19d7b5f7366093e1d3fd8578d66a1f7c7b57fd890b5028664736f6c63430008120033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "getAccountIntents(address)": {
+        "params": {
+          "_account": "The account address."
+        },
+        "returns": {
+          "intentViews": "Array of IntentView structs."
+        }
+      },
+      "getDeposit(uint256)": {
+        "params": {
+          "_depositId": "The ID of the deposit."
+        },
+        "returns": {
+          "depositView": "The DepositView struct."
+        }
+      },
+      "getDepositFromIds(uint256[])": {
+        "params": {
+          "_depositIds": "Array of deposit IDs."
+        },
+        "returns": {
+          "depositArray": "Array of DepositView structs."
+        }
+      },
+      "getIntent(bytes32)": {
+        "params": {
+          "_intentHash": "The hash of the intent."
+        },
+        "returns": {
+          "intentView": "The IntentView struct."
+        }
+      },
+      "getIntents(bytes32[])": {
+        "params": {
+          "_intentHashes": "Array of intent hashes."
+        },
+        "returns": {
+          "intentArray": "Array of IntentView structs."
+        }
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "getAccountIntents(address)": {
+        "notice": "Gets the active intents for a specific account."
+      },
+      "getDeposit(uint256)": {
+        "notice": "Gets details for a single deposit."
+      },
+      "getDepositFromIds(uint256[])": {
+        "notice": "Gets deposit details for a list of deposit IDs."
+      },
+      "getIntent(bytes32)": {
+        "notice": "Gets details for a single intent."
+      },
+      "getIntents(bytes32[])": {
+        "notice": "Gets details for a list of intent hashes."
+      }
+    },
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}

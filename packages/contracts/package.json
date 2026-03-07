@@ -1,0 +1,179 @@
+{
+  "name": "@zkp2p/contracts-v2",
+  "version": "0.2.0-rc.3",
+  "description": "ZKP2P V2 smart contract interfaces and utilities",
+  "main": "./_cjs/index.js",
+  "module": "./_esm/index.js",
+  "types": "./_types/index.d.ts",
+  "files": [
+    "_cjs",
+    "_esm",
+    "_types",
+    "addresses",
+    "abis",
+    "constants",
+    "paymentMethods",
+    "networks",
+    "types",
+    "utils"
+  ],
+  "scripts": {
+    "build": "yarn clean && yarn extract && yarn generate:wrappers && yarn generate:networks && yarn bundle",
+    "build:full": "yarn build",
+    "clean": "rimraf _cjs _esm _types addresses abis constants paymentMethods networks types utils",
+    "extract": "ts-node --transpile-only scripts/extract-all.ts",
+    "generate:wrappers": "ts-node --transpile-only scripts/generate-abi-wrappers.ts",
+    "generate:networks": "ts-node --transpile-only scripts/generate-network-entries.ts",
+    "compile": "echo 'Skipping tsc, using Rollup for compilation'",
+    "bundle": "ts-node --transpile-only scripts/build-modules.ts",
+    "test": "jest --passWithNoTests",
+    "test:coverage": "jest --coverage --passWithNoTests",
+    "prepublishOnly": "yarn build && yarn test"
+  },
+  "exports": {
+    ".": {
+      "types": "./_types/index.d.ts",
+      "import": "./_esm/index.js",
+      "require": "./_cjs/index.js"
+    },
+    "./addresses": {
+      "types": "./addresses/index.d.ts",
+      "import": "./_esm/addresses/index.js",
+      "react-native": "./_esm/addresses/index.js",
+      "require": "./_cjs/addresses/index.js",
+      "default": "./_esm/addresses/index.js"
+    },
+    "./addresses/*": {
+      "types": "./addresses/*.d.ts",
+      "import": "./_esm/addresses/*.js",
+      "react-native": "./_esm/addresses/*.js",
+      "require": "./_cjs/addresses/*.js",
+      "default": "./_esm/addresses/*.js"
+    },
+    "./addresses/*.json": "./addresses/*.json",
+    "./constants": {
+      "types": "./constants/index.d.ts",
+      "import": "./_esm/constants/index.js",
+      "react-native": "./_esm/constants/index.js",
+      "require": "./_cjs/constants/index.js",
+      "default": "./_esm/constants/index.js"
+    },
+    "./constants/*": {
+      "types": "./constants/*.d.ts",
+      "import": "./_esm/constants/*.js",
+      "react-native": "./_esm/constants/*.js",
+      "require": "./_cjs/constants/*.js",
+      "default": "./_esm/constants/*.js"
+    },
+    "./constants/*.json": "./constants/*.json",
+    "./paymentMethods": {
+      "types": "./paymentMethods/index.d.ts",
+      "import": "./_esm/paymentMethods/index.js",
+      "react-native": "./_esm/paymentMethods/index.js",
+      "require": "./_cjs/paymentMethods/index.js",
+      "default": "./_esm/paymentMethods/index.js"
+    },
+    "./paymentMethods/*": {
+      "types": "./paymentMethods/*.d.ts",
+      "import": "./_esm/paymentMethods/*.js",
+      "react-native": "./_esm/paymentMethods/*.js",
+      "require": "./_cjs/paymentMethods/*.js",
+      "default": "./_esm/paymentMethods/*.js"
+    },
+    "./paymentMethods/*.json": "./paymentMethods/*.json",
+    "./types": {
+      "types": "./types/index.ts"
+    },
+    "./utils": {
+      "types": "./utils/index.d.ts",
+      "default": "./utils/index.ts"
+    },
+    "./utils/protocolUtils": {
+      "types": "./utils/protocolUtils.d.ts",
+      "default": "./utils/protocolUtils.ts"
+    },
+    "./abis/base": {
+      "types": "./abis/base.d.ts",
+      "import": "./abis/base.mjs",
+      "react-native": "./abis/base.mjs",
+      "require": "./abis/base.cjs",
+      "default": "./abis/base.mjs"
+    },
+    "./abis/base/*.json": "./abis/base/*.json",
+    "./abis/baseStaging": {
+      "types": "./abis/baseStaging.d.ts",
+      "import": "./abis/baseStaging.mjs",
+      "react-native": "./abis/baseStaging.mjs",
+      "require": "./abis/baseStaging.cjs",
+      "default": "./abis/baseStaging.mjs"
+    },
+    "./abis/baseStaging/*.json": "./abis/baseStaging/*.json",
+    "./abis": {
+      "types": "./abis/index.ts",
+      "import": "./abis/index.ts",
+      "require": "./abis/index.ts",
+      "default": "./abis/index.ts"
+    },
+    "./networks/base": {
+      "types": "./networks/base.d.ts",
+      "import": "./networks/base.mjs",
+      "react-native": "./networks/base.mjs",
+      "require": "./networks/base.cjs",
+      "default": "./networks/base.mjs"
+    },
+    "./networks/baseStaging": {
+      "types": "./networks/baseStaging.d.ts",
+      "import": "./networks/baseStaging.mjs",
+      "react-native": "./networks/baseStaging.mjs",
+      "require": "./networks/baseStaging.cjs",
+      "default": "./networks/baseStaging.mjs"
+    }
+  },
+  "sideEffects": false,
+  "peerDependencies": {
+    "ethers": "^5.0.0 || ^6.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@types/jest": "^29.0.0",
+    "@types/node": "^20.0.0",
+    "ethers": "^5.7.2",
+    "jest": "^29.0.0",
+    "rimraf": "^5.0.0",
+    "rollup": "^3.0.0",
+    "ts-jest": "^29.0.0",
+    "ts-node": "^10.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "abitype": "^1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zkp2p/zkp2p-v2-contracts.git",
+    "directory": "packages/contracts"
+  },
+  "keywords": [
+    "zkp2p",
+    "ethereum",
+    "smart-contracts",
+    "defi",
+    "p2p",
+    "fiat",
+    "onramp",
+    "offramp"
+  ],
+  "author": "ZKP2P",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zkp2p/zkp2p-v2-contracts/issues"
+  },
+  "homepage": "https://zkp2p.xyz",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

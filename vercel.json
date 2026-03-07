@@ -1,9 +1,0 @@
-{
-  "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "env": {
-    "VITE_ORCHESTRATOR_URL": "https://xramp-orchestrator.xramp.workers.dev"
-  }
-}

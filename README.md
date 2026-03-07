@@ -1,118 +1,208 @@
-# XRamp
+# zkp2p-v2-contracts (v2.1)
 
-XRamp is a fiat-to-crypto onramp/offramp that settles on Avalanche via escrow contracts. Users pay with Venmo (or other fiat rails), submit payment proof, and receive MockUSDC on Avalanche Fuji testnet after admin verification.
+[![Coverage](https://codecov.io/gh/zkp2p/zkp2p-v2-contracts/branch/main/graph/badge.svg?precision=2)](https://codecov.io/gh/zkp2p/zkp2p-v2-contracts)
 
-## What is real vs. demo vs. future
+V2.1 smart contracts for the ZK P2P fiat on/off‑ramp. The system centers on Escrow (maker deposits), Orchestrator (intent lifecycle and verification), and a Unified Payment Verifier that validates off‑chain attestations for multiple payment methods.
 
-### Fully real (on-chain, verifiable)
-- **Escrow funding** — real `createEscrow` + `deposit` transactions on Avalanche Fuji
-- **Escrow release** — real `releaseEscrow` transaction after proof verification
-- **Payment proof** — real Venmo proof hash captured by the XRamp Chrome extension
-- **LFJ swap** — real USDC → AVAX swap on LFJ (Trader Joe) V2.1 DEX on Fuji (post-settlement composability demo)
+## Overview
 
-### Demo / testnet
-- **MockUSDC** — open-mint test ERC20 (not real USDC). Rate is fixed 1:1 for demo.
-- **Fees** — hardcoded 0.5% (buy) / 1% (sell), clearly labeled as demo rates
-- **Single LP** — all liquidity provided by XRamp backend (arbiter wallet), not a multi-provider marketplace
-- **LFJ token difference** — LFJ testnet uses its own USDC (`0xB607…`), different from escrow MockUSDC (`0xb2F4…`). On mainnet these would be the same real USDC.
+ZKP2P is a decentralized protocol enabling trustless peer-to-peer exchanges between fiat and cryptocurrency. Users can on-ramp (buy crypto with fiat) or off-ramp (sell crypto for fiat) directly with counterparties, without intermediaries.
 
-### Future
-- **Multi-LP marketplace** — Peer.xyz's liquidity network is referenced as the future quoting engine; current demo uses XRamp's single LP
-- **Real USDC on mainnet** — production deployment with real stablecoins
-- **Automated proof verification** — currently admin-triggered
-- **Chrome extension SDK** — drop-in widget for partners
+### Key Features
+- **Trustless P2P Trading**: Direct fiat-to-crypto exchanges without intermediaries
+- **Multi-Platform Support**: Venmo, PayPal, Wise, Zelle, CashApp, Revolut, MercadoPago, Monzo
+- **Zero-Knowledge Privacy**: Payment verification without exposing sensitive data
+- **Intent-Based Architecture**: Efficient liquidity matching and settlement
+- **Modular Design**: Pluggable verifiers and extensible registry system
 
-## Architecture
+### Use Cases
+- **On-ramp**: Buy USDC with fiat through verified payment platforms
+- **Off-ramp**: Sell USDC for fiat with guaranteed settlement
+- **Cross-border**: Access global liquidity through multiple payment rails
 
+## Quick Start
+- Prereqs: Node 18+, Yarn 4, Foundry (for `forge`).
+- Install: `yarn`
+- Env: `cp .env.default .env` and set keys (`ALCHEMY_API_KEY`, `BASE_DEPLOY_PRIVATE_KEY`, `TESTNET_DEPLOY_PRIVATE_KEY`, `BASESCAN_API_KEY`, `ETHERSCAN_KEY`, `INFURA_TOKEN`).
+- Local node: `yarn chain`
+- Deploy locally: `yarn deploy:localhost`
+
+## Supported Networks
+
+| Network | Status | Contract Addresses |
+|---------|--------|-------------------|
+| Base | ✅ Production | [View Deployments](./deployments/base/) |
+| Base Sepolia | ✅ Testnet | [View Deployments](./deployments/base_sepolia/) |
+| Base Staging | 🔧 Staging | [View Deployments](./deployments/base_staging/) |
+
+
+## Commands
+- Build: `yarn build` (clean → compile → typechain → tsc)
+- Compile: `yarn compile`
+- Tests (Hardhat): `yarn test` | fast: `yarn test:fast`
+- Tests (Foundry): `yarn test:forge` | fuzz: `yarn test:forge:fuzz` | invariant: `yarn test:forge:invariant`
+- Coverage: `yarn coverage` | Foundry: `yarn test:forge:coverage`
+- Deploy: `yarn deploy:base` | `yarn deploy:base_sepolia`
+- Verify: `yarn etherscan:base` | `yarn etherscan:base_sepolia`
+
+## Architecture (v2.1)
+
+### Core Components
+
+**Escrow Contract**
+- Manages liquidity deposits from makers (liquidity providers)
+- Configures supported payment methods, currencies, and conversion rates
+- Enforces intent limits, expiry periods, and dust thresholds
+- Handles secure fund custody and transfers
+- Collects maker fees on successful trades
+
+**Orchestrator Contract**
+- Central coordinator for the intent lifecycle
+- Validates intent gating signatures (optional access control)
+- Locks/unlocks funds on Escrow during intent processing
+- Routes verification requests to appropriate verifiers via registry
+- Collects and distributes protocol/referrer fees
+- Executes optional post-intent hooks for custom logic
+
+**Unified Payment Verifier**
+- Single contract supporting all payment methods via configuration
+- Validates EIP-712 signed attestations from off-chain services
+- Enforces timestamp buffers for L2 flexibility
+- Nullifies payments in registry to prevent double-spending
+
+**Registry System**
+- `PaymentVerifierRegistry`: Maps payment methods to verifiers and currencies
+- `EscrowRegistry`: Whitelists valid escrow implementations
+- `RelayerRegistry`: Authorizes relayers for gasless transactions
+- `PostIntentHookRegistry`: Manages approved post-intent hooks
+- `NullifierRegistry`: Tracks used payment proofs globally
+
+**Protocol Viewer**
+- Read-only contract aggregating Escrow + Orchestrator state
+- Optimized for frontend queries and analytics
+- Provides batched data fetching for UI performance
+
+### User Flow
+
+1. **Deposit Phase**: Maker creates deposit with USDC, specifying accepted payment methods and rates
+2. **Intent Phase**: Taker signals intent to trade, temporarily locking maker's liquidity
+3. **Payment Phase**: Taker sends fiat payment off-chain through specified platform
+4. **Proof Phase**: Payment receipt is converted to zkTLS proof via attestation service
+5. **Verification Phase**: On-chain verification of payment proof and attestation signatures
+6. **Settlement Phase**: USDC released to taker, fees distributed, liquidity returned to maker
+
+### Diagram
 ```
-XRamp/
-├── src/                    # React frontend (Vite + Tailwind + shadcn/ui)
-│   ├── pages/              # Route pages: Home, Buy, Sell, Activity, etc.
-│   ├── components/         # UI components (shared, layout, deposits)
-│   ├── contexts/           # AuthContext (Privy), AppContext
-│   └── lib/
-│       ├── orchestratorApi.ts   # HTTP client for backend
-│       ├── fuji.ts              # Fuji chain utils (balance, escrow, explorer)
-│       └── fujiConfig.json      # Deployed contract addresses
-├── orchestrator/           # Cloudflare Worker + D1 backend
-│   ├── src/worker.ts       # Main Worker entry (all endpoints)
-│   ├── src/auth.ts         # Privy JWT verification
-│   ├── src/escrow.ts       # On-chain escrow release (ethers.js)
-│   ├── src/state.ts        # Intent state machine
-│   ├── schema.sql          # D1 tables: intents, event_log, proofs
-│   └── wrangler.toml       # Cloudflare config
-├── contracts/              # Hardhat project (Fuji testnet)
-│   ├── contracts/MockUSDC.sol      # Mintable test ERC20 (6 decimals)
-│   ├── contracts/XRampEscrow.sol   # Escrow: create → deposit → release/cancel
-│   └── scripts/deploy.ts          # Deploy script → writes deployed.json
+Maker ── createDeposit ──▶ Escrow
+Taker/Relayer ── signalIntent ──▶ Orchestrator ── lockFunds ──▶ Escrow
+Orchestrator ── getVerifier(paymentMethod) ──▶ PaymentVerifierRegistry ──▶ UnifiedPaymentVerifier
+UnifiedPaymentVerifier ── verify(EIP‑712) ──▶ AttestationVerifier
+UnifiedPaymentVerifier ── nullify(paymentId) ──▶ NullifierRegistry
+UnifiedPaymentVerifier ── result ──▶ Orchestrator
+Orchestrator ── unlockAndTransfer ──▶ Escrow ── tokens ──▶ Orchestrator
+Orchestrator ── fees ──▶ Protocol/Referrer
+Orchestrator ── net ──▶ Recipient OR PostIntentHook (then executes)
 ```
 
-## Local Development
+## Project Structure
+```
+contracts/
+├── Orchestrator.sol           # Intent lifecycle management
+├── Escrow.sol                 # Deposit and liquidity management
+├── unifiedVerifier/           # Unified payment verification
+│   ├── UnifiedPaymentVerifier.sol
+│   └── SimpleAttestationVerifier.sol
+├── registries/                # Permission and configuration registries
+│   ├── PaymentVerifierRegistry.sol
+│   ├── NullifierRegistry.sol
+│   └── [other registries]
+├── interfaces/                # Contract interfaces
+└── lib/                       # Utility libraries
 
+deploy/                        # Deployment scripts (00-09 numbered sequence)
+test/                         # Comprehensive test suite
+test-foundry/                 # Foundry tests (.t.sol)
+deployments/                  # Network deployment artifacts
+typechain/                    # Generated TypeScript bindings
+```
+
+## Integration Examples
+
+### Creating a Deposit (Maker)
+```typescript
+import { Escrow } from "@typechain/Escrow";
+
+// Create deposit with payment method configuration
+const depositId = await escrow.createDeposit({
+  token: USDC_ADDRESS,
+  amount: ethers.utils.parseUnits("1000", 6),
+  paymentMethods: [paymentMethodHash],
+  minAmounts: [ethers.utils.parseUnits("10", 6)],
+  conversionRates: [100], // 1:1 rate
+});
+```
+
+### Signaling Intent (Taker)
+```typescript
+import { Orchestrator } from "@typechain/Orchestrator";
+
+// Signal intent to trade
+await orchestrator.signalIntent({
+  escrow: escrowAddress,
+  depositId: depositId,
+  amount: ethers.utils.parseUnits("100", 6),
+  recipient: takerAddress,
+  paymentMethod: paymentMethodHash,
+  payeeDetails: payeeHash,
+  data: additionalData,
+});
+```
+
+### Fulfilling Intent with Payment Proof
+```typescript
+// Submit payment attestation for verification
+await orchestrator.fulfillIntent({
+  intentHash: intentHash,
+  paymentProof: attestationBytes, // EIP-712 signed attestation
+  data: verificationData,
+});
+```
+
+## Testing
+
+The project includes comprehensive test coverage:
+
+### Test Suites
+- **Unit Tests**: Individual contract function testing
+- **Integration Tests**: End-to-end user flow validation
+- **Fuzz Tests**: Property-based testing with Foundry
+- **Invariant Tests**: Protocol invariant verification
+
+### Running Tests
 ```bash
-# 1. Start the orchestrator backend
-cd orchestrator
-npm install
-npm run db:migrate:local
-npm run dev                  # → http://localhost:8787
+# Run all Hardhat tests
+yarn test
 
-# 2. Start the frontend (separate terminal)
-cd ..
-npm install --legacy-peer-deps
-npm run dev                  # → http://localhost:5173
+# Run specific test suites
+yarn test test/escrow/
+yarn test test/orchestrator/
+yarn test test/unifiedVerifier/
 
-# 3. (Optional) Build Chrome extension
-cd ../xramp-extension
-npm install --legacy-peer-deps
-npm run build
-# Load build/ as unpacked extension in chrome://extensions
+# Foundry tests
+yarn test:forge              # All Foundry tests
+yarn test:forge:fuzz         # Fuzz testing
+yarn test:forge:invariant    # Invariant testing
+
+# Coverage reports
+yarn coverage                # Hardhat coverage
+yarn test:forge:coverage     # Foundry coverage
 ```
 
-## Deploy
+## Resources
 
-```bash
-# Deploy contracts to Fuji (needs DEPLOYER_PRIVATE_KEY env var with AVAX)
-cd contracts && DEPLOYER_PRIVATE_KEY=0x... npx hardhat run scripts/deploy.ts --network fuji
+- **Website**: [zkp2p.xyz](https://zkp2p.xyz)
+- **Documentation**: [docs.zkp2p.xyz](https://docs.zkp2p.xyz)
+- **GitHub**: [github.com/zkp2p](https://github.com/zkp2p)
 
-# Deploy orchestrator to Cloudflare
-cd orchestrator
-npx wrangler d1 create xramp-orchestrator-db  # one-time
-# Copy database_id into wrangler.toml
-npm run db:migrate
-npx wrangler secret put PRIVY_APP_SECRET
-npx wrangler secret put ARBITER_PRIVATE_KEY
-npm run deploy
-
-# Update .env with production worker URL, then push
-# Vercel auto-deploys from main branch
-```
-
-## Hackathon Demo Script
-
-See [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) for the full judge-facing demo script with exact clicks, labels, and narration.
-
-### Quick Demo Flow
-
-1. **Open** → `https://xramp-app.vercel.app` → Log in with Privy
-2. **Buy** → Enter amount → Select Venmo → Continue → Review (shows "XRamp LP funds escrow", "Settlement: Avalanche Fuji · MockUSDC") → Confirm
-3. **Escrow funded** → See "Escrow funded by XRamp LP" with Fuji testnet badge, depositTxHash → Snowtrace link
-4. **Pay via Venmo** → Use XRamp extension → "Verify with Venmo (Beta)" → Submit proof
-5. **Activity** → See intent with Proof Hash (verified badge), Escrow Deposit (Fuji), Funded by: XRamp LP
-6. **Admin verify** → Click "Verify + Release Escrow" → Escrow Release (Fuji) tx hash appears
-7. **(Optional) LFJ swap** → Click "Swap USDC → AVAX on LFJ (testnet)" → LFJ Swap Tx (Fuji) hash appears under "Avalanche DeFi composability" section
-
-### Key URLs
-- **Frontend**: https://xramp-app.vercel.app
-- **Orchestrator**: https://xramp-orchestrator.xramp.workers.dev
-- **Explorer**: https://testnet.snowtrace.io
-
-### Verifiable On-Chain Tx Hashes (per intent)
-1. **Escrow Deposit (Fuji)** — `depositTxHash` → Snowtrace link
-2. **Proof Hash** — payment proof from extension
-3. **Escrow Release (Fuji)** — `releaseTxHash` → Snowtrace link
-4. **LFJ Swap Tx (Fuji)** — `swapTxHash` → Snowtrace link (optional)
-
-## References
-- Peer.xyz / ZKP2P: https://docs.peer.xyz/ (future multi-LP quoting engine; current demo uses XRamp single LP)
-- LFJ / Trader Joe: https://traderjoexyz.com/ (Avalanche DEX, V2.1 on Fuji testnet)
-- ZKP2P Contracts: https://github.com/zkp2p/zkp2p-contracts
+## License
+MIT
