@@ -9,6 +9,7 @@
  *   POST   /intents/:id/proof       submit proof
  *   POST   /intents/:id/verify      admin: verify + release escrow
  *   POST   /intents/:id/fund-escrow backend: arbiter mints+funds escrow, transitions FUNDING→FUNDED
+ *   POST   /intents/:id/swap        post-settlement LFJ swap (USDC→AVAX on Trader Joe)
  *   GET    /health                  health check
  */
 
@@ -151,6 +152,7 @@ export default {
     const verifyMatch = url.pathname.match(/^\/intents\/([^/]+)\/verify$/);
     const fundEscrowMatch = url.pathname.match(/^\/intents\/([^/]+)\/fund-escrow$/);
     const reportFundingMatch = url.pathname.match(/^\/intents\/([^/]+)\/report-funding$/);
+    const swapMatch = url.pathname.match(/^\/intents\/([^/]+)\/swap$/);
 
     // ── GET /intents/:id ─────────────────────────────────────────────────
     if (intentMatch && request.method === 'GET') {
@@ -376,6 +378,56 @@ export default {
 
       const updated = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first();
       return cors(json({ intent: updated, releaseTxHash }), origin);
+    }
+
+    // ── POST /intents/:id/swap (LFJ post-settlement) ───────────────────
+    if (swapMatch && request.method === 'POST') {
+      const intentId = swapMatch[1];
+      const body = await request.json<Record<string, unknown>>();
+      const recipient = (body.recipient as string) || '';
+
+      if (!recipient) return cors(err('Missing recipient address'), origin);
+
+      const intent = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first<Record<string, unknown>>();
+      if (!intent) return cors(err('Intent not found', 404), origin);
+
+      const currentState = intent.state as string;
+      if (currentState !== 'COMPLETE') {
+        return cors(err(`Swap only available for COMPLETE intents (current: ${currentState})`, 409), origin);
+      }
+
+      // Check if already swapped
+      const existingMeta = JSON.parse((intent.metaJson as string) || '{}');
+      if (existingMeta.swapTxHash) {
+        return cors(json({ intent, swapTxHash: existingMeta.swapTxHash, message: 'Already swapped' }), origin);
+      }
+
+      try {
+        const { swapUsdcToAvaxOnLfj } = await import('./lfj');
+        const { swapTxHash, amountIn } = await swapUsdcToAvaxOnLfj(
+          env,
+          intent.amount as string,
+          recipient,
+        );
+
+        const now = iso();
+        const updatedMeta = JSON.stringify({ ...existingMeta, swapTxHash, swapDex: 'LFJ (Trader Joe)', swapPair: 'USDC→AVAX', swapAmountIn: amountIn });
+
+        await env.DB.prepare(
+          `UPDATE intents SET metaJson = ?, updatedAt = ? WHERE id = ?`
+        ).bind(updatedMeta, now, intentId).run();
+
+        await env.DB.prepare(
+          `INSERT INTO event_log (id, intentId, ts, actor, fromState, toState, metaJson)
+           VALUES (?, ?, ?, 'system', 'COMPLETE', 'COMPLETE', ?)`
+        ).bind(uid(), intentId, now, JSON.stringify({ swapTxHash, swapDex: 'LFJ', swapPair: 'USDC→AVAX' })).run();
+
+        const updated = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first();
+        return cors(json({ intent: updated, swapTxHash }, 200), origin);
+      } catch (e) {
+        console.error('LFJ swap failed:', e);
+        return cors(err(`LFJ swap failed: ${(e as Error).message}`, 500), origin);
+      }
     }
 
     return cors(err('Not found', 404), origin);

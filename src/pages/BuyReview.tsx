@@ -99,11 +99,7 @@ export default function BuyReview() {
               <span>1 {crypto} = $1.00 {currency}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Network fee</span>
-              <span>$0.12</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">XRamp fee</span>
+              <span className="text-muted-foreground">XRamp fee (0.5%)</span>
               <span>${(parseFloat(payAmount) * 0.005).toFixed(2)}</span>
             </div>
             <div className="flex justify-between pt-2 border-t border-border font-medium">
@@ -112,8 +108,7 @@ export default function BuyReview() {
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              <span>Rate lock</span>
-              <span className="font-mono">00:28</span>
+              <span>Settlement: Avalanche Fuji · MockUSDC</span>
             </div>
           </div>
         </div>

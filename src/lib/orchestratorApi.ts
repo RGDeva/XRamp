@@ -205,6 +205,20 @@ export const orchestratorApi = {
     });
   },
 
+  /**
+   * Post-settlement: swap released USDC → AVAX on LFJ (Trader Joe) DEX.
+   * Only available for COMPLETE intents.
+   */
+  async swapOnLfj(intentId: string, recipient: string): Promise<{
+    intent: OrchestratorIntent;
+    swapTxHash: string;
+  }> {
+    return apiFetch(`/intents/${intentId}/swap`, {
+      method: 'POST',
+      body: JSON.stringify({ recipient }),
+    });
+  },
+
   /** Admin: verify proof and release escrow → COMPLETE */
   async verifyAndRelease(intentId: string): Promise<{
     intent: OrchestratorIntent;

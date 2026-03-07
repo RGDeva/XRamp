@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
-import { ArrowDownToLine, ArrowUpFromLine, Eye, RefreshCw, ExternalLink, ShieldCheck, AlertCircle, Hash } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Eye, RefreshCw, ExternalLink, ShieldCheck, AlertCircle, Hash, ArrowRightLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApp } from '@/contexts/AppContext';
@@ -10,6 +10,7 @@ import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button
 import { RailIcon } from '@/components/shared/RailIcon';
 import { orchestratorApi, type OrchestratorIntent } from '@/lib/orchestratorApi';
 import { txUrl } from '@/lib/fuji';
+import { getDeliveryAddress } from '@/contexts/AuthContext';
 
 const ADMIN_EMAILS = ['rishig@umich.edu'];
 
@@ -188,9 +189,12 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
   privacyMode: boolean;
   onUpdate: () => void;
 }) {
+  const { user } = useAuth();
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [proofVerified, setProofVerified] = useState<boolean | null>(null);
+  const [swapping, setSwapping] = useState(false);
+  const [swapError, setSwapError] = useState<string | null>(null);
   const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail.toLowerCase()) : false;
 
   useEffect(() => {
@@ -307,6 +311,24 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
           </span>
         </Row>
       )}
+      {/* LFJ swap result */}
+      {(() => {
+        try {
+          const meta = JSON.parse(intent.metaJson || '{}');
+          if (!meta.swapTxHash) return null;
+          return (
+            <>
+              <Row label="LFJ Swap Tx"><TxLink hash={meta.swapTxHash as string} /></Row>
+              <Row label="Swap">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-success/15 text-success border border-success/30">
+                  <ArrowRightLeft className="h-2.5 w-2.5" /> {meta.swapPair || 'USDC→AVAX'}
+                </span>
+              </Row>
+              {meta.swapDex && <Row label="DEX"><span className="text-xs font-medium">{meta.swapDex as string}</span></Row>}
+            </>
+          );
+        } catch { return null; }
+      })()}
       <Row label="Updated">{new Date(intent.updatedAt).toLocaleString()}</Row>
       <Row label="Created">{new Date(intent.createdAt).toLocaleString()}</Row>
 
@@ -329,6 +351,45 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {verifying ? 'Verifying & Releasing…' : 'Verify + Release Escrow'}
+          </Button>
+        </div>
+      )}
+
+      {/* Post-settlement LFJ swap */}
+      {intent.state === 'COMPLETE' && !(() => { try { return JSON.parse(intent.metaJson || '{}').swapTxHash; } catch { return false; } })() && (
+        <div className="pt-4 border-t border-border space-y-2">
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
+            Post-settlement DeFi
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Swap released USDC → AVAX on LFJ (Trader Joe) DEX on Fuji. Real on-chain swap.
+          </p>
+          {swapError && (
+            <div className="flex items-center gap-2 text-xs text-destructive">
+              <AlertCircle className="h-3.5 w-3.5" />
+              <span>{swapError}</span>
+            </div>
+          )}
+          <Button
+            onClick={async () => {
+              try {
+                setSwapping(true);
+                setSwapError(null);
+                const recipient = getDeliveryAddress(user) || '';
+                if (!recipient) throw new Error('No wallet address');
+                await orchestratorApi.swapOnLfj(intent.id, recipient);
+                onUpdate();
+              } catch (e) {
+                setSwapError(e instanceof Error ? e.message : 'Swap failed');
+              } finally {
+                setSwapping(false);
+              }
+            }}
+            disabled={swapping}
+            className="w-full bg-gradient-to-r from-primary to-success hover:opacity-90 text-primary-foreground"
+          >
+            {swapping ? 'Swapping on LFJ…' : 'Swap to AVAX on LFJ'}
           </Button>
         </div>
       )}
