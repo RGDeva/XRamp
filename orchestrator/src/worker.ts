@@ -9,7 +9,7 @@
  *   POST   /intents/:id/proof       submit proof
  *   POST   /intents/:id/verify      admin: verify + release escrow
  *   POST   /intents/:id/fund-escrow backend: arbiter mints+funds escrow, transitions FUNDING→FUNDED
- *   POST   /intents/:id/swap        post-settlement LFJ swap (USDC→AVAX on Trader Joe)
+ *   POST   /intents/:id/swap        Avalanche DeFi composability demo (USDC→AVAX on LFJ/Trader Joe, Fuji testnet)
  *   GET    /health                  health check
  */
 
@@ -380,7 +380,7 @@ export default {
       return cors(json({ intent: updated, releaseTxHash }), origin);
     }
 
-    // ── POST /intents/:id/swap (LFJ post-settlement) ───────────────────
+    // ── POST /intents/:id/swap (Avalanche DeFi composability demo) ──────────
     if (swapMatch && request.method === 'POST') {
       const intentId = swapMatch[1];
       const body = await request.json<Record<string, unknown>>();

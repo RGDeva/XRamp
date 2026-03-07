@@ -32,10 +32,13 @@ export default function SellComplete() {
 
         {/* Title */}
         <div className="text-center space-y-2">
-          <h1 className="text-xl font-semibold">Your USDC is locked</h1>
+          <h1 className="text-xl font-semibold">Your MockUSDC is locked</h1>
           <p className="text-muted-foreground text-sm">
-            Your wallet signed to lock USDC in escrow on Fuji. Awaiting buyer fiat payment proof and admin verification before release.
+            Your wallet signed to lock MockUSDC in escrow on Avalanche Fuji testnet. Awaiting buyer fiat payment proof and admin verification before release.
           </p>
+          <span className="inline-flex mx-auto text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full font-medium">
+            Avalanche Fuji testnet · MockUSDC
+          </span>
         </div>
 
         {/* Details */}
@@ -69,7 +72,7 @@ export default function SellComplete() {
           )}
           {state.depositTxHash && (
             <div className="flex justify-between py-2">
-              <span className="text-muted-foreground text-sm">Deposit Tx</span>
+              <span className="text-muted-foreground text-sm">Escrow Deposit (Fuji)</span>
               <a
                 href={txUrl(state.depositTxHash as string)}
                 target="_blank"
@@ -95,7 +98,7 @@ export default function SellComplete() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            After fiat payment is verified via the XRamp extension, admin will release USDC from escrow.
+            After fiat payment is verified via the XRamp extension, admin releases MockUSDC from escrow on Fuji.
           </p>
         </div>
       </div>

@@ -259,10 +259,10 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
       {intent.rail && <Row label="Rail">{intent.rail}</Row>}
       {intent.paymentHandle && <Row label="Handle">{intent.paymentHandle}</Row>}
       {intent.depositTxHash && (
-        <Row label="Deposit Tx"><TxLink hash={intent.depositTxHash} /></Row>
+        <Row label="Escrow Deposit (Fuji)"><TxLink hash={intent.depositTxHash} /></Row>
       )}
       {intent.releaseTxHash && (
-        <Row label="Release Tx"><TxLink hash={intent.releaseTxHash} /></Row>
+        <Row label="Escrow Release (Fuji)"><TxLink hash={intent.releaseTxHash} /></Row>
       )}
       {intent.escrowId && <Row label="Escrow ID"><span className="font-mono text-xs">{intent.escrowId}</span></Row>}
       {intent.escrowId && intent.depositTxHash && (
@@ -311,20 +311,23 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
           </span>
         </Row>
       )}
-      {/* LFJ swap result */}
+      {/* LFJ DeFi composability demo */}
       {(() => {
         try {
           const meta = JSON.parse(intent.metaJson || '{}');
           if (!meta.swapTxHash) return null;
           return (
             <>
-              <Row label="LFJ Swap Tx"><TxLink hash={meta.swapTxHash as string} /></Row>
+              <div className="pt-2 mt-2 border-t border-border">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Avalanche DeFi composability</span>
+              </div>
+              <Row label="LFJ Swap Tx (Fuji)"><TxLink hash={meta.swapTxHash as string} /></Row>
               <Row label="Swap">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-success/15 text-success border border-success/30">
-                  <ArrowRightLeft className="h-2.5 w-2.5" /> {meta.swapPair || 'USDC→AVAX'}
+                  <ArrowRightLeft className="h-2.5 w-2.5" /> USDC → AVAX (testnet)
                 </span>
               </Row>
-              {meta.swapDex && <Row label="DEX"><span className="text-xs font-medium">{meta.swapDex as string}</span></Row>}
+              <Row label="DEX"><span className="text-xs font-medium">LFJ (Trader Joe) V2.1</span></Row>
             </>
           );
         } catch { return null; }
@@ -355,15 +358,15 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
         </div>
       )}
 
-      {/* Post-settlement LFJ swap */}
+      {/* Avalanche DeFi composability demo — LFJ swap */}
       {intent.state === 'COMPLETE' && !(() => { try { return JSON.parse(intent.metaJson || '{}').swapTxHash; } catch { return false; } })() && (
         <div className="pt-4 border-t border-border space-y-2">
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
-            Post-settlement DeFi
+            Avalanche DeFi composability
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Swap released USDC → AVAX on LFJ (Trader Joe) DEX on Fuji. Real on-chain swap.
+            Execute a real USDC → AVAX swap on LFJ (Trader Joe) DEX · Fuji testnet. Demonstrates post-settlement DeFi composability on Avalanche.
           </p>
           {swapError && (
             <div className="flex items-center gap-2 text-xs text-destructive">
@@ -389,7 +392,7 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
             disabled={swapping}
             className="w-full bg-gradient-to-r from-primary to-success hover:opacity-90 text-primary-foreground"
           >
-            {swapping ? 'Swapping on LFJ…' : 'Swap to AVAX on LFJ'}
+            {swapping ? 'Swapping on LFJ…' : 'Swap USDC → AVAX on LFJ (testnet)'}
           </Button>
         </div>
       )}

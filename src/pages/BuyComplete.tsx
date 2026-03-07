@@ -31,10 +31,13 @@ export default function BuyComplete() {
 
         {/* Title */}
         <div className="text-center space-y-2">
-          <h1 className="text-xl font-semibold">Escrow funded</h1>
+          <h1 className="text-xl font-semibold">Escrow funded by XRamp LP</h1>
           <p className="text-muted-foreground text-sm">
-            USDC has been locked in escrow on Fuji. Complete your fiat payment, then submit proof via the extension.
+            MockUSDC has been locked in escrow on Avalanche Fuji testnet. Complete your fiat payment, then submit proof via the XRamp extension.
           </p>
+          <span className="inline-flex mx-auto text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full font-medium">
+            Avalanche Fuji testnet · MockUSDC
+          </span>
         </div>
 
         {/* Details */}
@@ -65,7 +68,7 @@ export default function BuyComplete() {
           )}
           {state.depositTxHash && (
             <div className="flex justify-between py-2">
-              <span className="text-muted-foreground text-sm">Deposit Tx</span>
+              <span className="text-muted-foreground text-sm">Escrow Deposit (Fuji)</span>
               <a
                 href={txUrl(state.depositTxHash as string)}
                 target="_blank"
@@ -91,7 +94,7 @@ export default function BuyComplete() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Pay via your selected method, then use the XRamp extension to submit payment proof. Admin will verify and release escrow.
+            Pay via your selected method, then use the XRamp extension to submit payment proof. Admin verifies and releases MockUSDC from escrow on Fuji.
           </p>
         </div>
       </div>

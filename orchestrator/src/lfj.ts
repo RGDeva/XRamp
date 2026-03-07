@@ -1,6 +1,8 @@
 /**
- * LFJ (Trader Joe) DEX integration for Fuji testnet.
- * Swaps USDC → AVAX via LBRouter V2.1 on Avalanche Fuji.
+ * Avalanche DeFi composability demo — LFJ (Trader Joe) integration.
+ * Executes a real USDC → AVAX swap via LBRouter V2.1 on Fuji testnet.
+ * Note: uses LFJ’s own testnet USDC (0xB607…), not the escrow MockUSDC (0xb2F4…).
+ * On mainnet these would be the same real USDC token.
  */
 
 import { ethers } from 'ethers';
@@ -34,9 +36,10 @@ const LB_ROUTER_ABI = [
 ];
 
 /**
- * Swap USDC → AVAX on LFJ V2.1 (Fuji testnet).
- * Uses the arbiter wallet. Mints LFJ test USDC first, then swaps via LBRouter.
- * Returns { swapTxHash, amountIn, amountOut }.
+ * Avalanche DeFi composability: swap USDC → AVAX on LFJ V2.1 (Fuji testnet).
+ * Uses the arbiter wallet. Mints LFJ testnet USDC, then swaps via LBRouter.
+ * This is a real on-chain DEX swap demonstrating post-settlement composability.
+ * Returns { swapTxHash, amountIn, amountOutMin }.
  */
 export async function swapUsdcToAvaxOnLfj(
   env: Env,
