@@ -11,8 +11,8 @@
 | **Proof submission** | XRamp extension captures proof, submits proofHash to orchestrator | ✅ Real | N/A (extension) | — | — |
 | **Admin verify + release** | Arbiter calls releaseEscrow() on Fuji, MockUSDC released | ✅ Real Fuji tx | Backend arbiter | MockUSDC (`0xb2F4…`) | Avalanche Fuji |
 | **LFJ swap** | Arbiter mints LFJ testnet USDC, swaps USDC→AVAX via LBRouter V2.1 | ✅ Real Fuji tx | Backend arbiter | LFJ USDC (`0xB607…`) | Avalanche Fuji |
-| **Rate** | Fixed 1:1 USD = USDC | ⚠️ Hardcoded | — | — | — |
-| **Fees** | 0.5% buy, 1% sell | ⚠️ Hardcoded | — | — | — |
+| **Rate (demo)** | Fixed 1:1 USD = MockUSDC, labeled "(demo)" in UI | ⚠️ Demo rate | — | — | — |
+| **Fees (demo)** | 0.5% buy, 1% sell, labeled "(demo)" in UI | ⚠️ Demo rate | — | — | — |
 
 ### LFJ Honest Framing
 

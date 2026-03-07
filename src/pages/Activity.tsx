@@ -366,7 +366,7 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
             Avalanche DeFi composability
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Execute a real USDC → AVAX swap on LFJ (Trader Joe) DEX · Fuji testnet. Demonstrates post-settlement DeFi composability on Avalanche.
+            Execute a real USDC → AVAX swap on LFJ (Trader Joe) DEX · Fuji testnet. Uses LFJ testnet USDC (separate from escrow MockUSDC; on mainnet these are the same token).
           </p>
           {swapError && (
             <div className="flex items-center gap-2 text-xs text-destructive">

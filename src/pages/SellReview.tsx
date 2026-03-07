@@ -88,7 +88,12 @@ export default function SellReview() {
         }
       });
     } catch (e) {
-      setConfirmError(e instanceof Error ? e.message : 'Failed to confirm');
+      const msg = e instanceof Error ? e.message : 'Failed to confirm';
+      if (msg.toLowerCase().includes('insufficient funds') || msg.toLowerCase().includes('gas')) {
+        setConfirmError('Insufficient Fuji AVAX for gas. Get testnet AVAX from the Avalanche Fuji faucet (faucet.avax.network) and try again.');
+      } else {
+        setConfirmError(msg);
+      }
       setConfirmStep('idle');
     }
   };
@@ -125,8 +130,8 @@ export default function SellReview() {
           <p className="text-sm font-medium text-muted-foreground">Quote details</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Rate</span>
-              <span>1 {crypto} = $1.00 {currency}</span>
+              <span className="text-muted-foreground">Rate (demo)</span>
+              <span>1 MockUSDC = $1.00 {currency}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">XRamp fee (1%)</span>
@@ -159,7 +164,7 @@ export default function SellReview() {
         <div className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-xl">
           <Wallet className="h-4 w-4 text-primary flex-shrink-0" />
           <p className="text-xs text-muted-foreground">
-            <span className="text-foreground font-medium">Your wallet will sign</span> to lock {sellAmount} USDC into escrow on Fuji. You'll see wallet confirmation popups.
+            <span className="text-foreground font-medium">Your wallet will sign</span> to lock {sellAmount} MockUSDC into escrow on Avalanche Fuji testnet. You'll see wallet confirmation popups.
           </p>
         </div>
       </div>

@@ -58,7 +58,12 @@ export default function BuyReview() {
         }
       });
     } catch (e) {
-      setConfirmError(e instanceof Error ? e.message : 'Failed to confirm');
+      const msg = e instanceof Error ? e.message : 'Failed to confirm';
+      if (msg.toLowerCase().includes('insufficient funds') || msg.toLowerCase().includes('gas')) {
+        setConfirmError('Insufficient Fuji AVAX for gas. Get testnet AVAX from the Avalanche Fuji faucet (faucet.avax.network) and try again.');
+      } else {
+        setConfirmError(msg);
+      }
       setConfirmStep('idle');
     }
   };
@@ -95,8 +100,8 @@ export default function BuyReview() {
           <p className="text-sm font-medium text-muted-foreground">Quote details</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Rate</span>
-              <span>1 {crypto} = $1.00 {currency}</span>
+              <span className="text-muted-foreground">Rate (demo)</span>
+              <span>1 MockUSDC = $1.00 {currency}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">XRamp fee (0.5%)</span>
@@ -134,7 +139,7 @@ export default function BuyReview() {
         <div className="flex items-center gap-2 p-3 bg-secondary/50 border border-border rounded-xl">
           <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <p className="text-xs text-muted-foreground">
-            <span className="text-foreground font-medium">XRamp LP funds escrow</span> — USDC is locked by the liquidity provider on Fuji. No wallet signature required from you.
+            <span className="text-foreground font-medium">XRamp LP funds escrow</span> — MockUSDC is locked by the liquidity provider on Avalanche Fuji testnet. No wallet signature required from you.
           </p>
         </div>
       </div>

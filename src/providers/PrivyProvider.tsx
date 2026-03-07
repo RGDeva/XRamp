@@ -1,4 +1,5 @@
 import { PrivyProvider as PrivyProviderBase } from '@privy-io/react-auth';
+import { avalancheFuji, avalanche } from '@privy-io/chains';
 import { ReactNode } from 'react';
 
 const PRIVY_APP_ID = 'cmkcshfa402kxi20ce4puhb3t';
@@ -18,6 +19,8 @@ export function PrivyWrapper({ children }: PrivyWrapperProps) {
           showWalletLoginFirst: false,
         },
         loginMethods: ['email', 'wallet'],
+        defaultChain: avalancheFuji,
+        supportedChains: [avalancheFuji, avalanche],
         embeddedWallets: {
           ethereum: {
             createOnLogin: 'users-without-wallets',

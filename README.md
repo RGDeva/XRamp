@@ -1,43 +1,26 @@
 # XRamp
 
-XRamp is an embedded crypto rails product that makes it easy to move between fiat and onchain assets in minutes.
+XRamp is a fiat-to-crypto onramp/offramp that settles on Avalanche via escrow contracts. Users pay with Venmo (or other fiat rails), submit payment proof, and receive MockUSDC on Avalanche Fuji testnet after admin verification.
 
-At a high level, XRamp orchestrates:
-- P2P onramp/offramp coordination (Peer / ZKP2P style flows)
-- Escrow-style safety guarantees (lock → confirm → release)
-- A universal swap layer (Trustware) to route USDC into any token
-- Optional privacy and shielded-transfer layers (future)
-- A distribution surface via web embed + Chrome extension (future)
+## What is real vs. demo vs. future
 
-This repo contains the XRamp frontend built in Lovable and designed to stay minimal, fast, and easy to embed.
+### Fully real (on-chain, verifiable)
+- **Escrow funding** — real `createEscrow` + `deposit` transactions on Avalanche Fuji
+- **Escrow release** — real `releaseEscrow` transaction after proof verification
+- **Payment proof** — real Venmo proof hash captured by the XRamp Chrome extension
+- **LFJ swap** — real USDC → AVAX swap on LFJ (Trader Joe) V2.1 DEX on Fuji (post-settlement composability demo)
 
-## Product direction
+### Demo / testnet
+- **MockUSDC** — open-mint test ERC20 (not real USDC). Rate is fixed 1:1 for demo.
+- **Fees** — hardcoded 0.5% (buy) / 1% (sell), clearly labeled as demo rates
+- **Single LP** — all liquidity provided by XRamp backend (arbiter wallet), not a multi-provider marketplace
+- **LFJ token difference** — LFJ testnet uses its own USDC (`0xB607…`), different from escrow MockUSDC (`0xb2F4…`). On mainnet these would be the same real USDC.
 
-### Current focus (v0)
-- Clean 4-step flow: Amount → Funding → Swap → Withdraw
-- Intent + status tracking UI (funding, swapping, withdrawing)
-- Receipt view for users (timeline + tx refs)
-- Basic admin/debug surfaces (dev only)
-
-### Planned integrations
-- **Peer / ZKP2P**: onramp and offramp coordination (fiat methods like Venmo, Cash App, Revolut, bank transfer)
-- **Trustware**: universal swaps and routing (USDC → target token)
-- **Escrow + verification**: automated lock/confirm/release lifecycle via orchestration + webhooks
-- **Veil.cash or similar** (optional): privacy mode and shielded transfers (phase 2)
-
-### Future surfaces
-- **Chrome extension**: “XRamp anywhere” onramp/offramp/swap overlay
-- **Embedded SDK**: drop-in widget for partners
-- **Partner API**: create funding/swap/withdraw intents programmatically
-
-## To-do (near-term)
-- [ ] Decide v0 chain + stablecoin scope (recommend: single chain + USDC only)
-- [ ] Define escrow model and verification rules per payment method
-- [ ] Implement intent-based state machine and status UI
-- [ ] Add webhook listeners for Peer and Trustware events
-- [ ] Add receipt export (JSON + human-readable)
-- [ ] Add basic admin view (intent list + detail + logs)
-- [ ] Spike Chrome extension architecture and onboarding flow
+### Future
+- **Multi-LP marketplace** — Peer.xyz's liquidity network is referenced as the future quoting engine; current demo uses XRamp's single LP
+- **Real USDC on mainnet** — production deployment with real stablecoins
+- **Automated proof verification** — currently admin-triggered
+- **Chrome extension SDK** — drop-in widget for partners
 
 ## Architecture
 
@@ -106,43 +89,30 @@ npm run deploy
 
 ## Hackathon Demo Script
 
-### Prerequisites
-- Orchestrator running (local or deployed)
-- Privy account logged in
-- (For on-chain demo) Contracts deployed to Fuji, addresses in `fujiConfig.json`
+See [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) for the full judge-facing demo script with exact clicks, labels, and narration.
 
-### Demo Flow
+### Quick Demo Flow
 
-1. **Open XRamp** → `https://xramp-app.vercel.app` or `localhost:5173`
-2. **Log in** → Click "Get Started" → Privy login (email or wallet)
-3. **Home page** → Shows delivery address, real ERC20 balance (if contracts deployed), recent activity from backend
-4. **Buy crypto**:
-   - Click "Buy" → Enter amount (e.g. `100`) → Select payment method (e.g. Venmo) → Enter handle (`@username`)
-   - Click "Continue" → Creates real intent in backend (state: `CREATED`)
-   - Review page shows intent details → Confirm
-   - Complete page shows order received
-5. **View Activity** → Click "View activity" or navigate to Activity tab
-   - Shows all intents from backend with real states
-   - Click any intent → Detail sheet shows Intent ID, state, rail, handle, tx hashes
-6. **Admin Verify + Release** (admin email: `rishig@umich.edu`):
-   - Open an intent detail → "Verify + Release Escrow" button appears for admin
-   - Click → Backend marks proofs verified, releases escrow on Fuji (if deployed), transitions to `COMPLETE`
-   - Release tx hash appears with Snowtrace explorer link
-7. **Sell crypto** → Same flow as Buy but creates OFFRAMP intent
-8. **Chrome Extension** → Open side panel → Same Buy/Sell/Send flows, all dropdowns working
+1. **Open** → `https://xramp-app.vercel.app` → Log in with Privy
+2. **Buy** → Enter amount → Select Venmo → Continue → Review (shows "XRamp LP funds escrow", "Settlement: Avalanche Fuji · MockUSDC") → Confirm
+3. **Escrow funded** → See "Escrow funded by XRamp LP" with Fuji testnet badge, depositTxHash → Snowtrace link
+4. **Pay via Venmo** → Use XRamp extension → "Verify with Venmo (Beta)" → Submit proof
+5. **Activity** → See intent with Proof Hash (verified badge), Escrow Deposit (Fuji), Funded by: XRamp LP
+6. **Admin verify** → Click "Verify + Release Escrow" → Escrow Release (Fuji) tx hash appears
+7. **(Optional) LFJ swap** → Click "Swap USDC → AVAX on LFJ (testnet)" → LFJ Swap Tx (Fuji) hash appears under "Avalanche DeFi composability" section
 
 ### Key URLs
 - **Frontend**: https://xramp-app.vercel.app
+- **Orchestrator**: https://xramp-orchestrator.xramp.workers.dev
 - **Explorer**: https://testnet.snowtrace.io
-- **Orchestrator health**: `GET /health`
 
-### Verifiable On-Chain Artifacts
-- MockUSDC contract address → check `contracts/deployed.json`
-- XRampEscrow contract address → check `contracts/deployed.json`
-- Deposit tx hashes → visible in Activity detail sheet → clickable Snowtrace links
-- Release tx hashes → visible after admin verify
+### Verifiable On-Chain Tx Hashes (per intent)
+1. **Escrow Deposit (Fuji)** — `depositTxHash` → Snowtrace link
+2. **Proof Hash** — payment proof from extension
+3. **Escrow Release (Fuji)** — `releaseTxHash` → Snowtrace link
+4. **LFJ Swap Tx (Fuji)** — `swapTxHash` → Snowtrace link (optional)
 
 ## References
-- Peer/ZkP2P Documentation: https://docs.peer.xyz/
-- Trustware SDK: https://www.notion.so/trustware/Deposit-Widget-28671aae45df80c7b7bbeae1ff38848e
+- Peer.xyz / ZKP2P: https://docs.peer.xyz/ (future multi-LP quoting engine; current demo uses XRamp single LP)
+- LFJ / Trader Joe: https://traderjoexyz.com/ (Avalanche DEX, V2.1 on Fuji testnet)
 - ZKP2P Contracts: https://github.com/zkp2p/zkp2p-contracts

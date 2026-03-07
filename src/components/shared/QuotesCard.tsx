@@ -54,8 +54,8 @@ export function QuotesCard({ payAmount, payCurrency, receiveCrypto }: QuotesCard
       {/* Detail rows */}
       <div className="space-y-2 border-t border-border/50 pt-3">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Rate</span>
-          <span className="font-medium text-foreground">1 {payCurrency} = 1.00 {displayToken}</span>
+          <span className="text-muted-foreground">Rate (demo)</span>
+          <span className="font-medium text-foreground">1 {payCurrency} = 1.00 MockUSDC</span>
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">XRamp fee (0.5%)</span>

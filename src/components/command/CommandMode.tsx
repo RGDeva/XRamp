@@ -5,33 +5,25 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { orchestratorApi } from '@/lib/orchestratorApi';
 
-// ─── Simulated LP Engine ────────────────────────────────────────────────────
+// ─── XRamp LP (single provider for demo) ────────────────────────────────────
 
 interface LP {
   id: string;
   name: string;
-  reliability: number;    // percentage
-  avgTime: string;        // human-readable
-  avgSeconds: number;     // for sorting
-  expressEligible: boolean;
-  fillRate: number;       // percentage
+  reliability: number;
+  avgTime: string;
+  avgSeconds: number;
+  fillRate: number;
 }
 
-const LP_POOL: LP[] = [
-  { id: 'lp_a', name: 'LP_A', reliability: 98, avgTime: '2m 10s', avgSeconds: 130, expressEligible: true,  fillRate: 99 },
-  { id: 'lp_b', name: 'LP_B', reliability: 91, avgTime: '5m 40s', avgSeconds: 340, expressEligible: false, fillRate: 94 },
-  { id: 'lp_c', name: 'LP_C', reliability: 96, avgTime: '3m 05s', avgSeconds: 185, expressEligible: true,  fillRate: 97 },
-];
-
-function routeLP(express: boolean): LP {
-  const eligible = express
-    ? LP_POOL.filter((lp) => lp.expressEligible && lp.reliability > 95)
-    : [...LP_POOL];
-  // Sort by reliability desc, then avgSeconds asc
-  return eligible.sort((a, b) =>
-    b.reliability - a.reliability || a.avgSeconds - b.avgSeconds
-  )[0];
-}
+const XRAMP_LP: LP = {
+  id: 'xramp_lp',
+  name: 'XRamp LP',
+  reliability: 99,
+  avgTime: '~2 min',
+  avgSeconds: 120,
+  fillRate: 100,
+};
 
 // ─── Message Types ───────────────────────────────────────────────────────────
 
@@ -61,8 +53,6 @@ const QUICK_COMMANDS = [
 interface Intent {
   action: 'buy' | 'sell' | 'onramp';
   amount: number;
-  express: boolean;
-  swapToAvax: boolean;
   rail: string;
 }
 
@@ -70,11 +60,9 @@ function parseIntent(text: string): Intent {
   const lower = text.toLowerCase();
   const amtMatch = text.match(/\$?([\d,]+)/);
   const amount = amtMatch ? parseFloat(amtMatch[1].replace(',', '')) : 100;
-  const express = lower.includes('express');
-  const swapToAvax = lower.includes('swap to avax') || lower.includes('avax');
   const action: Intent['action'] = lower.includes('sell') ? 'sell' : lower.includes('on-ramp') || lower.includes('onramp') ? 'onramp' : 'buy';
   const rail = lower.includes('venmo') ? 'Venmo' : lower.includes('cashapp') || lower.includes('cash app') ? 'CashApp' : lower.includes('zelle') ? 'Zelle' : 'CashApp';
-  return { action, amount, express, swapToAvax, rail };
+  return { action, amount, rail };
 }
 
 // ─── SLA Countdown Component ──────────────────────────────────────────────────
@@ -118,14 +106,14 @@ export function CommandMode() {
     {
       id: uid(),
       role: 'system',
-      text: 'XRamp Command Mode active. Intent-based settlement on Avalanche. Tap a quick command or type below.',
+      text: 'XRamp Command Mode active. Settlement on Avalanche Fuji via XRamp LP. Tap a quick command or type below.',
       ts: Date.now(),
     },
   ]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [slaActive, setSlaActive] = useState(false);
-  const [matchedLP, setMatchedLP] = useState<LP | null>(null);
+  const [showLP, setShowLP] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const push = useCallback((role: MsgRole, text: string) => {
@@ -142,13 +130,12 @@ export function CommandMode() {
     setMinimized(false);
 
     const parsed = parseIntent(text);
-    const lp = routeLP(parsed.express);
-    setMatchedLP(lp);
+    setShowLP(true);
 
     push('user', text);
     await delay(400);
 
-    push('info', `Creating ${parsed.action} intent for $${parsed.amount} via ${parsed.rail}…`);
+    push('info', `Creating ${parsed.action} intent for $${parsed.amount} MockUSDC via ${parsed.rail}…`);
     await delay(400);
 
     // ── Real orchestrator intent creation ─────────────────────────────────────
@@ -184,16 +171,8 @@ export function CommandMode() {
       await delay(400);
       push('system', 'Track this intent on the Activity tab. Admin will release escrow after proof verification.');
     } else {
-      // ── Demo / API unreachable — simulation only ───────────────────────
-      setSlaActive(true);
-      await delay(3000);
-      setSlaActive(false);
-
-      push('success', '✓ Fiat received (demo)');
-      await delay(700);
-      push('success', '✓ Escrow released (demo)');
-      await delay(300);
-      push('system', `Demo complete. ${parsed.action === 'sell' ? 'Fiat payout' : 'Crypto delivery'} simulated — log in to create real intents.`);
+      // ── API unreachable — inform user ──────────────────────────────────
+      push('system', 'Log in and use the Buy or Sell page to create a real intent with on-chain escrow.');
     }
     setBusy(false);
   }, [busy, push]);
@@ -320,7 +299,7 @@ export function CommandMode() {
                 </div>
 
                 {/* LP Stats */}
-                <LPStatsBar lp={matchedLP} />
+                {showLP && <LPStatsBar />}
               </>
             )}
           </motion.div>
@@ -399,11 +378,11 @@ function ChatBubble({ msg }: { msg: Msg }) {
 
 // ─── LP Stats Bar ─────────────────────────────────────────────────────────────
 
-function LPStatsBar({ lp }: { lp: LP | null }) {
-  const display = lp ?? LP_POOL[0];
+function LPStatsBar() {
+  const display = XRAMP_LP;
   return (
     <div className="px-4 py-3 border-t border-border/30 bg-secondary/20">
-      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-2">Active LP performance</p>
+      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-2">XRamp LP · single provider</p>
       <div className="grid grid-cols-3 gap-2">
         <StatPill
           icon={<TrendingUp className="h-3 w-3" />}
