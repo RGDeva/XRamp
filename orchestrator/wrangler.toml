@@ -7,6 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 PRIVY_APP_ID = "cmkcshfa402kxi20ce4puhb3t"
 ADMIN_EMAILS = "rishmanx@gmail.com"
 ADMIN_WALLET_ADDRESSES = "0x01141553F506Df71cb71751a30526F00269179ac"
+ADMIN_PRIVY_SUBS = "did:privy:cmm2yw6n800460cl5cnozhi7j"
 FUJI_RPC_URL = "https://api.avax-test.network/ext/bc/C/rpc"
 ESCROW_CONTRACT_ADDRESS = "0xe1189d9644Ba8546FB421c02fd28bf64CF74F821"
 MOCK_USDC_ADDRESS = "0xb2F4Ca689C54bCe4effcf8A12Cb02089C933C5c6"

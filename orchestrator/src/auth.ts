@@ -86,45 +86,32 @@ export async function verifyAuth(request: Request, env: Env): Promise<AuthResult
   let email: string | undefined;
   let wallet: string | undefined;
 
-  // Extract user info from all possible Privy JWT claim locations.
-  // Privy's JWT structure varies by login method (email, external wallet, embedded wallet).
+  // Privy access tokens only contain: sid, iss, iat, aud, sub, exp
+  // linked_accounts / email / wallet are NOT embedded in the access token.
+  // The sub claim (Privy DID) is the only stable identity present.
+  // We also attempt extraction from linked_accounts for id-token flows.
   const linkedAccounts = payload.linked_accounts as Array<Record<string, string>> | undefined;
-  console.log('[auth] payload keys:', Object.keys(payload).join(', '));
-  console.log('[auth] linked_accounts:', JSON.stringify(linkedAccounts));
-
   const isEthAddress = (s: string) => /^0x[0-9a-fA-F]{40}$/.test(s);
 
   if (linkedAccounts) {
     for (const account of linkedAccounts) {
-      console.log('[auth] account:', JSON.stringify(account));
-      // Email: type='email', address=email string
       if (account.type === 'email' && account.address) email = account.address;
-      // Wallet: scan ALL account types for any eth address field
-      // (Core = type:'wallet', embedded = type:'wallet', smart = type:'smart_wallet')
       for (const val of Object.values(account)) {
         if (!wallet && isEthAddress(val)) wallet = val;
       }
     }
   }
 
-  // Top-level JWT claims
   if (!email && payload.email) email = payload.email as string;
   if (!wallet && payload.wallet_address && isEthAddress(payload.wallet_address as string)) {
     wallet = payload.wallet_address as string;
   }
-  if (!wallet && payload.walletAddress && isEthAddress(payload.walletAddress as string)) {
-    wallet = payload.walletAddress as string;
-  }
-  // active_wallet claim (some Privy configs)
   const activeWallet = payload.active_wallet as Record<string, string> | undefined;
   if (!wallet && activeWallet) {
     for (const val of Object.values(activeWallet)) {
       if (isEthAddress(val)) { wallet = val; break; }
     }
   }
-
-  console.log('[auth] sub (Privy DID):', sub);
-  console.log('[auth] FINAL extracted email:', email, '| wallet:', wallet);
 
   return {
     ok: true,

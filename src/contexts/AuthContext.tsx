@@ -11,6 +11,7 @@ interface AuthState {
     email?: string;
     walletAddress?: string;
     embeddedWalletAddress?: string;
+    privySub?: string;
   } | null;
   login: () => void;
   logout: () => Promise<void>;
@@ -79,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         walletAddress: externalWallet?.address,
         embeddedWalletAddress: embeddedWallet?.address,
+        privySub: user.id,
       } : null,
       login,
       logout,

@@ -14,6 +14,7 @@ import { getDeliveryAddress } from '@/contexts/AuthContext';
 
 const ADMIN_EMAILS = ['rishmanx@gmail.com'];
 const ADMIN_WALLETS = ['0x01141553f506df71cb71751a30526f00269179ac'];
+const ADMIN_SUBS = ['did:privy:cmm2yw6n800460cl5cnozhi7j'];
 
 type FilterType = 'all' | 'active' | 'completed';
 
@@ -198,7 +199,8 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
   const [swapError, setSwapError] = useState<string | null>(null);
   const userWallet = user?.walletAddress?.toLowerCase() || user?.embeddedWalletAddress?.toLowerCase() || null;
   const isAdmin = (userEmail ? ADMIN_EMAILS.includes(userEmail.toLowerCase()) : false)
-    || (userWallet ? ADMIN_WALLETS.includes(userWallet) : false);
+    || (userWallet ? ADMIN_WALLETS.includes(userWallet) : false)
+    || (user?.privySub ? ADMIN_SUBS.includes(user.privySub) : false);
 
   useEffect(() => {
     if (!intent.proofHash) return;
@@ -216,22 +218,6 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
     try {
       setVerifying(true);
       setVerifyError(null);
-      // DEBUG: show exactly what identity the worker sees
-      const tok = orchestratorApi.getAuthToken();
-      if (tok) {
-        try {
-          const parts = tok.split('.');
-          const decoded = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-          console.log('[XRamp admin debug] JWT payload:', JSON.stringify(decoded, null, 2));
-        } catch { /* ignore */ }
-        try {
-          const whoami = await fetch(`${import.meta.env.VITE_ORCHESTRATOR_URL || 'https://xramp-orchestrator.xramp.workers.dev'}/whoami`, {
-            headers: { Authorization: `Bearer ${tok}` },
-          });
-          const whoamiData = await whoami.json();
-          console.log('[XRamp admin debug] /whoami response:', JSON.stringify(whoamiData));
-        } catch { /* ignore */ }
-      }
       await orchestratorApi.verifyAndRelease(intent.id);
       onUpdate();
     } catch (e) {

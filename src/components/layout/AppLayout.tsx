@@ -9,13 +9,15 @@ import { toast } from 'sonner';
 
 const ADMIN_EMAILS = ['rishmanx@gmail.com'];
 const ADMIN_WALLETS = ['0x01141553f506df71cb71751a30526f00269179ac'];
+const ADMIN_SUBS = ['did:privy:cmm2yw6n800460cl5cnozhi7j'];
 
 function useProofMessageListener() {
   const { user } = useAuth();
   const userEmail = user?.email || null;
   const userWallet = user?.walletAddress?.toLowerCase() || user?.embeddedWalletAddress?.toLowerCase() || null;
   const isAdmin = (userEmail ? ADMIN_EMAILS.includes(userEmail.toLowerCase()) : false)
-    || (userWallet ? ADMIN_WALLETS.includes(userWallet) : false);
+    || (userWallet ? ADMIN_WALLETS.includes(userWallet) : false)
+    || (user?.privySub ? ADMIN_SUBS.includes(user.privySub) : false);
 
   useEffect(() => {
     const handler = async (event: MessageEvent) => {

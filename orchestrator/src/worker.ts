@@ -89,13 +89,6 @@ export default {
       return cors(json({ ok: true, service: 'xramp-orchestrator', time: iso() }), origin);
     }
 
-    // Whoami (debug — returns caller identity from JWT)
-    if (url.pathname === '/whoami' && request.method === 'GET') {
-      const authResult = await verifyAuth(request, env);
-      if (!authResult.ok) return cors(err(authResult.error || 'Unauthorized', 401), origin);
-      return cors(json({ sub: authResult.userId, email: authResult.email ?? null, wallet: authResult.wallet ?? null }), origin);
-    }
-
     // ── Auth ──────────────────────────────────────────────────────────────
     let userId: string | null = null;
     let userEmail: string | null = null;
@@ -374,9 +367,8 @@ export default {
 
     // ── POST /intents/:id/verify (ADMIN ONLY) ───────────────────────────
     if (verifyMatch && request.method === 'POST') {
-      console.log('[verify] userId/sub:', userId, '| email:', userEmail, '| wallet:', userWallet);
       if (!isAdmin(userEmail, userWallet, env, userId)) {
-        return cors(err(`Forbidden: admin only. sub=${userId ?? 'null'} email=${userEmail ?? 'null'} wallet=${userWallet ?? 'null'}`, 403), origin);
+        return cors(err('Forbidden: admin only', 403), origin);
       }
 
       const intentId = verifyMatch[1];
