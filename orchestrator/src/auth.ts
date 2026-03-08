@@ -123,6 +123,7 @@ export async function verifyAuth(request: Request, env: Env): Promise<AuthResult
     }
   }
 
+  console.log('[auth] sub (Privy DID):', sub);
   console.log('[auth] FINAL extracted email:', email, '| wallet:', wallet);
 
   return {
@@ -133,12 +134,14 @@ export async function verifyAuth(request: Request, env: Env): Promise<AuthResult
   };
 }
 
-export function isAdmin(email: string | null, wallet: string | null, env: Env): boolean {
+export function isAdmin(email: string | null, wallet: string | null, env: Env, sub?: string | null): boolean {
   const adminEmails = (env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
   const adminWallets = (env.ADMIN_WALLET_ADDRESSES || '').split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+  const adminSubs = (env.ADMIN_PRIVY_SUBS || '').split(',').map(s => s.trim()).filter(Boolean);
 
   if (email && adminEmails.includes(email.toLowerCase())) return true;
   if (wallet && adminWallets.includes(wallet.toLowerCase())) return true;
+  if (sub && adminSubs.includes(sub)) return true;
 
   return false;
 }
