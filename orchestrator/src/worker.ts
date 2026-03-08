@@ -367,7 +367,7 @@ export default {
     // ── POST /intents/:id/verify (ADMIN ONLY) ───────────────────────────
     if (verifyMatch && request.method === 'POST') {
       if (!isAdmin(userEmail, userWallet, env)) {
-        return cors(err('Forbidden: admin only', 403), origin);
+        return cors(err(`Forbidden: admin only. Extracted email=${userEmail ?? 'null'} wallet=${userWallet ?? 'null'}`, 403), origin);
       }
 
       const intentId = verifyMatch[1];

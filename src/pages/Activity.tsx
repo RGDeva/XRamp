@@ -216,6 +216,17 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
     try {
       setVerifying(true);
       setVerifyError(null);
+      // DEBUG: decode JWT to see what Privy embeds for Core wallet login
+      const tok = orchestratorApi.getAuthToken();
+      if (tok) {
+        try {
+          const parts = tok.split('.');
+          const decoded = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+          console.log('[XRamp admin debug] JWT payload:', JSON.stringify(decoded, null, 2));
+          console.log('[XRamp admin debug] linked_accounts:', JSON.stringify(decoded.linked_accounts, null, 2));
+          console.log('[XRamp admin debug] active_wallet:', JSON.stringify(decoded.active_wallet, null, 2));
+        } catch { /* ignore */ }
+      }
       await orchestratorApi.verifyAndRelease(intent.id);
       onUpdate();
     } catch (e) {
