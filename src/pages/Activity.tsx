@@ -13,6 +13,7 @@ import { txUrl } from '@/lib/fuji';
 import { getDeliveryAddress } from '@/contexts/AuthContext';
 
 const ADMIN_EMAILS = ['rishmanx@gmail.com'];
+const ADMIN_WALLETS = ['0x01141553f506df71cb71751a30526f00269179ac'];
 
 type FilterType = 'all' | 'active' | 'completed';
 
@@ -195,7 +196,9 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
   const [proofVerified, setProofVerified] = useState<boolean | null>(null);
   const [swapping, setSwapping] = useState(false);
   const [swapError, setSwapError] = useState<string | null>(null);
-  const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail.toLowerCase()) : false;
+  const userWallet = user?.walletAddress?.toLowerCase() || user?.embeddedWalletAddress?.toLowerCase() || null;
+  const isAdmin = (userEmail ? ADMIN_EMAILS.includes(userEmail.toLowerCase()) : false)
+    || (userWallet ? ADMIN_WALLETS.includes(userWallet) : false);
 
   useEffect(() => {
     if (!intent.proofHash) return;

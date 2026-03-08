@@ -7,12 +7,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { orchestratorApi } from '@/lib/orchestratorApi';
 import { toast } from 'sonner';
 
-const ADMIN_EMAILS = ['rishig@umich.edu'];
+const ADMIN_EMAILS = ['rishmanx@gmail.com'];
+const ADMIN_WALLETS = ['0x01141553f506df71cb71751a30526f00269179ac'];
 
 function useProofMessageListener() {
   const { user } = useAuth();
   const userEmail = user?.email || null;
-  const isAdmin = userEmail ? ADMIN_EMAILS.includes(userEmail.toLowerCase()) : false;
+  const userWallet = user?.walletAddress?.toLowerCase() || user?.embeddedWalletAddress?.toLowerCase() || null;
+  const isAdmin = (userEmail ? ADMIN_EMAILS.includes(userEmail.toLowerCase()) : false)
+    || (userWallet ? ADMIN_WALLETS.includes(userWallet) : false);
 
   useEffect(() => {
     const handler = async (event: MessageEvent) => {
