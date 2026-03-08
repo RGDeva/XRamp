@@ -12,7 +12,7 @@ import { orchestratorApi, type OrchestratorIntent } from '@/lib/orchestratorApi'
 import { txUrl } from '@/lib/fuji';
 import { getDeliveryAddress } from '@/contexts/AuthContext';
 
-const ADMIN_EMAILS = ['rishig@umich.edu'];
+const ADMIN_EMAILS = ['rishmanx@gmail.com'];
 
 type FilterType = 'all' | 'active' | 'completed';
 

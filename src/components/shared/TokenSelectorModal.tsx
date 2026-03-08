@@ -12,22 +12,11 @@ interface Token {
 }
 
 const TOKENS: Token[] = [
-  { symbol: 'ETH',   name: 'Ethereum',    chain: 'Ethereum',    color: '#627EEA', letter: '⟠',  popular: true },
-  { symbol: 'AVAX',  name: 'Avalanche',   chain: 'Avalanche',   color: '#E84142', letter: 'A',  popular: true },
-  { symbol: 'SOL',   name: 'Solana',      chain: 'Solana',      color: '#9945FF', letter: '◎',  popular: true },
-  { symbol: 'USDC',  name: 'USD Coin',    chain: 'Multi-chain', color: '#2775CA', letter: '$',  popular: true },
-  { symbol: 'BASE',  name: 'Base',        chain: 'Base',        color: '#0052FF', letter: 'B',  popular: true },
-  { symbol: 'HYPE',  name: 'Hyperliquid', chain: 'Hyperliquid', color: '#00FF88', letter: 'H',  popular: true },
-  { symbol: 'APE',   name: 'Ape Chain',   chain: 'ApeChain',    color: '#0054FA', letter: 'A' },
-  { symbol: 'ARB',   name: 'Arbitrum',    chain: 'Arbitrum',    color: '#12AAFF', letter: 'A' },
-  { symbol: 'BTC',   name: 'Bitcoin',     chain: 'Bitcoin',     color: '#F7931A', letter: '₿' },
-  { symbol: 'BNB',   name: 'BNB Chain',   chain: 'BSC',         color: '#F3BA2F', letter: 'B' },
-  { symbol: 'MATIC', name: 'Polygon',     chain: 'Polygon',     color: '#8247E5', letter: 'M' },
-  { symbol: 'OP',    name: 'Optimism',    chain: 'Optimism',    color: '#FF0420', letter: 'O' },
-  { symbol: 'LINK',  name: 'Chainlink',   chain: 'Ethereum',    color: '#375BD2', letter: 'L' },
-  { symbol: 'UNI',   name: 'Uniswap',     chain: 'Ethereum',    color: '#FF007A', letter: 'U' },
-  { symbol: 'AAVE',  name: 'Aave',        chain: 'Ethereum',    color: '#B6509E', letter: 'A' },
-  { symbol: 'NEAR',  name: 'NEAR',        chain: 'NEAR',        color: '#00C08B', letter: 'N' },
+  { symbol: 'USDC',  name: 'USD Coin',            chain: 'Avalanche C-Chain', color: '#2775CA', letter: '$',  popular: true },
+  { symbol: 'AVAX',  name: 'Avalanche',           chain: 'Avalanche C-Chain', color: '#E84142', letter: 'A',  popular: true },
+  { symbol: 'USDT',  name: 'Tether',              chain: 'Avalanche C-Chain', color: '#26A17B', letter: '₮',  popular: true },
+  { symbol: 'BTC.b', name: 'Bitcoin (Avalanche)', chain: 'Avalanche C-Chain', color: '#F7931A', letter: '₿',  popular: true },
+  { symbol: 'WAVAX', name: 'Wrapped AVAX',        chain: 'Avalanche C-Chain', color: '#E84142', letter: 'W',  popular: true },
 ];
 
 interface TokenSelectorModalProps {

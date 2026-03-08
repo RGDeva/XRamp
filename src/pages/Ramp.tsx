@@ -60,7 +60,7 @@ function TokenPicker({
     tokens: filtered.filter(t => t.chain === chain),
   })).filter(g => g.tokens.length > 0);
 
-  const quickTokens = TOKENS.filter(t => ['AVAX','USDC','USDT','BTC.b','ETH'].includes(t.symbol));
+  const quickTokens = TOKENS.filter(t => ['USDC','AVAX','USDT','BTC.b','WAVAX'].includes(t.symbol));
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -140,7 +140,7 @@ export default function Ramp() {
   const [tab, setTab] = useState<RampTab>(initialTab);
 
   const [buyAmount, setBuyAmount] = useState('');
-  const [buyToken, setBuyToken] = useState<Token>(TOKENS[0]);
+  const [buyToken, setBuyToken] = useState<Token>(TOKENS.find(t => t.symbol === 'USDC') ?? TOKENS[0]);
   const [showBuyTokenPicker, setShowBuyTokenPicker] = useState(false);
   const [buyMethod, setBuyMethod] = useState<string | null>(null);
   const [showBuyMethodPicker, setShowBuyMethodPicker] = useState(false);
@@ -149,7 +149,7 @@ export default function Ramp() {
   const [buyError, setBuyError] = useState<string | null>(null);
 
   const [sellAmount, setSellAmount] = useState('');
-  const [sellToken, setSellToken] = useState<Token>(TOKENS[0]);
+  const [sellToken, setSellToken] = useState<Token>(TOKENS.find(t => t.symbol === 'USDC') ?? TOKENS[0]);
   const [showSellTokenPicker, setShowSellTokenPicker] = useState(false);
   const [sellMethod, setSellMethod] = useState<string | null>(null);
   const [showSellMethodPicker, setShowSellMethodPicker] = useState(false);
@@ -412,7 +412,7 @@ export default function Ramp() {
                     <p className="text-xs text-muted-foreground mt-1.5">Demo rate: 1 USD = 1 USDC · Fee: ${buyFee}</p>
                   )}
                 </div>
-                {buyNum > 0 && <QuotesCard payAmount={buyAmount} payCurrency="USD" receiveCrypto={buyToken.symbol} />}
+                {buyNum > 0 && <QuotesCard payAmount={buyAmount} payCurrency="USD" receiveCrypto={buyToken.symbol} rail={buySelectedMethod?.name ?? 'Venmo'} />}
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">Payment method</p>
                   <button onClick={() => setShowBuyMethodPicker(true)}
