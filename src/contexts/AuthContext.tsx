@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { wallets } = useWallets();
 
   // Sync Privy access token into the orchestrator API client
+  // Re-run whenever authenticated or wallets change so the token is always fresh
   useEffect(() => {
     if (authenticated) {
       getAccessToken().then((token) => {
@@ -47,24 +48,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setAuthToken(null);
     }
-  }, [authenticated, getAccessToken]);
+  }, [authenticated, wallets, getAccessToken]);
 
   const getWalletSigner = useCallback(async (): Promise<ethers.Signer> => {
-    // Prefer embedded wallet (always available for Privy users), fall back to external
-    const embedded = wallets.find(w => w.walletClientType === 'privy');
+    // Prefer external wallet (Core) so user signs with the wallet they connected
     const external = wallets.find(w => w.walletClientType !== 'privy');
-    const wallet = embedded || external;
+    const embedded = wallets.find(w => w.walletClientType === 'privy');
+    const wallet = external || embedded;
     if (!wallet) throw new Error('No wallet connected');
 
-    // Switch to Fuji if not already
+    const provider = await wallet.getEthereumProvider();
+
+    // Switch to Fuji — try Privy's switchChain first, then fall back to
+    // wallet_addEthereumChain (required for external wallets like Core that
+    // don't have Fuji pre-configured).
     try {
       await wallet.switchChain(FUJI_CHAIN_ID);
     } catch {
-      // switchChain may throw if already on the right chain or unsupported — continue
+      try {
+        await provider.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: `0x${FUJI_CHAIN_ID.toString(16)}`,
+            chainName: 'Avalanche Fuji Testnet',
+            nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
+            rpcUrls: ['https://api.avax-test.network/ext/bc/C/rpc'],
+            blockExplorerUrls: ['https://testnet.snowtrace.io'],
+          }],
+        });
+      } catch {
+        // If add also fails (user rejected), continue — tx will fail with a clear error
+      }
     }
 
-    const ethereumProvider = await wallet.getEthereumProvider();
-    const browserProvider = new ethers.BrowserProvider(ethereumProvider);
+    const browserProvider = new ethers.BrowserProvider(provider);
     return browserProvider.getSigner();
   }, [wallets]);
 
