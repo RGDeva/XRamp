@@ -101,7 +101,7 @@ export default function BuyReview() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Rate (demo)</span>
-              <span>1 MockUSDC = $1.00 {currency}</span>
+              <span>1 USDC = $1.00 {currency}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">XRamp fee (0.5%)</span>
@@ -113,7 +113,7 @@ export default function BuyReview() {
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              <span>Settlement: Avalanche Fuji · MockUSDC</span>
+              <span>Settlement: Avalanche Fuji · USDC</span>
             </div>
           </div>
         </div>
@@ -139,7 +139,7 @@ export default function BuyReview() {
         <div className="flex items-center gap-2 p-3 bg-secondary/50 border border-border rounded-xl">
           <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <p className="text-xs text-muted-foreground">
-            <span className="text-foreground font-medium">XRamp LP funds escrow</span> — MockUSDC is locked by the liquidity provider on Avalanche Fuji testnet. No wallet signature required from you.
+            <span className="text-foreground font-medium">XRamp LP funds escrow</span> — USDC is locked by the liquidity provider on Avalanche Fuji testnet. No wallet signature required from you.
           </p>
         </div>
       </div>

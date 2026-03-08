@@ -134,7 +134,7 @@ export default function SellReview() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Rate (demo)</span>
-              <span>1 MockUSDC = $1.00 {currency}</span>
+              <span>1 USDC = $1.00 {currency}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">XRamp fee (1%)</span>
@@ -146,7 +146,7 @@ export default function SellReview() {
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              <span>Settlement: Avalanche Fuji · MockUSDC</span>
+              <span>Settlement: Avalanche Fuji · USDC</span>
             </div>
           </div>
         </div>
@@ -167,7 +167,7 @@ export default function SellReview() {
         <div className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-xl">
           <Wallet className="h-4 w-4 text-primary flex-shrink-0" />
           <p className="text-xs text-muted-foreground">
-            <span className="text-foreground font-medium">Your wallet will show 4 popups</span> — mint MockUSDC, create escrow, approve spend, deposit. All required to lock {sellAmount} MockUSDC on Fuji testnet. Approve each in order.
+            <span className="text-foreground font-medium">Your wallet will show 4 popups</span> — mint USDC, create escrow, approve spend, deposit. All required to lock {sellAmount} USDC on Fuji testnet. Approve each in order.
           </p>
         </div>
       </div>
@@ -186,9 +186,9 @@ export default function SellReview() {
               <KineticDotsLoader dots={3} className="py-0" />
               <span className="text-xs text-muted-foreground">
                 {confirmStep === 'transitioning' && 'Confirming intent…'}
-                {confirmStep === 'minting' && 'Wallet popup 1/4 — Minting test MockUSDC…'}
+                {confirmStep === 'minting' && 'Wallet popup 1/4 — Minting test USDC…'}
                 {confirmStep === 'creating_escrow' && 'Wallet popup 2/4 — Creating escrow…'}
-                {confirmStep === 'approving' && 'Wallet popup 3/4 — Approving MockUSDC spend…'}
+                {confirmStep === 'approving' && 'Wallet popup 3/4 — Approving USDC spend…'}
                 {confirmStep === 'depositing' && 'Wallet popup 4/4 — Depositing into escrow…'}
                 {confirmStep === 'reporting' && 'Recording on-chain…'}
               </span>

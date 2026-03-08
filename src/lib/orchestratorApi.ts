@@ -208,7 +208,7 @@ export const orchestratorApi = {
   /**
    * Avalanche DeFi composability demo: execute USDC → AVAX swap on
    * LFJ (Trader Joe) DEX · Fuji testnet. Only available for COMPLETE intents.
-   * Note: uses LFJ testnet USDC, not the same MockUSDC token from escrow.
+   * Uses LFJ testnet USDC pool on Fuji.
    */
   async swapOnLfj(intentId: string, recipient: string): Promise<{
     intent: OrchestratorIntent;

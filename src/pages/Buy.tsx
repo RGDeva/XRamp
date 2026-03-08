@@ -191,7 +191,7 @@ export default function Buy() {
                 <div className="space-y-2 pt-2 pb-1 text-sm">
                   <div className="flex justify-between text-muted-foreground">
                     <span>Rate (demo)</span>
-                    <span>1 MockUSDC = $1.00 {selectedCurrency}</span>
+                    <span>1 USDC = $1.00 {selectedCurrency}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>XRamp fee</span>

@@ -55,7 +55,7 @@ export function QuotesCard({ payAmount, payCurrency, receiveCrypto }: QuotesCard
       <div className="space-y-2 border-t border-border/50 pt-3">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Rate (demo)</span>
-          <span className="font-medium text-foreground">1 {payCurrency} = 1.00 MockUSDC</span>
+          <span className="font-medium text-foreground">1 {payCurrency} = 1.00 USDC</span>
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">XRamp fee (0.5%)</span>
@@ -68,7 +68,7 @@ export function QuotesCard({ payAmount, payCurrency, receiveCrypto }: QuotesCard
       </div>
 
       <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
-        MockUSDC released from Fuji escrow after fiat payment verification. Rate is fixed 1:1 for demo.
+        USDC released from escrow on Avalanche Fuji testnet after fiat payment verification. Rate is fixed 1:1 for demo.
       </p>
     </div>
   );

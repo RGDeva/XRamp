@@ -400,17 +400,39 @@ export default {
       }
 
       // Transition to COMPLETE
+      const existingMeta = JSON.parse((intent.metaJson as string) || '{}');
+      let swapTxHash: string | null = null;
+
+      // Auto LFJ swap: if this is an ONRAMP intent, swap USDC → AVAX on Trader Joe
+      const recipient = existingMeta.payee as string || '';
+      if (intent.type === 'ONRAMP' && recipient && releaseTxHash) {
+        try {
+          const { swapUsdcToAvaxOnLfj } = await import('./lfj');
+          const swapResult = await swapUsdcToAvaxOnLfj(env, intent.amount as string, recipient);
+          swapTxHash = swapResult.swapTxHash;
+        } catch (e) {
+          console.error('Auto LFJ swap failed (non-blocking):', e);
+          // Non-blocking — release succeeded, swap can be retried manually
+        }
+      }
+
+      const updatedMeta = JSON.stringify({
+        ...existingMeta,
+        releaseTxHash,
+        ...(swapTxHash ? { swapTxHash, swapDex: 'LFJ (Trader Joe)', swapPair: 'USDC→AVAX', swapAmountIn: intent.amount } : {}),
+      });
+
       await env.DB.prepare(
-        `UPDATE intents SET state = 'COMPLETE', updatedAt = ?, releaseTxHash = COALESCE(?, releaseTxHash) WHERE id = ?`
-      ).bind(now, releaseTxHash, intentId).run();
+        `UPDATE intents SET state = 'COMPLETE', updatedAt = ?, releaseTxHash = COALESCE(?, releaseTxHash), metaJson = ? WHERE id = ?`
+      ).bind(now, releaseTxHash, updatedMeta, intentId).run();
 
       await env.DB.prepare(
         `INSERT INTO event_log (id, intentId, ts, actor, fromState, toState, metaJson)
          VALUES (?, ?, ?, 'admin', ?, 'COMPLETE', ?)`
-      ).bind(uid(), intentId, now, fromState, JSON.stringify({ releaseTxHash, verifiedBy: userEmail || userWallet })).run();
+      ).bind(uid(), intentId, now, fromState, JSON.stringify({ releaseTxHash, swapTxHash, verifiedBy: userEmail || userWallet })).run();
 
       const updated = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first();
-      return cors(json({ intent: updated, releaseTxHash }), origin);
+      return cors(json({ intent: updated, releaseTxHash, swapTxHash }), origin);
     }
 
     // ── POST /intents/:id/swap (Avalanche DeFi composability demo) ──────────

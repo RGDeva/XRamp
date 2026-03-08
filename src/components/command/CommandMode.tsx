@@ -135,7 +135,7 @@ export function CommandMode() {
     push('user', text);
     await delay(400);
 
-    push('info', `Creating ${parsed.action} intent for $${parsed.amount} MockUSDC via ${parsed.rail}…`);
+    push('info', `Creating ${parsed.action} intent for $${parsed.amount} USDC via ${parsed.rail}…`);
     await delay(400);
 
     // ── Real orchestrator intent creation ─────────────────────────────────────

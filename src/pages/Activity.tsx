@@ -353,20 +353,20 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
             disabled={verifying}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           >
-            {verifying ? 'Verifying & Releasing…' : 'Verify + Release Escrow'}
+            {verifying ? 'Verifying & Releasing…' : intent.type === 'ONRAMP' ? 'Verify + Release + Swap to AVAX' : 'Verify + Release Escrow'}
           </Button>
         </div>
       )}
 
       {/* Avalanche DeFi composability demo — LFJ swap */}
-      {intent.state === 'COMPLETE' && !(() => { try { return JSON.parse(intent.metaJson || '{}').swapTxHash; } catch { return false; } })() && (
+      {intent.state === 'COMPLETE' && intent.type === 'ONRAMP' && !(() => { try { return JSON.parse(intent.metaJson || '{}').swapTxHash; } catch { return false; } })() && (
         <div className="pt-4 border-t border-border space-y-2">
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
             Avalanche DeFi composability
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Execute a real USDC → AVAX swap on LFJ (Trader Joe) DEX · Fuji testnet. Uses LFJ testnet USDC (separate from escrow MockUSDC; on mainnet these are the same token).
+            Execute a real USDC → AVAX swap on LFJ (Trader Joe) DEX · Avalanche Fuji testnet.
           </p>
           {swapError && (
             <div className="flex items-center gap-2 text-xs text-destructive">
