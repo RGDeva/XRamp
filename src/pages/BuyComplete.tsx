@@ -51,17 +51,20 @@ export default function BuyComplete() {
   // Memo the user must include in Venmo payment so proof can be verified
   const memo = intentId ? `XRamp-${intentId.slice(0, 8)}` : 'XRamp payment';
 
-  // Venmo deep link: prefills amount, recipient, note
-  const venmoDeepLink = `venmo://paycharge?txn=pay&recipients=${LP_VENMO_HANDLE.replace('@', '')}&amount=${payAmount}&note=${encodeURIComponent(memo)}`;
-  const venmoWebLink = `https://venmo.com/${LP_VENMO_HANDLE.replace('@', '')}`;
+  const handle = LP_VENMO_HANDLE.replace('@', '');
 
-  // QR encodes all payment instructions as plain text for scanner
-  const qrPayload = [
-    `Pay via Venmo`,
-    `To: ${LP_VENMO_HANDLE}`,
-    `Amount: $${payAmount} ${currency}`,
-    `Memo: ${memo}`,
-  ].join('\n');
+  // Venmo payment-link URL — prefills recipient, amount, note.
+  // Works on desktop (opens venmo.com) and mobile (iOS/Android intercepts → Venmo app).
+  const venmoPaymentUrl = `https://account.venmo.com/payment-link?audience=public&recipients=${handle}&amount=${payAmount}&note=${encodeURIComponent(memo)}`;
+
+  // Mobile deep link (venmo:// scheme) — only works if Venmo app is already installed.
+  // Used as href so mobile browsers try the app first, fallback to web URL.
+  const venmoDeepLink = `venmo://paycharge?txn=pay&recipients=${handle}&amount=${payAmount}&note=${encodeURIComponent(memo)}`;
+
+  // QR payload: encode the Venmo payment-link URL.
+  // On mobile, camera apps and QR scanners open this as a URL → iOS/Android routes to Venmo app.
+  // On desktop scan, opens the prefilled Venmo web payment page.
+  const qrPayload = venmoPaymentUrl;
 
   return (
     <div className="max-w-md mx-auto px-4 py-8 pb-32 md:pb-8 space-y-4">
@@ -158,16 +161,19 @@ export default function BuyComplete() {
             />
           </div>
           <p className="text-[10px] text-muted-foreground text-center max-w-[220px]">
-            QR encodes amount, handle, and memo. Use Venmo's QR scanner or copy details above.
+            Scan with your phone camera — opens Venmo with payment prefilled.
           </p>
         </div>
 
         {/* Open Venmo button */}
         <a
-          href={venmoDeepLink}
-          onClick={(e) => {
-            // Fallback to web if deep link fails
-            setTimeout(() => { window.open(venmoWebLink, '_blank'); }, 1500);
+          href={venmoPaymentUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => {
+            // Also try the native deep link on mobile — if the app is installed it
+            // will intercept; otherwise the payment-link URL above handles it.
+            window.location.href = venmoDeepLink;
           }}
           className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#3D95CE]/10 border border-[#3D95CE]/30 text-[#3D95CE] font-semibold text-sm hover:bg-[#3D95CE]/20 transition-colors"
         >
