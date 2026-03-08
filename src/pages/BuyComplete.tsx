@@ -10,7 +10,7 @@ import { txUrl } from '@/lib/fuji';
 import { cn } from '@/lib/utils';
 
 // XRamp LP Venmo handle — users pay this handle
-const LP_VENMO_HANDLE = '@rishi_g3';
+const LP_VENMO_HANDLE = '@Rishi-G3';
 
 function CopyButton({ value, className }: { value: string; className?: string }) {
   const [copied, setCopied] = useState(false);
