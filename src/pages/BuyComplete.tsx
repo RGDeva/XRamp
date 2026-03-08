@@ -1,122 +1,208 @@
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
-import { AnimatedNumber } from '@/components/ui/animated-number';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
-import { ShieldCheck, Clock, ExternalLink } from 'lucide-react';
-import { useAuth, truncateAddress, getDeliveryAddress } from '@/contexts/AuthContext';
+import { ShieldCheck, Copy, Check, ExternalLink } from 'lucide-react';
+import { RailIcon } from '@/components/shared/RailIcon';
 import { txUrl } from '@/lib/fuji';
+import { cn } from '@/lib/utils';
+
+// XRamp LP Venmo handle — users pay this handle
+const LP_VENMO_HANDLE = '@rishi_g3';
+
+function CopyButton({ value, className }: { value: string; className?: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button
+      onClick={copy}
+      className={cn(
+        'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all',
+        copied
+          ? 'bg-success/15 text-success border border-success/30'
+          : 'bg-secondary/80 text-muted-foreground hover:text-foreground border border-border hover:border-primary/30',
+        className,
+      )}
+    >
+      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      {copied ? 'Copied!' : 'Copy'}
+    </button>
+  );
+}
 
 export default function BuyComplete() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
-  
+
   const state = location.state || {};
-  const payAmount = state.payAmount || '100.00';
-  const receiveAmount = state.receiveAmount || '99.50';
-  const currency = state.currency || 'USD';
-  const crypto = state.crypto || 'USDC';
-  
-  const deliveryAddress = getDeliveryAddress(user);
+  const payAmount: string = state.payAmount || '1.00';
+  const currency: string = state.currency || 'USD';
+  const paymentMethodId: string = state.paymentMethod || 'venmo';
+  const intentId: string | undefined = state.intentId;
+  const depositTxHash: string | undefined = state.depositTxHash;
+
+  // Memo the user must include in Venmo payment so proof can be verified
+  const memo = intentId ? `XRamp-${intentId.slice(0, 8)}` : 'XRamp payment';
+
+  // Venmo deep link: prefills amount, recipient, note
+  const venmoDeepLink = `venmo://paycharge?txn=pay&recipients=${LP_VENMO_HANDLE.replace('@', '')}&amount=${payAmount}&note=${encodeURIComponent(memo)}`;
+  const venmoWebLink = `https://venmo.com/${LP_VENMO_HANDLE.replace('@', '')}`;
+
+  // QR encodes all payment instructions as plain text for scanner
+  const qrPayload = [
+    `Pay via Venmo`,
+    `To: ${LP_VENMO_HANDLE}`,
+    `Amount: $${payAmount} ${currency}`,
+    `Memo: ${memo}`,
+  ].join('\n');
 
   return (
-    <div className="max-w-md mx-auto px-4 py-8 pb-32 md:pb-8">
-      <div className="relative bg-card border border-border rounded-2xl p-6 space-y-6 animate-fade-in">
+    <div className="max-w-md mx-auto px-4 py-8 pb-32 md:pb-8 space-y-4">
+
+      {/* Escrow confirmed badge */}
+      <div className="relative bg-card border border-border rounded-2xl p-5 animate-fade-in overflow-hidden">
         <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-        {/* Success icon */}
-        <div className="h-16 w-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center animate-success-pop">
-          <ShieldCheck className="h-8 w-8 text-primary" />
-        </div>
-
-        {/* Title */}
-        <div className="text-center space-y-2">
-          <h1 className="text-xl font-semibold">Escrow funded by XRamp LP</h1>
-          <p className="text-muted-foreground text-sm">
-            USDC has been locked in escrow on Avalanche Fuji testnet. Complete your fiat payment, then submit proof via the XRamp extension.
-          </p>
-          <span className="inline-flex mx-auto text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full font-medium">
-            Avalanche Fuji testnet · USDC
-          </span>
-        </div>
-
-        {/* Details */}
-        <div className="space-y-3 pt-4 border-t border-border">
-          <div className="flex justify-between py-2">
-            <span className="text-muted-foreground text-sm">Paid</span>
-            <span className="font-medium">
-              $<AnimatedNumber value={parseFloat(payAmount) || 0} className="" /> {currency}
-            </span>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <ShieldCheck className="h-5 w-5 text-primary" />
           </div>
-          <div className="flex justify-between py-2">
-            <span className="text-muted-foreground text-sm">Receiving</span>
-            <span className="font-medium text-primary">
-              <AnimatedNumber value={parseFloat(receiveAmount) || 0} className="" /> {crypto}
-            </span>
+          <div>
+            <p className="font-semibold text-sm">Escrow locked on Avalanche Fuji</p>
+            <p className="text-xs text-muted-foreground mt-0.5">USDC is held in escrow — released when payment is verified.</p>
           </div>
-          {deliveryAddress && (
-            <div className="flex justify-between py-2">
-              <span className="text-muted-foreground text-sm">To</span>
-              <span className="font-mono text-sm">{truncateAddress(deliveryAddress)}</span>
-            </div>
-          )}
-          {state.intentId && (
-            <div className="flex justify-between py-2">
-              <span className="text-muted-foreground text-sm">Intent ID</span>
-              <span className="font-mono text-xs text-primary">{(state.intentId as string).slice(0, 12)}…</span>
-            </div>
-          )}
-          {state.depositTxHash && (
-            <div className="flex justify-between py-2">
-              <span className="text-muted-foreground text-sm">Escrow Deposit (Fuji)</span>
-              <a
-                href={txUrl(state.depositTxHash as string)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-primary hover:underline font-mono text-xs"
-              >
-                {(state.depositTxHash as string).slice(0, 8)}…{(state.depositTxHash as string).slice(-6)}
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          )}
-          {state.escrowId && (
-            <div className="flex justify-between py-2">
-              <span className="text-muted-foreground text-sm">Escrow ID</span>
-              <span className="font-mono text-xs">{state.escrowId as string}</span>
-            </div>
-          )}
-          <div className="flex justify-between py-2">
-            <span className="text-muted-foreground text-sm">Status</span>
-            <div className="flex items-center gap-2">
-              <Clock className="h-3 w-3 text-primary" />
-              <span className="text-sm text-primary font-medium">Awaiting fiat payment + proof</span>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Pay via your selected method, then use the XRamp extension to submit payment proof. Admin verifies and releases USDC from escrow on Fuji.
-          </p>
         </div>
-      </div>
-
-      {/* CTAs */}
-      <div className="fixed bottom-20 md:bottom-8 left-0 right-0 p-4 md:relative md:p-0 md:mt-6">
-        <div className="max-w-md mx-auto space-y-2">
-          <InteractiveHoverButton
-            text="View activity"
-            onClick={() => navigate('/activity')}
-            className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"
-          />
-          <Button
-            variant="ghost"
-            className="w-full text-sm"
-            size="sm"
-            onClick={() => navigate('/')}
+        {depositTxHash && (
+          <a
+            href={txUrl(depositTxHash)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-3 text-xs text-primary hover:underline font-mono"
           >
-            Done
-          </Button>
+            Escrow deposit: {depositTxHash.slice(0, 10)}…{depositTxHash.slice(-6)}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+      </div>
+
+      {/* Payment instructions */}
+      <div className="relative bg-card border border-border rounded-2xl p-5 space-y-5 animate-fade-in">
+        <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+
+        {/* Step header */}
+        <div className="flex items-center gap-2">
+          <RailIcon rail={paymentMethodId} size={28} />
+          <div>
+            <p className="font-semibold text-sm">Complete your Venmo payment</p>
+            <p className="text-xs text-muted-foreground">Follow the steps below exactly</p>
+          </div>
+        </div>
+
+        {/* Steps */}
+        <ol className="space-y-4">
+          {/* Step 1: Amount */}
+          <li className="flex gap-3">
+            <span className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/15 text-primary text-[11px] font-bold flex items-center justify-center">1</span>
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground mb-1">Send exactly this amount</p>
+              <div className="flex items-center justify-between bg-secondary/60 rounded-xl px-4 py-3">
+                <span className="text-2xl font-bold text-foreground">${payAmount}</span>
+                <CopyButton value={payAmount} />
+              </div>
+            </div>
+          </li>
+
+          {/* Step 2: Recipient */}
+          <li className="flex gap-3">
+            <span className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/15 text-primary text-[11px] font-bold flex items-center justify-center">2</span>
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground mb-1">Send to this Venmo handle</p>
+              <div className="flex items-center justify-between bg-secondary/60 rounded-xl px-4 py-3">
+                <span className="font-mono font-semibold text-foreground">{LP_VENMO_HANDLE}</span>
+                <CopyButton value={LP_VENMO_HANDLE} />
+              </div>
+            </div>
+          </li>
+
+          {/* Step 3: Memo */}
+          <li className="flex gap-3">
+            <span className="flex-shrink-0 h-6 w-6 rounded-full bg-destructive/15 text-destructive text-[11px] font-bold flex items-center justify-center">3</span>
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground mb-1">
+                Include this exact memo <span className="text-destructive font-medium">(required for verification)</span>
+              </p>
+              <div className="flex items-center justify-between bg-secondary/60 rounded-xl px-4 py-3 border border-destructive/20">
+                <span className="font-mono text-sm font-semibold text-foreground">{memo}</span>
+                <CopyButton value={memo} />
+              </div>
+            </div>
+          </li>
+        </ol>
+
+        {/* QR Code */}
+        <div className="flex flex-col items-center gap-3 pt-2 border-t border-border">
+          <p className="text-xs text-muted-foreground">Or scan QR to view payment details</p>
+          <div className="bg-white p-3 rounded-xl shadow-sm">
+            <QRCodeSVG
+              value={qrPayload}
+              size={160}
+              level="M"
+              bgColor="#ffffff"
+              fgColor="#000000"
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground text-center max-w-[220px]">
+            QR encodes amount, handle, and memo. Use Venmo's QR scanner or copy details above.
+          </p>
+        </div>
+
+        {/* Open Venmo button */}
+        <a
+          href={venmoDeepLink}
+          onClick={(e) => {
+            // Fallback to web if deep link fails
+            setTimeout(() => { window.open(venmoWebLink, '_blank'); }, 1500);
+          }}
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#3D95CE]/10 border border-[#3D95CE]/30 text-[#3D95CE] font-semibold text-sm hover:bg-[#3D95CE]/20 transition-colors"
+        >
+          <RailIcon rail="venmo" size={20} />
+          Open Venmo
+        </a>
+      </div>
+
+      {/* Step 4: Verify */}
+      <div className="relative bg-card border border-border rounded-2xl p-5 animate-fade-in">
+        <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+        <div className="flex gap-3">
+          <span className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/15 text-primary text-[11px] font-bold flex items-center justify-center">4</span>
+          <div className="flex-1 space-y-3">
+            <div>
+              <p className="text-sm font-semibold">After sending payment</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Open the XRamp extension, find this order, and click <strong>Verify Payment</strong> to submit your proof screenshot.</p>
+            </div>
+            <InteractiveHoverButton
+              text="View in Activity"
+              onClick={() => navigate('/activity')}
+              className="w-full h-11 text-sm rounded-xl border-primary/40 text-foreground"
+            />
+          </div>
         </div>
       </div>
+
+      <Button
+        variant="ghost"
+        className="w-full text-sm text-muted-foreground"
+        size="sm"
+        onClick={() => navigate('/')}
+      >
+        Back to home
+      </Button>
     </div>
   );
 }

@@ -360,7 +360,7 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
             disabled={verifying}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           >
-            {verifying ? 'Verifying & Releasing…' : intent.type === 'ONRAMP' ? 'Verify + Release + Swap to AVAX' : 'Verify + Release Escrow'}
+            {verifying ? 'Verifying & Releasing…' : intent.type === 'ONRAMP' ? 'Verify + Release + Deliver AVAX' : 'Verify + Release Escrow'}
           </Button>
         </div>
       )}
