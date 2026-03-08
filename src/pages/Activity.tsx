@@ -316,23 +316,25 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
           </span>
         </Row>
       )}
-      {/* LFJ DeFi composability demo */}
+      {/* AVAX Settlement */}
       {(() => {
         try {
           const meta = JSON.parse(intent.metaJson || '{}');
           if (!meta.swapTxHash) return null;
+          const dex = (meta.swapDex as string) || 'Arbiter LP';
+          const pair = (meta.swapPair as string) || 'USD→AVAX';
           return (
             <>
               <div className="pt-2 mt-2 border-t border-border">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Avalanche DeFi composability</span>
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">⚡ Avalanche settlement</span>
               </div>
-              <Row label="LFJ Swap Tx (Fuji)"><TxLink hash={meta.swapTxHash as string} /></Row>
-              <Row label="Swap">
+              <Row label="AVAX Delivery (Fuji)"><TxLink hash={meta.swapTxHash as string} /></Row>
+              <Row label="Settlement">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-success/15 text-success border border-success/30">
-                  <ArrowRightLeft className="h-2.5 w-2.5" /> USDC → AVAX (testnet)
+                  <ArrowRightLeft className="h-2.5 w-2.5" /> {pair} (testnet)
                 </span>
               </Row>
-              <Row label="DEX"><span className="text-xs font-medium">LFJ (Trader Joe) V2.1</span></Row>
+              <Row label="Via"><span className="text-xs font-medium">{dex}</span></Row>
             </>
           );
         } catch { return null; }
@@ -363,15 +365,15 @@ function IntentDetail({ intent, userEmail, privacyMode, onUpdate }: {
         </div>
       )}
 
-      {/* Avalanche DeFi composability demo — LFJ swap */}
+      {/* Manual AVAX settlement retry */}
       {intent.state === 'COMPLETE' && intent.type === 'ONRAMP' && !(() => { try { return JSON.parse(intent.metaJson || '{}').swapTxHash; } catch { return false; } })() && (
         <div className="pt-4 border-t border-border space-y-2">
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
-            Avalanche DeFi composability
+            Avalanche settlement
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Execute a real USDC → AVAX swap on LFJ (Trader Joe) DEX · Avalanche Fuji testnet.
+            Deliver AVAX to buyer's wallet on Avalanche Fuji testnet.
           </p>
           {swapError && (
             <div className="flex items-center gap-2 text-xs text-destructive">

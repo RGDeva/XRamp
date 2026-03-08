@@ -420,7 +420,7 @@ export default {
       const updatedMeta = JSON.stringify({
         ...existingMeta,
         releaseTxHash,
-        ...(swapTxHash ? { swapTxHash, swapDex: 'LFJ (Trader Joe)', swapPair: 'USDC→AVAX', swapAmountIn: intent.amount } : {}),
+        ...(swapTxHash ? { swapTxHash, swapDex: 'Arbiter LP', swapPair: 'USD→AVAX', swapAmountIn: intent.amount } : {}),
       });
 
       await env.DB.prepare(

@@ -1,45 +1,26 @@
 /**
- * Avalanche DeFi composability demo — LFJ (Trader Joe) integration.
- * Executes a real USDC → AVAX swap via LBRouter V2.1 on Fuji testnet.
- * Note: uses LFJ’s own testnet USDC (0xB607…), not the escrow MockUSDC (0xb2F4…).
- * On mainnet these would be the same real USDC token.
+ * Avalanche settlement via arbiter LP wallet.
+ *
+ * On Fuji testnet the LFJ USDC token (0xB607…) has owner-gated mint(),
+ * so the old mint→swap path fails. Instead the arbiter wallet (which holds
+ * real AVAX from testnet funding) sends AVAX directly to the recipient.
+ *
+ * This is truthful for the demo: escrow is released → arbiter LP delivers
+ * AVAX to the buyer's wallet on-chain. On mainnet this step would be a real
+ * DEX swap; on Fuji it is a direct AVAX transfer from the LP reserve.
  */
 
 import { ethers } from 'ethers';
 import type { Env } from './worker';
 
-// LFJ V2.1 Fuji testnet addresses
-const LFJ_ROUTER_V2_1 = '0xb4315e873dBcf96Ffd0acd8EA43f689D8c20fB30';
-const LFJ_USDC_FUJI = '0xB6076C93701D6a07266c31066B298AeC6dd65c2d';
-const WAVAX_FUJI = '0xd00ae08403B9bbb9124bB305C09058E32C39A48c'; // WAVAX on Fuji
-
-// Bin step for AVAX-USDC V2.1 pool (20bps)
-const AVAX_USDC_BIN_STEP = 20;
-
-const ERC20_ABI = [
-  'function approve(address spender, uint256 amount) returns (bool)',
-  'function balanceOf(address) view returns (uint256)',
-  'function decimals() view returns (uint8)',
-  'function mint(address to, uint256 amount)',
-];
-
-// LBRouter V2.1 minimal ABI for swapExactTokensForNATIVE
-const LB_ROUTER_ABI = [
-  `function swapExactTokensForNATIVE(
-    uint256 amountIn,
-    uint256 amountOutMinNATIVE,
-    tuple(uint256[] pairBinSteps, uint8[] versions, address[] tokenPath) path,
-    address payable to,
-    uint256 deadline
-  ) external returns (uint256 amountOut)`,
-  `function getWNATIVE() external view returns (address)`,
-];
+// Fixed AVAX amount per $1 USD on Fuji testnet (≈ $25/AVAX → 0.04 AVAX per $1)
+// Adjust this constant to match current testnet price for demo accuracy.
+const AVAX_PER_USD = 0.04; // 1 USD ≈ 0.04 AVAX at ~$25/AVAX
 
 /**
- * Avalanche DeFi composability: swap USDC → AVAX on LFJ V2.1 (Fuji testnet).
- * Uses the arbiter wallet. Mints LFJ testnet USDC, then swaps via LBRouter.
- * This is a real on-chain DEX swap demonstrating post-settlement composability.
- * Returns { swapTxHash, amountIn, amountOutMin }.
+ * Settle USDC→AVAX: send AVAX from arbiter LP wallet to recipient.
+ * Returns { swapTxHash, amountIn, amountOutMin } — same shape as before
+ * so worker.ts needs no changes.
  */
 export async function swapUsdcToAvaxOnLfj(
   env: Env,
@@ -47,46 +28,37 @@ export async function swapUsdcToAvaxOnLfj(
   recipient: string,
 ): Promise<{ swapTxHash: string; amountIn: string; amountOutMin: string }> {
   if (!env.ARBITER_PRIVATE_KEY) throw new Error('ARBITER_PRIVATE_KEY not configured');
+  if (!recipient || !ethers.isAddress(recipient)) throw new Error('Invalid recipient address');
 
   const provider = new ethers.JsonRpcProvider(env.FUJI_RPC_URL);
   const arbiter = new ethers.Wallet(env.ARBITER_PRIVATE_KEY, provider);
 
-  const amount = ethers.parseUnits(amountUsd, 6); // USDC 6 decimals
+  // Calculate AVAX amount: $1 USD → AVAX_PER_USD AVAX
+  const usdAmount = parseFloat(amountUsd) || 1;
+  const avaxAmount = usdAmount * AVAX_PER_USD;
+  const avaxWei = ethers.parseEther(avaxAmount.toFixed(6));
 
-  const lfjUsdc = new ethers.Contract(LFJ_USDC_FUJI, ERC20_ABI, arbiter);
-  const router = new ethers.Contract(LFJ_ROUTER_V2_1, LB_ROUTER_ABI, arbiter);
+  // Check arbiter has enough AVAX
+  const balance = await provider.getBalance(arbiter.address);
+  const gasReserve = ethers.parseEther('0.01'); // keep 0.01 AVAX for gas
+  if (balance < avaxWei + gasReserve) {
+    throw new Error(
+      `Arbiter AVAX balance too low: has ${ethers.formatEther(balance)} AVAX, ` +
+      `needs ${ethers.formatEther(avaxWei + gasReserve)} AVAX`
+    );
+  }
 
-  // 1. Mint LFJ test USDC to arbiter (testnet faucet — open mint)
-  const mintTx = await lfjUsdc.mint(arbiter.address, amount);
-  await mintTx.wait();
-
-  // 2. Approve router to spend USDC
-  const approveTx = await lfjUsdc.approve(LFJ_ROUTER_V2_1, amount);
-  await approveTx.wait();
-
-  // 3. Build swap path: USDC → WAVAX (native AVAX out)
-  const path = {
-    pairBinSteps: [AVAX_USDC_BIN_STEP],
-    versions: [2], // V2.1 = version enum 2
-    tokenPath: [LFJ_USDC_FUJI, WAVAX_FUJI],
-  };
-
-  const deadline = Math.floor(Date.now() / 1000) + 300; // 5 min
-  const amountOutMin = 0; // Accept any amount on testnet
-
-  // 4. Execute swap — USDC → AVAX, sent to recipient
-  const swapTx = await router.swapExactTokensForNATIVE(
-    amount,
-    amountOutMin,
-    path,
-    recipient,
-    deadline,
-  );
-  const swapReceipt = await swapTx.wait();
+  // Send AVAX directly to recipient
+  const tx = await arbiter.sendTransaction({
+    to: recipient,
+    value: avaxWei,
+  });
+  const receipt = await tx.wait();
+  if (!receipt) throw new Error('Transaction receipt is null');
 
   return {
-    swapTxHash: swapReceipt.hash,
+    swapTxHash: receipt.hash,
     amountIn: amountUsd,
-    amountOutMin: '0', // testnet — any amount accepted
+    amountOutMin: avaxAmount.toFixed(6),
   };
 }
