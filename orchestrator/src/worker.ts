@@ -122,10 +122,14 @@ export default {
       const id = uid();
       const now = iso();
 
+      // LP receiver handle for Venmo rail — stored so extension/admin can verify recipient
+      const lpHandle = rail === 'venmo' ? '@NoCultureStudios' : '';
+      const initMeta = JSON.stringify({ lpHandle: lpHandle || undefined });
+
       await env.DB.prepare(
-        `INSERT INTO intents (id, userId, type, amount, sourceAsset, targetAsset, rail, paymentHandle, state, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'CREATED', ?, ?)`
-      ).bind(id, userId, type, amount, sourceAsset, targetAsset, rail, paymentHandle, now, now).run();
+        `INSERT INTO intents (id, userId, type, amount, sourceAsset, targetAsset, rail, paymentHandle, state, metaJson, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'CREATED', ?, ?, ?)`
+      ).bind(id, userId, type, amount, sourceAsset, targetAsset, rail, paymentHandle, initMeta, now, now).run();
 
       // Write creation event
       await env.DB.prepare(

@@ -10,7 +10,7 @@ import { txUrl } from '@/lib/fuji';
 import { cn } from '@/lib/utils';
 
 // XRamp LP Venmo handle — users pay this handle
-const LP_VENMO_HANDLE = '@Rishi-G3';
+const LP_VENMO_HANDLE = '@NoCultureStudios';
 
 function CopyButton({ value, className }: { value: string; className?: string }) {
   const [copied, setCopied] = useState(false);
@@ -49,7 +49,7 @@ export default function BuyComplete() {
   const depositTxHash: string | undefined = state.depositTxHash;
 
   // Memo the user must include in Venmo payment so proof can be verified
-  const memo = intentId ? `XRamp-${intentId.slice(0, 8)}` : 'XRamp payment';
+  const memo = intentId ? `XRAMP-${intentId.slice(0, 8)}` : 'XRAMP-payment';
 
   const handle = LP_VENMO_HANDLE.replace('@', '');
 
