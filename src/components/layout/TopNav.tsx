@@ -31,8 +31,6 @@ export function TopNav() {
   const location = useLocation();
   const { isAuthenticated, isLoading, user, login, logout } = useAuth();
   const { privacyMode, togglePrivacyMode, toggleRampPanel, rampPanelOpen } = useApp();
-  const isRamp = location.pathname === '/ramp';
-
   const deliveryAddress = getDeliveryAddress(user);
   const displayIdentifier = user?.email || (deliveryAddress ? truncateAddress(deliveryAddress) : null);
 
@@ -57,8 +55,8 @@ export function TopNav() {
 
           {/* Right actions */}
           <div className="flex items-center gap-2">
-            {/* Profile panel toggle — only on /ramp */}
-            {isRamp && (
+            {/* Profile panel toggle — global, visible when authenticated */}
+            {isAuthenticated && !isLoading && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button

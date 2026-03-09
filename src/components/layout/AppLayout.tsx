@@ -1,6 +1,8 @@
 import { ReactNode, useEffect } from 'react';
 import { TopNav } from './TopNav';
 import { BottomNav } from './BottomNav';
+import { WalletSidebar } from './WalletSidebar';
+import { useApp } from '@/contexts/AppContext';
 import { StarsBackground } from '@/components/animate-ui/components/backgrounds/stars';
 import { CommandMode } from '@/components/command/CommandMode';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,6 +66,8 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   useProofMessageListener();
+  const { rampPanelOpen } = useApp();
+
   return (
     <div className="min-h-screen">
       {/* Stars background — fixed, full-screen, behind everything */}
@@ -79,8 +83,9 @@ export function AppLayout({ children }: AppLayoutProps) {
       </div>
 
       <TopNav />
+      <WalletSidebar />
 
-      <main className="relative z-10 pt-16 pb-20 md:pb-8 min-h-screen">
+      <main className={`relative z-10 pt-16 pb-20 md:pb-8 min-h-screen transition-all duration-300 ${rampPanelOpen ? 'md:mr-80' : 'mr-0'}`}>
         {children}
       </main>
 

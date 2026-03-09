@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import KineticDotsLoader from '@/components/ui/kinetic-dots-loader';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  ChevronDown, X, Wallet, History, LayoutList, Send as SendIcon,
+  ChevronDown, X, Send as SendIcon,
   Search, Check, AlertCircle, ChevronRight, Info,
 } from 'lucide-react';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
@@ -14,10 +13,7 @@ import { RailIcon } from '@/components/shared/RailIcon';
 import { PaymentMethodPicker, getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 import { QuotesCard } from '@/components/shared/QuotesCard';
 import { SendSheet } from '@/components/deposits/SendSheet';
-import { AddFundsModal } from '@/components/shared/AddFundsModal';
 import { orchestratorApi } from '@/lib/orchestratorApi';
-import { getUsdcBalance } from '@/lib/fuji';
-import { getDeliveryAddress } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 type RampTab = 'Buy' | 'Sell' | 'Send';
@@ -133,7 +129,6 @@ function TokenPicker({
 export default function Ramp() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { rampPanelOpen: panelOpen, setRampPanelOpen: setPanelOpen } = useApp();
   const { isAuthenticated, login, user } = useAuth();
 
   const rawTab = searchParams.get('tab') ?? '';
@@ -166,7 +161,6 @@ export default function Ramp() {
   const [showReceiveTokenPicker, setShowReceiveTokenPicker] = useState(false);
   const [showSendSheet, setShowSendSheet] = useState(false);
   const [mockDepositId] = useState(Math.floor(3000 + Math.random() * 999));
-  const [showAddFunds, setShowAddFunds] = useState(false);
 
   const getUserId = () => user?.email || user?.walletAddress || user?.embeddedWalletAddress || 'guest';
 
@@ -200,20 +194,6 @@ export default function Ramp() {
     const saved = savedHandles[sellMethod];
     if (saved) setSellHandle(h => h || saved);
   }, [sellMethod, savedHandles]);
-
-  const [sidebarBalance, setSidebarBalance] = useState<string>('—');
-
-  useEffect(() => {
-    const addr = getDeliveryAddress(user ? {
-      email: user?.email || undefined,
-      walletAddress: user?.walletAddress || undefined,
-      embeddedWalletAddress: user?.embeddedWalletAddress || undefined,
-    } : null);
-    if (!addr) { setSidebarBalance('—'); return; }
-    getUsdcBalance(addr)
-      .then(({ formatted }) => setSidebarBalance(parseFloat(formatted).toFixed(2)))
-      .catch(() => setSidebarBalance('0.00'));
-  }, [user]);
 
   // Listen for postMessage from XRamp Chrome extension to prefill state
   useEffect(() => {
@@ -304,65 +284,7 @@ export default function Ramp() {
 
   return (
     <div className="min-h-screen pb-24 relative">
-      {/* Right collapsible panel */}
-      <div className={`fixed top-16 right-0 h-[calc(100vh-4rem)] z-30 flex flex-col bg-card/95 backdrop-blur-xl border-l border-border shadow-elevated transition-all duration-300 ease-in-out ${panelOpen ? 'w-72 translate-x-0' : 'w-72 translate-x-full'}`}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Account</span>
-          <button onClick={() => setPanelOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-          <div>
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Wallet Balance</div>
-            <div className="bg-secondary border border-border rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Wallet className="h-4 w-4 text-primary" />
-                <span className="text-xs text-muted-foreground">Top up via bridge or direct transfer</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CryptoIcon symbol="USDC" size={24} />
-                <span className="text-2xl font-bold text-foreground">{sidebarBalance}</span>
-                <span className="text-muted-foreground font-medium">USDC</span>
-              </div>
-              <button onClick={() => setShowAddFunds(true)} className="mt-3 w-full text-xs text-primary border border-primary/30 rounded-lg py-2 hover:bg-primary/10 transition-colors font-medium">+ Add Funds</button>
-            </div>
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Active Deposits</div>
-            <div className="space-y-2">
-              {[
-                { id: 2428, token: 'USDC', taken: '6.69', rail: 'venmo' },
-                { id: 2441, token: 'USDC', taken: '18.69', rail: 'cashapp' },
-              ].map(dep => (
-                <div key={dep.id} className="bg-secondary border border-border rounded-xl px-4 py-3 flex items-center gap-3">
-                  <CryptoIcon symbol={dep.token} size={28} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-foreground">#{dep.id}</div>
-                    <div className="text-xs text-muted-foreground">${dep.taken} taken</div>
-                  </div>
-                  <RailIcon rail={dep.rail} size={20} />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="border-t border-border pt-4 space-y-1">
-            {([
-              { icon: SendIcon,   label: 'Send',         action: () => setTab('Send') },
-              { icon: History,    label: 'Order History', action: () => navigate('/activity') },
-              { icon: LayoutList, label: 'My Deposits',   action: () => navigate('/deposits') },
-            ] as const).map(({ icon: Icon, label, action }) => (
-              <button key={label} onClick={action} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors text-left">
-                <Icon className="h-4 w-4 flex-shrink-0" />{label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className={`transition-all duration-300 ${panelOpen ? 'md:mr-72' : 'mr-0'}`}>
-        <div className="max-w-lg mx-auto px-4 pt-8 pb-8">
+      <div className="max-w-lg mx-auto px-4 pt-8 pb-8">
 
           {/* Tabs */}
           <div className="flex gap-0 mb-8 border-b border-border">
@@ -647,7 +569,6 @@ export default function Ramp() {
             </div>
           )}
         </div>
-      </div>
 
       <TokenPicker open={showBuyTokenPicker}     onClose={() => setShowBuyTokenPicker(false)}     selected={buyToken}     onSelect={setBuyToken} />
       <TokenPicker open={showSellTokenPicker}    onClose={() => setShowSellTokenPicker(false)}    selected={sellToken}    onSelect={setSellToken} />
@@ -670,8 +591,6 @@ export default function Ramp() {
         depositId={mockDepositId} amount={sendAmount}
         token={receiveToken.symbol} railId="wallet" railName="Wallet" handle={walletAddress}
       />
-
-      <AddFundsModal open={showAddFunds} onClose={() => setShowAddFunds(false)} />
     </div>
   );
 }
