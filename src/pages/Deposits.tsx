@@ -1,70 +1,63 @@
-import { Target, Clock } from 'lucide-react';
+import { ArrowDownToLine, Clock, Layers } from 'lucide-react';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
-import { RailIcon } from '@/components/shared/RailIcon';
-
-const SUPPORTED_RAILS = [
-  { id: 'venmo', name: 'Venmo' },
-  { id: 'cashapp', name: 'Cash App' },
-  { id: 'zelle', name: 'Zelle' },
-  { id: 'revolut', name: 'Revolut' },
-  { id: 'wise', name: 'Wise' },
-];
+import { TrustwareDepositWidget } from '@/components/shared/TrustwareDepositWidget';
 
 export default function Deposits() {
   return (
-    <div className="min-h-[calc(100vh-4rem)] px-4 py-8 pb-32 md:pb-12 max-w-3xl mx-auto">
+    <div className="min-h-[calc(100vh-4rem)] px-4 py-8 pb-32 md:pb-12 max-w-3xl mx-auto space-y-6">
 
       {/* Page header */}
-      <div className="mb-6">
+      <div>
         <h1 className="text-2xl font-bold text-foreground">Deposits</h1>
-        <p className="text-sm text-muted-foreground mt-1">USDC liquidity deposits for fiat off-ramp orders.</p>
+        <p className="text-sm text-muted-foreground mt-1">Fund your position with any token from any chain.</p>
       </div>
 
-      {/* Supported rails */}
-      <div className="flex items-center gap-3 mb-6">
-        {SUPPORTED_RAILS.map(({ id, name }) => (
-          <div key={id} className="h-9 w-9 rounded-full bg-card border border-border flex items-center justify-center overflow-hidden shadow-sm" title={name}>
-            <RailIcon rail={id} size={26} />
+      {/* Trustware cross-chain deposit section */}
+      <div className="relative bg-card border border-border rounded-2xl p-5 space-y-4">
+        <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
+
+        {/* Section header */}
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Layers className="h-4.5 w-4.5 text-primary" />
           </div>
-        ))}
+          <div>
+            <p className="font-semibold text-sm text-foreground">Cross-Chain Deposit</p>
+            <p className="text-xs text-muted-foreground">Powered by Trustware — bridge any token, arrive as AVAX on Avalanche</p>
+          </div>
+        </div>
+
+        {/* How it works */}
+        <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-primary/5 border border-primary/15">
+          <ArrowDownToLine className="h-3.5 w-3.5 text-primary flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-muted-foreground">
+            Select any source token on any supported chain. Trustware automatically routes and converts it to AVAX on Avalanche — no manual bridging required.
+          </p>
+        </div>
+
+        {/* Widget */}
+        <TrustwareDepositWidget />
       </div>
 
-      {/* Honest empty state */}
-      <div className="relative bg-card border border-border rounded-2xl p-10 text-center">
+      {/* LP Deposits — coming soon */}
+      <div className="relative bg-card border border-border rounded-2xl p-5">
         <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-        <div className="h-14 w-14 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
-          <Target className="h-7 w-7 text-muted-foreground" />
+        <div className="flex items-center gap-2 mb-3">
+          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          <p className="text-sm font-medium text-foreground">Fiat LP Deposits — Coming Soon</p>
         </div>
-        <p className="font-semibold text-foreground mb-2">LP Deposits — Coming Soon</p>
-        <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
-          The LP deposit system is not yet implemented. When available, liquidity providers will be able to deposit USDC and accept fiat off-ramp orders via supported payment rails.
-        </p>
-        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <Clock className="h-3.5 w-3.5" />
-          <span>Currently, escrow funding is handled by the arbiter wallet during the demo flow.</span>
-        </div>
-      </div>
-
-      {/* What will be here */}
-      <div className="mt-6 relative bg-card border border-border rounded-2xl p-5">
-        <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
-        <p className="text-sm font-medium text-foreground mb-3">Planned features</p>
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            Create USDC liquidity deposits with configurable rate and payment rail
+            Deposit USDC liquidity and accept fiat off-ramp orders
           </li>
           <li className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            Order matching against buyer intents
+            Order matching against buyer intents across Venmo, Cash App, Zelle
           </li>
           <li className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             Earnings tracking, fill rate analytics, and deposit management
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            Multi-rail support: Venmo, Cash App, Zelle, Revolut, Wise
           </li>
         </ul>
       </div>
