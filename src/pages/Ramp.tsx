@@ -14,6 +14,7 @@ import { RailIcon } from '@/components/shared/RailIcon';
 import { PaymentMethodPicker, getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
 import { QuotesCard } from '@/components/shared/QuotesCard';
 import { SendSheet } from '@/components/deposits/SendSheet';
+import { AddFundsModal } from '@/components/shared/AddFundsModal';
 import { orchestratorApi } from '@/lib/orchestratorApi';
 import { getUsdcBalance } from '@/lib/fuji';
 import { getDeliveryAddress } from '@/contexts/AuthContext';
@@ -165,6 +166,7 @@ export default function Ramp() {
   const [showReceiveTokenPicker, setShowReceiveTokenPicker] = useState(false);
   const [showSendSheet, setShowSendSheet] = useState(false);
   const [mockDepositId] = useState(Math.floor(3000 + Math.random() * 999));
+  const [showAddFunds, setShowAddFunds] = useState(false);
 
   const getUserId = () => user?.email || user?.walletAddress || user?.embeddedWalletAddress || 'guest';
 
@@ -323,7 +325,7 @@ export default function Ramp() {
                 <span className="text-2xl font-bold text-foreground">{sidebarBalance}</span>
                 <span className="text-muted-foreground font-medium">USDC</span>
               </div>
-              <button className="mt-3 w-full text-xs text-primary border border-primary/30 rounded-lg py-2 hover:bg-primary/10 transition-colors font-medium">+ Add Funds</button>
+              <button onClick={() => setShowAddFunds(true)} className="mt-3 w-full text-xs text-primary border border-primary/30 rounded-lg py-2 hover:bg-primary/10 transition-colors font-medium">+ Add Funds</button>
             </div>
           </div>
           <div>
@@ -348,7 +350,7 @@ export default function Ramp() {
             {([
               { icon: SendIcon,   label: 'Send',         action: () => setTab('Send') },
               { icon: History,    label: 'Order History', action: () => navigate('/activity') },
-              { icon: LayoutList, label: 'My Deposits',   action: () => {} },
+              { icon: LayoutList, label: 'My Deposits',   action: () => navigate('/deposits') },
             ] as const).map(({ icon: Icon, label, action }) => (
               <button key={label} onClick={action} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors text-left">
                 <Icon className="h-4 w-4 flex-shrink-0" />{label}
@@ -668,6 +670,8 @@ export default function Ramp() {
         depositId={mockDepositId} amount={sendAmount}
         token={receiveToken.symbol} railId="wallet" railName="Wallet" handle={walletAddress}
       />
+
+      <AddFundsModal open={showAddFunds} onClose={() => setShowAddFunds(false)} />
     </div>
   );
 }

@@ -123,7 +123,7 @@ export default {
       const now = iso();
 
       // LP receiver handle for Venmo rail — stored so extension/admin can verify recipient
-      const lpHandle = rail === 'venmo' ? '@NoCultureStudios' : '';
+      const lpHandle = rail === 'venmo' ? '@primeaj' : '';
       const initMeta = JSON.stringify({ lpHandle: lpHandle || undefined });
 
       await env.DB.prepare(
