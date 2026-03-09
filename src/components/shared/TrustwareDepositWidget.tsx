@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TrustwareProvider, TrustwareWidget, type TrustwareConfigOptions, type WalletInterFaceAPI } from '@trustware/sdk';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 
-// Avalanche C-Chain mainnet — Trustware routes real assets here
-const AVAX_CHAIN = 'avalanche';
-// Native AVAX token address (use zero address as convention for native)
-const NATIVE_AVAX = '0x0000000000000000000000000000000000000000';
+// Avalanche C-Chain — Squid/Trustware uses numeric chainId as string
+const AVAX_CHAIN = '43114';
+// Standard ERC-20 sentinel for native token (Squid convention)
+const NATIVE_AVAX = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
 const TRUSTWARE_API_KEY = import.meta.env.VITE_TRUSTWARE_API_KEY as string | undefined;
 
@@ -28,9 +28,7 @@ export function TrustwareDepositWidget() {
   const { authenticated } = usePrivy();
   const { wallets } = useWallets();
   const [walletApi, setWalletApi] = useState<WalletInterFaceAPI | null>(null);
-  const [ready, setReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
-  const initialized = useRef(false);
 
   // Build WalletInterFaceAPI from Privy's EIP-1193 provider
   useEffect(() => {
@@ -60,6 +58,7 @@ export function TrustwareDepositWidget() {
         setWalletApi(api);
       } catch (e) {
         console.warn('TrustwareWidget: wallet API build failed', e);
+        setInitError('Could not connect wallet to Trustware. Please refresh.');
       }
     }
 
@@ -70,6 +69,14 @@ export function TrustwareDepositWidget() {
     return (
       <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-xs text-amber-500/90">
         Set <code className="font-mono">VITE_TRUSTWARE_API_KEY</code> in <code className="font-mono">.env</code> to enable the deposit widget.
+      </div>
+    );
+  }
+
+  if (initError) {
+    return (
+      <div className="rounded-xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-xs text-destructive">
+        {initError}
       </div>
     );
   }
