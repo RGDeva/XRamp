@@ -17,11 +17,13 @@ type StarLayerProps = HTMLMotionProps<'div'> & {
   starColor: string;
 };
 
+const STAR_FIELD = 6000;
+
 function generateStars(count: number, starColor: string) {
   const shadows: string[] = [];
   for (let i = 0; i < count; i++) {
-    const x = Math.floor(Math.random() * 4000) - 2000;
-    const y = Math.floor(Math.random() * 4000) - 2000;
+    const x = Math.floor(Math.random() * STAR_FIELD * 2) - STAR_FIELD;
+    const y = Math.floor(Math.random() * STAR_FIELD * 2) - STAR_FIELD;
     shadows.push(`${x}px ${y}px ${starColor}`);
   }
   return shadows.join(', ');
@@ -44,26 +46,19 @@ function StarLayer({
   return (
     <motion.div
       data-slot="star-layer"
-      animate={{ y: [0, -2000] }}
+      animate={{ y: [0, -STAR_FIELD] }}
       transition={transition}
-      className={cn('absolute top-0 left-0 w-full h-[2000px]', className)}
+      className={cn('absolute top-0 left-0 w-full', className)}
+      style={{ height: `${STAR_FIELD}px` }}
       {...props}
     >
       <div
         className="absolute bg-transparent rounded-full"
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          boxShadow: boxShadow,
-        }}
+        style={{ width: `${size}px`, height: `${size}px`, boxShadow }}
       />
       <div
-        className="absolute bg-transparent rounded-full top-[2000px]"
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          boxShadow: boxShadow,
-        }}
+        className="absolute bg-transparent rounded-full"
+        style={{ width: `${size}px`, height: `${size}px`, boxShadow, top: `${STAR_FIELD}px` }}
       />
     </motion.div>
   );
@@ -117,7 +112,7 @@ function StarsBackground({
     >
       <motion.div
         style={{ x: springX, y: springY }}
-        className={cn({ 'pointer-events-none': !pointerEvents })}
+        className={cn('absolute inset-0 w-full h-full', { 'pointer-events-none': !pointerEvents })}
       >
         <StarLayer
           count={1000}
