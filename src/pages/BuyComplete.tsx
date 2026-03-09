@@ -53,18 +53,16 @@ export default function BuyComplete() {
 
   const handle = LP_VENMO_HANDLE.replace('@', '');
 
-  // Venmo payment-link URL — prefills recipient, amount, note.
-  // Works on desktop (opens venmo.com) and mobile (iOS/Android intercepts → Venmo app).
-  const venmoPaymentUrl = `https://account.venmo.com/payment-link?audience=public&recipients=${handle}&amount=${payAmount}&note=${encodeURIComponent(memo)}`;
+  // Venmo profile URL — reliably opens on desktop and mobile web.
+  const venmoProfileUrl = `https://venmo.com/${handle}`;
 
-  // Mobile deep link (venmo:// scheme) — only works if Venmo app is already installed.
-  // Used as href so mobile browsers try the app first, fallback to web URL.
+  // Mobile deep link (venmo:// scheme) — opens Venmo app directly with payment prefilled.
+  // Only works if Venmo app is installed; falls back to profile URL on desktop.
   const venmoDeepLink = `venmo://paycharge?txn=pay&recipients=${handle}&amount=${payAmount}&note=${encodeURIComponent(memo)}`;
 
-  // QR payload: encode the Venmo payment-link URL.
-  // On mobile, camera apps and QR scanners open this as a URL → iOS/Android routes to Venmo app.
-  // On desktop scan, opens the prefilled Venmo web payment page.
-  const qrPayload = venmoPaymentUrl;
+  // QR payload: encode deep link so phone camera routes straight to Venmo app.
+  // If app not installed, phone browser will fall back to venmo.com.
+  const qrPayload = venmoDeepLink;
 
   return (
     <div className="max-w-md mx-auto px-4 py-8 pb-32 md:pb-8 space-y-4">
@@ -162,16 +160,18 @@ export default function BuyComplete() {
 
           {/* Open Venmo button */}
           <a
-            href={venmoPaymentUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => {
+            href={venmoDeepLink}
+            onClick={(e) => {
+              e.preventDefault();
+              // Try deep link first (opens Venmo app with payment prefilled)
               window.location.href = venmoDeepLink;
+              // After 1.5s, if still here, fall back to venmo.com profile page
+              setTimeout(() => { window.open(venmoProfileUrl, '_blank'); }, 1500);
             }}
             className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#3D95CE]/10 border border-[#3D95CE]/30 text-[#3D95CE] font-semibold text-sm hover:bg-[#3D95CE]/20 transition-colors"
           >
             <RailIcon rail="venmo" size={20} />
-            Open Venmo (prefilled)
+            Open Venmo app
           </a>
 
           {/* QR Code */}

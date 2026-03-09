@@ -65,11 +65,11 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   useProofMessageListener();
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* Stars background — fixed, full-screen, behind everything */}
       <StarsBackground
         starColor="#ffffff"
-        className="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,_#0d1117_0%,_#000_100%)]"
+        className="!fixed !inset-0 !w-screen !h-screen z-0 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,_#0d1117_0%,_#000_100%)]"
         pointerEvents={false}
       />
 
