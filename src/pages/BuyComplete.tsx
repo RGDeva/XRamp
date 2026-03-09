@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
-import { ShieldCheck, Copy, Check, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Copy, Check, ExternalLink, AlertTriangle } from 'lucide-react';
 import { RailIcon } from '@/components/shared/RailIcon';
 import { txUrl } from '@/lib/fuji';
 import { cn } from '@/lib/utils';
@@ -103,8 +103,16 @@ export default function BuyComplete() {
           <RailIcon rail={paymentMethodId} size={28} />
           <div>
             <p className="font-semibold text-sm">Complete your Venmo payment</p>
-            <p className="text-xs text-muted-foreground">Follow the steps below exactly</p>
+            <p className="text-xs text-muted-foreground">Copy the details below and pay manually in Venmo</p>
           </div>
+        </div>
+
+        {/* Fallback notice */}
+        <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-500/90">
+            If Venmo web fails to load, copy the amount, handle, and memo below and complete the payment manually in the Venmo app.
+          </p>
         </div>
 
         {/* Steps */}
@@ -148,38 +156,40 @@ export default function BuyComplete() {
           </li>
         </ol>
 
-        {/* QR Code */}
-        <div className="flex flex-col items-center gap-3 pt-2 border-t border-border">
-          <p className="text-xs text-muted-foreground">Or scan QR to view payment details</p>
-          <div className="bg-white p-3 rounded-xl shadow-sm">
-            <QRCodeSVG
-              value={qrPayload}
-              size={160}
-              level="M"
-              bgColor="#ffffff"
-              fgColor="#000000"
-            />
-          </div>
-          <p className="text-[10px] text-muted-foreground text-center max-w-[220px]">
-            Scan with your phone camera — opens Venmo with payment prefilled.
-          </p>
-        </div>
+        {/* QR + Open Venmo — secondary path */}
+        <div className="pt-2 border-t border-border space-y-3">
+          <p className="text-xs text-muted-foreground text-center">Or try to open Venmo with payment prefilled</p>
 
-        {/* Open Venmo button */}
-        <a
-          href={venmoPaymentUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => {
-            // Also try the native deep link on mobile — if the app is installed it
-            // will intercept; otherwise the payment-link URL above handles it.
-            window.location.href = venmoDeepLink;
-          }}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#3D95CE]/10 border border-[#3D95CE]/30 text-[#3D95CE] font-semibold text-sm hover:bg-[#3D95CE]/20 transition-colors"
-        >
-          <RailIcon rail="venmo" size={20} />
-          Open Venmo
-        </a>
+          {/* Open Venmo button */}
+          <a
+            href={venmoPaymentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              window.location.href = venmoDeepLink;
+            }}
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#3D95CE]/10 border border-[#3D95CE]/30 text-[#3D95CE] font-semibold text-sm hover:bg-[#3D95CE]/20 transition-colors"
+          >
+            <RailIcon rail="venmo" size={20} />
+            Open Venmo (prefilled)
+          </a>
+
+          {/* QR Code */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="bg-white p-3 rounded-xl shadow-sm">
+              <QRCodeSVG
+                value={qrPayload}
+                size={140}
+                level="M"
+                bgColor="#ffffff"
+                fgColor="#000000"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground text-center max-w-[220px]">
+              Scan with phone camera — opens Venmo prefilled. If Venmo web errors, use copy buttons above.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Step 4: Verify */}
