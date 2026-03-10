@@ -68,7 +68,7 @@ export default function Home() {
     );
   }
 
-  // Not logged in state - ZKP2P style landing
+  // Not logged in state - landing page
   if (!isAuthenticated) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex flex-col">

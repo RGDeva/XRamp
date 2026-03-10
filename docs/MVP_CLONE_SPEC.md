@@ -1,4 +1,4 @@
-# XRamp MVP Clone Spec (Peer/ZKP2P-style)
+# XRamp MVP Spec
 
 ## Goal
 Ship a production-usable v0 offramp flow that is a 1:1 functional clone baseline, with one measurable wedge:

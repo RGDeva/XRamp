@@ -17,7 +17,7 @@ XRamp is a fiat-to-crypto onramp/offramp that settles on Avalanche via escrow co
 - **LFJ token difference** — LFJ testnet uses its own USDC (`0xB607…`), different from escrow MockUSDC (`0xb2F4…`). On mainnet these would be the same real USDC.
 
 ### Future
-- **Multi-LP marketplace** — Peer.xyz's liquidity network is referenced as the future quoting engine; current demo uses XRamp's single LP
+- **Multi-LP marketplace** — multiple liquidity providers competing on price; current demo uses XRamp's single LP
 - **Real USDC on mainnet** — production deployment with real stablecoins
 - **Automated proof verification** — currently admin-triggered
 - **Chrome extension SDK** — drop-in widget for partners
@@ -113,6 +113,7 @@ See [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) for the full judge-facing demo script wit
 4. **LFJ Swap Tx (Fuji)** — `swapTxHash` → Snowtrace link (optional)
 
 ## References
-- Peer.xyz / ZKP2P: https://docs.peer.xyz/ (future multi-LP quoting engine; current demo uses XRamp single LP)
 - LFJ / Trader Joe: https://traderjoexyz.com/ (Avalanche DEX, V2.1 on Fuji testnet)
-- ZKP2P Contracts: https://github.com/zkp2p/zkp2p-contracts
+- Avalanche Fuji: https://testnet.snowtrace.io
+- Privy Auth: https://privy.io
+- Trustware SDK: https://trustware.com

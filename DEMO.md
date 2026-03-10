@@ -28,7 +28,7 @@
 |---|---|
 | Web App (deployed) | https://xramp-app.vercel.app |
 | Orchestrator (Cloudflare Worker) | https://xramp-orchestrator.xramp.workers.dev |
-| Extension repo | https://github.com/RGDeva/zkp2p-extension-v1 |
+| Extension repo | https://github.com/RGDeva/xramp-extension |
 | Fuji RPC | https://api.avax-test.network/ext/bc/C/rpc |
 | MockUSDC | `0xb2F4Ca689C54bCe4effcf8A12Cb02089C933C5c6` |
 | XRampEscrow | `0xe1189d9644Ba8546FB421c02fd28bf64CF74F821` |
@@ -140,7 +140,7 @@ Extension → "Awaiting Payment" screen
 What happens:
 1. Extension finds the open `account.venmo.com` tab
 2. `chrome.scripting.executeScript` fetches `/api/stories?feedType=me` (uses existing session cookies — **never stored**)
-3. Matches transaction: receiver handle + amount + within 30 min window + **debit only** (per zkp2p template `"amount":"- $..."`)
+3. Matches transaction: receiver handle + amount + within 30 min window + **debit only** (outgoing payments only, matching `"amount":"- $..."`)
 4. Extracts proof fields: `amount`, `date`, `paymentId`, `receiverUsername`, `currency`
 5. Computes `proofHash = sha256(JSON.stringify(proofPayload))` — cookies/headers never in payload
 6. Calls `POST /intents/:id/proof` → orchestrator stores proof row + updates `intents.proofHash`
@@ -209,20 +209,7 @@ On API failure (not logged in / orchestrator down): falls back to full demo simu
 
 ---
 
-## 6 · zkp2p / Peer Alignment
-
-`venmoProofRunner.ts` mirrors `@zkp2p/providers/venmo/transfer_venmo.json`:
-
-| Template field | Implementation |
-|---|---|
-| `responseMatches: "amount":"- $..."` | `isDebitTransaction()` — outgoing payments only |
-| `transactionJsonPathSelectors` | `amount`, `date`, `paymentId`, `receiverUsername`, `currency` |
-| `secretHeaders: ["Cookie"]` | Never in `proofPayload` |
-| `url` with `{{SENDER_ID}}` | `fetchVenmoStories(tabId)` via scripting |
-
----
-
-## 7 · Verified Checklist
+## 6 · Verified Checklist
 
 - [x] `npx tsc --noEmit` exits 0 (web app)
 - [x] `XRAMP_ENABLE_VENMO_PROOF=true npm run build` exits 0 (extension)

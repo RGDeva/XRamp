@@ -56,4 +56,4 @@ Every transition must:
 - Invalid transition = 409 + current state
 
 ## Note
-Peer/ZKP2P matching, lock, proof, and verification are tracked in event metadata and receipt artifacts while the intent remains in canonical state progression above.
+Payment matching, lock, proof, and verification are tracked in event metadata and receipt artifacts while the intent remains in canonical state progression above.

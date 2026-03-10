@@ -22,7 +22,7 @@ XRamp is infrastructure that routes between:
 
 ## MVP UX (4-step)
 1. **Amount**
-2. **Funding** (Peer/ZKP2P escrow + payment verification)
+2. **Funding** (escrow + payment verification)
 3. **Swap** (Trustware optional)
 4. **Withdraw** (external wallet + receipt)
 
@@ -62,9 +62,9 @@ Rules:
 - EventLog
 
 ## Integrations
-### Peer/ZKP2P (ramp layer)
-- escrow + offchain payment verification
-- XRamp uses this as ramp rail (on/off)
+### Ramp Layer
+- on-chain escrow + offchain payment verification
+- proof-based settlement via Chrome extension
 
 ### Trustware (swap layer)
 - USDC to target token routing
@@ -92,7 +92,7 @@ Avoid public framing like:
 - wizard + timeline UI wired to mocked server truth
 
 ### Sprint 2 (integrations)
-- Peer/ZKP2P real integration
+- Multi-rail proof verification
 - Trustware real integration
 - withdraw confirmations
 - admin debug console
