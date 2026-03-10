@@ -113,6 +113,6 @@ See [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) for the full judge-facing demo script wit
 4. **LFJ Swap Tx (Fuji)** — `swapTxHash` → Snowtrace link (optional)
 
 ## References
-- Peer.xyz / ZKP2P: https://docs.peer.xyz/ (future multi-LP quoting engine; current demo uses XRamp single LP)
+-  (future multi-LP quoting engine; current demo uses XRamp single LP)
 - LFJ / Trader Joe: https://traderjoexyz.com/ (Avalanche DEX, V2.1 on Fuji testnet)
 - ZKP2P Contracts: https://github.com/zkp2p/zkp2p-contracts
