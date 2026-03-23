@@ -133,7 +133,7 @@ export default function SellReview() {
           <p className="text-sm font-medium text-muted-foreground">Quote details</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Rate (demo)</span>
+              <span className="text-muted-foreground">Rate</span>
               <span>1 USDC = $1.00 {currency}</span>
             </div>
             <div className="flex justify-between">

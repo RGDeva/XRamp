@@ -333,7 +333,7 @@ export default function Ramp() {
                     </button>
                   </div>
                   {buyNum > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1.5">Demo rate: 1 USD = 1 USDC · Fee: ${buyFee}</p>
+                    <p className="text-xs text-muted-foreground mt-1.5">1 USD = 1 USDC · Fee: ${buyFee}</p>
                   )}
                 </div>
                 {buyNum > 0 && <QuotesCard payAmount={buyAmount} payCurrency="USD" receiveCrypto={buyToken.symbol} rail={buySelectedMethod?.name ?? 'Venmo'} />}
@@ -430,7 +430,7 @@ export default function Ramp() {
                     <span className="flex items-center px-3.5 bg-secondary border border-border rounded-xl text-sm font-medium text-muted-foreground">USD</span>
                   </div>
                   {sellNum > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1.5">Demo rate: 1 USDC = 1 USD · 1% fee</p>
+                    <p className="text-xs text-muted-foreground mt-1.5">1 USDC = 1 USD · 1% fee</p>
                   )}
                 </div>
                 <div>

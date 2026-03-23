@@ -256,7 +256,7 @@ export default function Sell() {
               <CollapsibleContent>
                 <div className="space-y-2 pt-2 pb-1 text-sm">
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Rate (demo)</span>
+                    <span>Rate</span>
                     <span>1 USDC = $1.00 {selectedCurrency}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
