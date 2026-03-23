@@ -14,6 +14,7 @@ import { PaymentMethodPicker, getPaymentMethodById } from '@/components/shared/P
 import { QuotesCard } from '@/components/shared/QuotesCard';
 import { SendSheet } from '@/components/deposits/SendSheet';
 import { orchestratorApi } from '@/lib/orchestratorApi';
+import { getProvider } from '@/lib/providers';
 import { cn } from '@/lib/utils';
 
 type RampTab = 'Buy' | 'Sell' | 'Send';
@@ -25,15 +26,6 @@ const CHAIN_LABELS: Record<string, string> = {
 const CHAIN_ORDER = ['avalanche', 'ethereum', 'base', 'arbitrum', 'solana', 'other'];
 
 
-const HANDLE_META: Record<string, { label: string; placeholder: string; prefix?: string }> = {
-  venmo:   { label: 'Venmo username',         placeholder: 'yourname',     prefix: '@' },
-  cashapp: { label: 'Cash Tag',               placeholder: 'yourcashtag',  prefix: '$' },
-  chime:   { label: 'ChimeSign',              placeholder: 'yourname',     prefix: '@' },
-  zelle:   { label: 'Zelle email / phone',    placeholder: 'email or phone' },
-  revolut: { label: 'Revolut tag',            placeholder: 'yourrevtag',   prefix: '@' },
-  wise:    { label: 'Wise email',             placeholder: 'you@email.com' },
-  paypal:  { label: 'PayPal email / @handle', placeholder: 'you@email.com' },
-};
 
 function TokenPicker({
   open, onClose, selected, onSelect,
@@ -216,7 +208,7 @@ export default function Ramp() {
   const buyFee = (buyNum * 0.005).toFixed(2);
   const buyReceive = buyNum > 0 ? (buyNum - buyNum * 0.005).toFixed(2) : '';
   const buySelectedMethod = buyMethod ? getPaymentMethodById(buyMethod) : null;
-  const buyHandleMeta = buyMethod ? (HANDLE_META[buyMethod] ?? null) : null;
+  const buyHandleMeta = buyMethod ? getProvider(buyMethod).handleMeta : null;
   const buyRequiresHandle = !!buyMethod && buyMethod !== 'bank';
   const buyHasHandle = !buyRequiresHandle || buyHandle.trim().length > 0;
   const buyCanContinue = buyNum > 0 && !!buyMethod && buyHasHandle;
@@ -224,7 +216,7 @@ export default function Ramp() {
   const sellNum = parseFloat(sellAmount) || 0;
   const sellReceive = sellNum > 0 ? (sellNum * (1 - 0.01)).toFixed(2) : '';
   const sellSelectedMethod = sellMethod ? getPaymentMethodById(sellMethod) : null;
-  const sellHandleMeta = sellMethod ? (HANDLE_META[sellMethod] ?? null) : null;
+  const sellHandleMeta = sellMethod ? getProvider(sellMethod).handleMeta : null;
   const sellRequiresHandle = !!sellMethod && sellMethod !== 'bank';
   const sellHasHandle = !sellRequiresHandle || sellHandle.trim().length > 0;
   const sellCanContinue = sellNum > 0 && !!sellMethod && sellHasHandle;

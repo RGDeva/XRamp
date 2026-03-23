@@ -8,9 +8,8 @@ import { ShieldCheck, Copy, Check, ExternalLink, AlertTriangle } from 'lucide-re
 import { RailIcon } from '@/components/shared/RailIcon';
 import { txUrl } from '@/lib/fuji';
 import { cn } from '@/lib/utils';
+import { getProvider } from '@/lib/providers';
 
-// XRamp LP Venmo handle — users pay this handle
-const LP_VENMO_HANDLE = '@primeaj';
 
 function CopyButton({ value, className }: { value: string; className?: string }) {
   const [copied, setCopied] = useState(false);
@@ -48,20 +47,16 @@ export default function BuyComplete() {
   const intentId: string | undefined = state.intentId;
   const depositTxHash: string | undefined = state.depositTxHash;
 
-  // Memo the user must include in Venmo payment so proof can be verified
+  const provider = getProvider(paymentMethodId);
+  const lpHandle = provider.lpHandle;
+
+  // Memo the user must include in payment so proof can be verified
   const memo = intentId ? `XRAMP-${intentId.slice(0, 8)}` : 'XRAMP-payment';
 
-  const handle = LP_VENMO_HANDLE.replace('@', '');
-
-  // Venmo profile URL — reliably opens on desktop and mobile web.
-  const venmoProfileUrl = `https://venmo.com/${handle}`;
-
-  // Mobile deep link (venmo:// scheme) — opens Venmo app directly with payment prefilled.
-  // Only works if Venmo app is installed; falls back to profile URL on desktop.
-  const venmoDeepLink = `venmo://paycharge?txn=pay&recipients=${handle}&amount=${payAmount}&note=${encodeURIComponent(memo)}`;
-
-  // QR payload: encode deep link so phone camera routes straight to Venmo app.
-  // If app not installed, phone browser will fall back to venmo.com.
+  // Venmo-specific deep link (only used when rail === 'venmo')
+  const venmoHandle = lpHandle.replace('@', '');
+  const venmoProfileUrl = `https://venmo.com/${venmoHandle}`;
+  const venmoDeepLink = `venmo://paycharge?txn=pay&recipients=${venmoHandle}&amount=${payAmount}&note=${encodeURIComponent(memo)}`;
   const qrPayload = venmoDeepLink;
 
   return (
@@ -100,8 +95,8 @@ export default function BuyComplete() {
         <div className="flex items-center gap-2">
           <RailIcon rail={paymentMethodId} size={28} />
           <div>
-            <p className="font-semibold text-sm">Complete your Venmo payment</p>
-            <p className="text-xs text-muted-foreground">Copy the details below and pay manually in Venmo</p>
+            <p className="font-semibold text-sm">Complete your {provider.label} payment</p>
+            <p className="text-xs text-muted-foreground">Copy the details below and send payment via {provider.label}</p>
           </div>
         </div>
 
@@ -109,7 +104,7 @@ export default function BuyComplete() {
         <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
           <AlertTriangle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-amber-500/90">
-            If Venmo web fails to load, copy the amount, handle, and memo below and complete the payment manually in the Venmo app.
+            Copy the amount, handle, and memo below and complete the payment manually in {provider.label}.
           </p>
         </div>
 
@@ -131,10 +126,10 @@ export default function BuyComplete() {
           <li className="flex gap-3">
             <span className="flex-shrink-0 h-6 w-6 rounded-full bg-primary/15 text-primary text-[11px] font-bold flex items-center justify-center">2</span>
             <div className="flex-1">
-              <p className="text-xs text-muted-foreground mb-1">Send to this Venmo handle</p>
+              <p className="text-xs text-muted-foreground mb-1">Send to this {provider.label} handle</p>
               <div className="flex items-center justify-between bg-secondary/60 rounded-xl px-4 py-3">
-                <span className="font-mono font-semibold text-foreground">{LP_VENMO_HANDLE}</span>
-                <CopyButton value={LP_VENMO_HANDLE} />
+                <span className="font-mono font-semibold text-foreground">{lpHandle}</span>
+                <CopyButton value={lpHandle} />
               </div>
             </div>
           </li>
@@ -154,42 +149,40 @@ export default function BuyComplete() {
           </li>
         </ol>
 
-        {/* QR + Open Venmo — secondary path */}
-        <div className="pt-2 border-t border-border space-y-3">
-          <p className="text-xs text-muted-foreground text-center">Or try to open Venmo with payment prefilled</p>
+        {/* QR + deep-link — Venmo only */}
+        {paymentMethodId === 'venmo' && (
+          <div className="pt-2 border-t border-border space-y-3">
+            <p className="text-xs text-muted-foreground text-center">Or try to open Venmo with payment prefilled</p>
 
-          {/* Open Venmo button */}
-          <a
-            href={venmoDeepLink}
-            onClick={(e) => {
-              e.preventDefault();
-              // Try deep link first (opens Venmo app with payment prefilled)
-              window.location.href = venmoDeepLink;
-              // After 1.5s, if still here, fall back to venmo.com profile page
-              setTimeout(() => { window.open(venmoProfileUrl, '_blank'); }, 1500);
-            }}
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#3D95CE]/10 border border-[#3D95CE]/30 text-[#3D95CE] font-semibold text-sm hover:bg-[#3D95CE]/20 transition-colors"
-          >
-            <RailIcon rail="venmo" size={20} />
-            Open Venmo app
-          </a>
+            <a
+              href={venmoDeepLink}
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.href = venmoDeepLink;
+                setTimeout(() => { window.open(venmoProfileUrl, '_blank'); }, 1500);
+              }}
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#3D95CE]/10 border border-[#3D95CE]/30 text-[#3D95CE] font-semibold text-sm hover:bg-[#3D95CE]/20 transition-colors"
+            >
+              <RailIcon rail="venmo" size={20} />
+              Open Venmo app
+            </a>
 
-          {/* QR Code */}
-          <div className="flex flex-col items-center gap-2">
-            <div className="bg-white p-3 rounded-xl shadow-sm">
-              <QRCodeSVG
-                value={qrPayload}
-                size={140}
-                level="M"
-                bgColor="#ffffff"
-                fgColor="#000000"
-              />
+            <div className="flex flex-col items-center gap-2">
+              <div className="bg-white p-3 rounded-xl shadow-sm">
+                <QRCodeSVG
+                  value={qrPayload}
+                  size={140}
+                  level="M"
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center max-w-[220px]">
+                Scan with phone camera — opens Venmo prefilled. If Venmo web errors, use copy buttons above.
+              </p>
             </div>
-            <p className="text-[10px] text-muted-foreground text-center max-w-[220px]">
-              Scan with phone camera — opens Venmo prefilled. If Venmo web errors, use copy buttons above.
-            </p>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Step 4: Verify */}
