@@ -122,8 +122,17 @@ export default {
       const id = uid();
       const now = iso();
 
-      // LP receiver handle for Venmo rail — stored so extension/admin can verify recipient
-      const lpHandle = rail === 'venmo' ? '@primeaj' : '';
+      // LP receiver handle — looked up by rail
+      const LP_HANDLES: Record<string, string> = {
+        venmo: '@primeaj',
+        wise: 'primeaj@xramp.xyz',
+        revolut: '@primeaj',
+        cashapp: '$primeaj',
+        paypal: 'primeaj@xramp.xyz',
+        zelle: 'primeaj@xramp.xyz',
+        chime: '@primeaj',
+      };
+      const lpHandle = LP_HANDLES[rail] || '';
       const initMeta = JSON.stringify({ lpHandle: lpHandle || undefined });
 
       await env.DB.prepare(
@@ -155,7 +164,7 @@ export default {
       const row = await env.DB.prepare(
         'SELECT * FROM user_preferences WHERE userId = ?'
       ).bind(userId).first();
-      return cors(json({ preferences: row || { userId, venmoHandle: '', cashappHandle: '', paypalHandle: '', zelleHandle: '' } }), origin);
+      return cors(json({ preferences: row || { userId, venmoHandle: '', cashappHandle: '', paypalHandle: '', zelleHandle: '', wiseHandle: '' } }), origin);
     }
 
     // ── PUT /preferences ──────────────────────────────────────────────────
@@ -163,13 +172,14 @@ export default {
       const body = await request.json<Record<string, string>>();
       const now = iso();
       await env.DB.prepare(
-        `INSERT INTO user_preferences (userId, venmoHandle, cashappHandle, paypalHandle, zelleHandle, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?)
+        `INSERT INTO user_preferences (userId, venmoHandle, cashappHandle, paypalHandle, zelleHandle, wiseHandle, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(userId) DO UPDATE SET
            venmoHandle   = COALESCE(excluded.venmoHandle,   venmoHandle),
            cashappHandle = COALESCE(excluded.cashappHandle, cashappHandle),
            paypalHandle  = COALESCE(excluded.paypalHandle,  paypalHandle),
            zelleHandle   = COALESCE(excluded.zelleHandle,   zelleHandle),
+           wiseHandle    = COALESCE(excluded.wiseHandle,    wiseHandle),
            updatedAt     = excluded.updatedAt`
       ).bind(
         userId,
@@ -177,6 +187,7 @@ export default {
         body.cashappHandle ?? null,
         body.paypalHandle  ?? null,
         body.zelleHandle   ?? null,
+        body.wiseHandle    ?? null,
         now,
       ).run();
       const updated = await env.DB.prepare('SELECT * FROM user_preferences WHERE userId = ?').bind(userId).first();

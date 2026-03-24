@@ -48,7 +48,7 @@ export const PROVIDERS: Record<RampProviderId, RampProvider> = {
       placeholder: 'you@email.com',
     },
     proofEngine: 'wise',
-    live: false,
+    live: true,
   },
   revolut: {
     id: 'revolut',

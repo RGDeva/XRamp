@@ -54,5 +54,9 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   cashappHandle TEXT DEFAULT '',
   paypalHandle TEXT DEFAULT '',
   zelleHandle TEXT DEFAULT '',
+  wiseHandle TEXT DEFAULT '',
   updatedAt TEXT NOT NULL
 );
+
+-- Migration: add wiseHandle to existing tables
+-- ALTER TABLE user_preferences ADD COLUMN wiseHandle TEXT DEFAULT '';

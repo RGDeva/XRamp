@@ -228,6 +228,7 @@ export const orchestratorApi = {
       cashappHandle?: string;
       paypalHandle?: string;
       zelleHandle?: string;
+      wiseHandle?: string;
     };
   }> {
     return apiFetch('/preferences');
@@ -239,6 +240,7 @@ export const orchestratorApi = {
     cashappHandle?: string;
     paypalHandle?: string;
     zelleHandle?: string;
+    wiseHandle?: string;
   }): Promise<void> {
     await apiFetch('/preferences', {
       method: 'PUT',
