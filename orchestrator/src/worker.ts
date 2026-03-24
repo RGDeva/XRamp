@@ -164,7 +164,7 @@ export default {
       const row = await env.DB.prepare(
         'SELECT * FROM user_preferences WHERE userId = ?'
       ).bind(userId).first();
-      return cors(json({ preferences: row || { userId, venmoHandle: '', cashappHandle: '', paypalHandle: '', zelleHandle: '', wiseHandle: '' } }), origin);
+      return cors(json({ preferences: row || { userId, venmoHandle: '', cashappHandle: '', paypalHandle: '', zelleHandle: '', wiseHandle: '', revolutHandle: '' } }), origin);
     }
 
     // ── PUT /preferences ──────────────────────────────────────────────────
@@ -172,22 +172,24 @@ export default {
       const body = await request.json<Record<string, string>>();
       const now = iso();
       await env.DB.prepare(
-        `INSERT INTO user_preferences (userId, venmoHandle, cashappHandle, paypalHandle, zelleHandle, wiseHandle, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO user_preferences (userId, venmoHandle, cashappHandle, paypalHandle, zelleHandle, wiseHandle, revolutHandle, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(userId) DO UPDATE SET
-           venmoHandle   = COALESCE(excluded.venmoHandle,   venmoHandle),
-           cashappHandle = COALESCE(excluded.cashappHandle, cashappHandle),
-           paypalHandle  = COALESCE(excluded.paypalHandle,  paypalHandle),
-           zelleHandle   = COALESCE(excluded.zelleHandle,   zelleHandle),
-           wiseHandle    = COALESCE(excluded.wiseHandle,    wiseHandle),
-           updatedAt     = excluded.updatedAt`
+           venmoHandle    = COALESCE(excluded.venmoHandle,    venmoHandle),
+           cashappHandle  = COALESCE(excluded.cashappHandle,  cashappHandle),
+           paypalHandle   = COALESCE(excluded.paypalHandle,   paypalHandle),
+           zelleHandle    = COALESCE(excluded.zelleHandle,    zelleHandle),
+           wiseHandle     = COALESCE(excluded.wiseHandle,     wiseHandle),
+           revolutHandle  = COALESCE(excluded.revolutHandle,  revolutHandle),
+           updatedAt      = excluded.updatedAt`
       ).bind(
         userId,
-        body.venmoHandle   ?? null,
-        body.cashappHandle ?? null,
-        body.paypalHandle  ?? null,
-        body.zelleHandle   ?? null,
-        body.wiseHandle    ?? null,
+        body.venmoHandle    ?? null,
+        body.cashappHandle  ?? null,
+        body.paypalHandle   ?? null,
+        body.zelleHandle    ?? null,
+        body.wiseHandle     ?? null,
+        body.revolutHandle  ?? null,
         now,
       ).run();
       const updated = await env.DB.prepare('SELECT * FROM user_preferences WHERE userId = ?').bind(userId).first();

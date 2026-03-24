@@ -55,8 +55,11 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   paypalHandle TEXT DEFAULT '',
   zelleHandle TEXT DEFAULT '',
   wiseHandle TEXT DEFAULT '',
+  revolutHandle TEXT DEFAULT '',
   updatedAt TEXT NOT NULL
 );
 
 -- Migration: add wiseHandle to existing tables
 -- ALTER TABLE user_preferences ADD COLUMN wiseHandle TEXT DEFAULT '';
+-- Migration: add revolutHandle to existing tables
+-- ALTER TABLE user_preferences ADD COLUMN revolutHandle TEXT DEFAULT '';

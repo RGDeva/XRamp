@@ -229,6 +229,7 @@ export const orchestratorApi = {
       paypalHandle?: string;
       zelleHandle?: string;
       wiseHandle?: string;
+      revolutHandle?: string;
     };
   }> {
     return apiFetch('/preferences');
@@ -241,6 +242,7 @@ export const orchestratorApi = {
     paypalHandle?: string;
     zelleHandle?: string;
     wiseHandle?: string;
+    revolutHandle?: string;
   }): Promise<void> {
     await apiFetch('/preferences', {
       method: 'PUT',

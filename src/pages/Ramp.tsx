@@ -183,6 +183,7 @@ export default function Ramp() {
         if (preferences.paypalHandle)  map['paypal']  = preferences.paypalHandle;
         if (preferences.zelleHandle)   map['zelle']   = preferences.zelleHandle;
         if (preferences.wiseHandle)    map['wise']    = preferences.wiseHandle;
+        if (preferences.revolutHandle) map['revolut'] = preferences.revolutHandle;
         setSavedHandles(map);
       })
       .catch(() => null);
@@ -245,7 +246,7 @@ export default function Ramp() {
     try {
       setBuySubmitting(true); setBuyError(null);
       if (buyHandle.trim() && buyMethod) {
-        const key = (buyMethod + 'Handle') as 'venmoHandle' | 'cashappHandle' | 'paypalHandle' | 'zelleHandle' | 'wiseHandle';
+        const key = (buyMethod + 'Handle') as 'venmoHandle' | 'cashappHandle' | 'paypalHandle' | 'zelleHandle' | 'wiseHandle' | 'revolutHandle';
         orchestratorApi.savePreferences({ [key]: buyHandle.trim() }).catch(() => null);
       }
       const { intent } = await orchestratorApi.createOnrampIntent({
@@ -270,7 +271,7 @@ export default function Ramp() {
     try {
       setSellSubmitting(true); setSellError(null);
       if (sellHandle.trim() && sellMethod) {
-        const key = (sellMethod + 'Handle') as 'venmoHandle' | 'cashappHandle' | 'paypalHandle' | 'zelleHandle' | 'wiseHandle';
+        const key = (sellMethod + 'Handle') as 'venmoHandle' | 'cashappHandle' | 'paypalHandle' | 'zelleHandle' | 'wiseHandle' | 'revolutHandle';
         orchestratorApi.savePreferences({ [key]: sellHandle.trim() }).catch(() => null);
       }
       const { intent } = await orchestratorApi.createOfframpIntent({

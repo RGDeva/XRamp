@@ -60,7 +60,7 @@ export const PROVIDERS: Record<RampProviderId, RampProvider> = {
       prefix: '@',
     },
     proofEngine: 'revolut',
-    live: false,
+    live: true,
   },
   cashapp: {
     id: 'cashapp',
