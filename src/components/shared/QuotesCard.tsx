@@ -22,11 +22,18 @@ interface QuotesCardProps {
   rail?: string;
 }
 
-function sourceBadge(source?: string) {
+function sourceBadge(source?: string, partnerName?: string) {
   if (source === 'peer_lp') {
     return (
       <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-400 border border-violet-500/30">
         Peer P2P
+      </span>
+    );
+  }
+  if (source === 'partner_lp') {
+    return (
+      <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+        {partnerName ?? 'Partner LP'}
       </span>
     );
   }
@@ -132,7 +139,7 @@ export function QuotesCard({
                 {q.isBest && (
                   <span className="text-[8px] font-bold uppercase tracking-wide px-1 py-0.5 rounded bg-primary/20 text-primary">Best</span>
                 )}
-                {sourceBadge(q.source)}
+                {sourceBadge(q.source, q.partnerName)}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[10px] text-muted-foreground">
@@ -179,8 +186,14 @@ export function QuotesCard({
             </span>
             {' '}via{' '}
             <span className="text-foreground capitalize">{selected.provider}</span>
+            {selected.source === 'partner_lp' && (
+              <span className="text-amber-400"> · {selected.partnerName ?? 'Partner LP'}</span>
+            )}
             {selected.source === 'peer_lp' && (
-              <span className="text-violet-400"> (P2P)</span>
+              <span className="text-violet-400"> · Peer P2P</span>
+            )}
+            {selected.source === 'xramp_lp' && (
+              <span className="text-success/70"> · XRamp LP</span>
             )}
           </span>
           <button

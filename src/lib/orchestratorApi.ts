@@ -99,12 +99,16 @@ export interface OrchestratorQuote {
   feeAmount: string;
   feeBps: number;
   etaSeconds: number;
-  routeType: 'xramp_lp' | 'external_lp' | 'peer_lp';
-  /** Liquidity source: 'xramp_lp' = XRamp fallback LP, 'peer_lp' = live Peer/ZKP2P LP */
-  source: 'xramp_lp' | 'peer_lp' | 'external_lp';
+  routeType: 'xramp_lp' | 'partner_lp' | 'external_lp' | 'peer_lp';
+  /** Liquidity source tag */
+  source: 'xramp_lp' | 'partner_lp' | 'peer_lp' | 'external_lp';
   isBest: boolean;
   fiatCurrency: string;
   destination?: Record<string, unknown> | null;
+  /** Partner LP identifier (only present on partner_lp quotes) */
+  partnerId?: string;
+  /** Partner LP display name (only present on partner_lp quotes) */
+  partnerName?: string;
   /** Peer LP depositor address (only present on peer_lp quotes) */
   depositor?: string;
 }
@@ -115,7 +119,7 @@ export interface GetQuotesResponse {
   fiatAmount: number;
   fiatCurrency: string;
   /** How many quotes came from each source */
-  sources?: { xramp_lp: number; peer_lp: number };
+  sources?: { xramp_lp: number; partner_lp: number; peer_lp: number };
 }
 
 // ─── API surface ──────────────────────────────────────────────────────────────
@@ -157,6 +161,9 @@ export const orchestratorApi = {
     };
     quoteId?: string;
     quoteSnapshot?: Record<string, unknown>;
+    quoteSource?: string;
+    quotePartnerId?: string;
+    quotePartnerName?: string;
   }): Promise<{ intent: OrchestratorIntent }> {
     return apiFetch('/intents', {
       method: 'POST',
@@ -181,6 +188,9 @@ export const orchestratorApi = {
     };
     quoteId?: string;
     quoteSnapshot?: Record<string, unknown>;
+    quoteSource?: string;
+    quotePartnerId?: string;
+    quotePartnerName?: string;
   }): Promise<{ intent: OrchestratorIntent }> {
     return this.createIntent({ ...payload, type: 'ONRAMP' });
   },

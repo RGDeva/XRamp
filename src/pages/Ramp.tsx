@@ -267,7 +267,11 @@ export default function Ramp() {
           feeBps: selectedQuote.feeBps,
           etaSeconds: selectedQuote.etaSeconds,
           routeType: selectedQuote.routeType,
+          source: selectedQuote.source,
         } : undefined,
+        quoteSource: selectedQuote?.source,
+        quotePartnerId: selectedQuote?.partnerId,
+        quotePartnerName: selectedQuote?.partnerName,
       });
       navigate('/buy/review', { state: {
         payAmount: buyAmount, receiveAmount: buyReceive,

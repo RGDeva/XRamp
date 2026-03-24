@@ -17,6 +17,7 @@
 import { verifyAuth, isAdmin } from './auth';
 import { ALLOWED_TRANSITIONS, type IntentState } from './state';
 import { fetchPeerQuotes, buildPeerQuoteRequest, PEER_QUOTES_ENABLED_DEFAULT } from './peerLiquiditySource';
+import { getPartnerQuotes } from './partnerLiquiditySource';
 
 export interface Env {
   DB: D1Database;
@@ -138,6 +139,14 @@ export default {
         };
       });
 
+      // ── Partner LP quotes (config-driven, always synchronous) ────────
+      const partnerQuotes = getPartnerQuotes({
+        fiatAmount,
+        fiatCurrency,
+        enabledProviders,
+        destination: destination ?? null,
+      });
+
       // ── Peer LP quotes (experimental, best-effort) ───────────────────
       // PEER_QUOTES_ENABLED env var controls whether we attempt live Peer
       // ingestion. Defaults to false until the endpoint is verified.
@@ -158,9 +167,9 @@ export default {
       );
 
       // ── Aggregate + rank all sources together ─────────────────────────
-      // Both XRamp LP and Peer LP quotes are ranked together.
-      // XRamp LP is always present; Peer LP is additive when available.
-      const allQuotes = [...xrampQuotes, ...peerQuotes];
+      // XRamp LP always present; Partner LP additive (config-driven);
+      // Peer LP additive (experimental, feature-flagged).
+      const allQuotes = [...xrampQuotes, ...partnerQuotes, ...peerQuotes];
 
       // Rank: highest outputAmount first, ETA as tiebreaker
       allQuotes.sort((a, b) => {
@@ -179,6 +188,7 @@ export default {
         fiatCurrency,
         sources: {
           xramp_lp: xrampQuotes.length,
+          partner_lp: partnerQuotes.length,
           peer_lp: peerQuotes.length,
         },
         // Internal diagnostics — strip from prod responses if needed
@@ -214,6 +224,9 @@ export default {
       const destination = body.destination as { chainId?: number; token?: string; recipientAddress?: string; app?: string; memo?: string } | undefined;
       const quoteId = (body.quoteId as string) || undefined;
       const quoteSnapshot = body.quoteSnapshot as Record<string, unknown> | undefined;
+      const quoteSource = (body.quoteSource as string) || undefined;
+      const quotePartnerId = (body.quotePartnerId as string) || undefined;
+      const quotePartnerName = (body.quotePartnerName as string) || undefined;
 
       if (!type || !amount || !sourceAsset || !targetAsset) {
         return cors(err('Missing required fields: type, amount, sourceAsset, targetAsset'), origin);
@@ -238,6 +251,9 @@ export default {
         ...(destination ? { destination } : {}),
         ...(quoteId ? { quoteId } : {}),
         ...(quoteSnapshot ? { quoteSnapshot } : {}),
+        ...(quoteSource ? { quoteSource } : {}),
+        ...(quotePartnerId ? { quotePartnerId } : {}),
+        ...(quotePartnerName ? { quotePartnerName } : {}),
       });
 
       await env.DB.prepare(
