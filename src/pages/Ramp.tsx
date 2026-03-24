@@ -15,6 +15,7 @@ import { QuotesCard } from '@/components/shared/QuotesCard';
 import { SendSheet } from '@/components/deposits/SendSheet';
 import { orchestratorApi } from '@/lib/orchestratorApi';
 import { getProvider } from '@/lib/providers';
+import { createXRampSdk, type XRampSdk, type XRampState } from '@/lib/xrampSdk';
 import { cn } from '@/lib/utils';
 
 type RampTab = 'Buy' | 'Sell' | 'Send';
@@ -157,6 +158,19 @@ export default function Ramp() {
   const getUserId = () => user?.email || user?.walletAddress || user?.embeddedWalletAddress || 'guest';
 
   const [savedHandles, setSavedHandles] = useState<Record<string, string>>({});
+  const [xrampSdk, setXrampSdk] = useState<XRampSdk | null>(null);
+  const [extensionState, setExtensionState] = useState<XRampState>('needs_install');
+
+  // Detect XRamp extension on mount
+  useEffect(() => {
+    const sdk = createXRampSdk({ window });
+    setXrampSdk(sdk);
+    sdk.getState().then(setExtensionState);
+    const unsub = sdk.onIntentFulfilled((data) => {
+      navigate('/activity');
+    });
+    return () => { unsub(); sdk.destroy(); };
+  }, []);
 
   // Load saved handles once on auth
   useEffect(() => {
@@ -386,6 +400,23 @@ export default function Ramp() {
                 disabled={buySubmitting || (isAuthenticated && !buyCanContinue)}
                 className="w-full h-12 text-base rounded-xl border-primary/40 text-foreground"
               />
+              {extensionState === 'ready' && buyCanContinue && (
+                <button
+                  onClick={() => xrampSdk?.onramp({
+                    amount: buyAmount,
+                    provider: buyMethod ?? 'venmo',
+                    destination: user?.walletAddress || user?.embeddedWalletAddress || '',
+                    asset: buyToken.symbol,
+                  })}
+                  className="w-full h-11 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary text-sm font-semibold transition-all flex items-center justify-center gap-2"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                  Fund with XRamp Extension
+                </button>
+              )}
             </div>
           )}
 
