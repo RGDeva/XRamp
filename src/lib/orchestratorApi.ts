@@ -100,9 +100,13 @@ export interface OrchestratorQuote {
   feeBps: number;
   etaSeconds: number;
   routeType: 'xramp_lp' | 'external_lp' | 'peer_lp';
+  /** Liquidity source: 'xramp_lp' = XRamp fallback LP, 'peer_lp' = live Peer/ZKP2P LP */
+  source: 'xramp_lp' | 'peer_lp' | 'external_lp';
   isBest: boolean;
   fiatCurrency: string;
   destination?: Record<string, unknown> | null;
+  /** Peer LP depositor address (only present on peer_lp quotes) */
+  depositor?: string;
 }
 
 export interface GetQuotesResponse {
@@ -110,6 +114,8 @@ export interface GetQuotesResponse {
   bestQuoteId: string | null;
   fiatAmount: number;
   fiatCurrency: string;
+  /** How many quotes came from each source */
+  sources?: { xramp_lp: number; peer_lp: number };
 }
 
 // ─── API surface ──────────────────────────────────────────────────────────────

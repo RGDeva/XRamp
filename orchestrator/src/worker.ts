@@ -16,6 +16,7 @@
 
 import { verifyAuth, isAdmin } from './auth';
 import { ALLOWED_TRANSITIONS, type IntentState } from './state';
+import { fetchPeerQuotes, buildPeerQuoteRequest } from './peerLiquiditySource';
 
 export interface Env {
   DB: D1Database;
@@ -102,27 +103,24 @@ export default {
         return cors(err('fiatAmount must be a positive number'), origin);
       }
 
-      // ── Deterministic provider catalogue ─────────────────────────────
+      // ── XRamp LP catalogue (always enabled, deterministic) ────────────
       // Each entry: { id, feeBps, etaSeconds, routeType }
       // Ranking: highest output (lowest fee) first; ETA breaks ties.
-      // All LP addresses are the XRamp demo LP (primeaj).
-      type ProviderConfig = {
+      type XRampProviderConfig = {
         id: string;
         feeBps: number;
         etaSeconds: number;
         routeType: 'xramp_lp' | 'external_lp' | 'peer_lp';
       };
-      const PROVIDER_CATALOGUE: ProviderConfig[] = [
-        { id: 'revolut',  feeBps: 40,  etaSeconds: 90,  routeType: 'xramp_lp' },
-        { id: 'venmo',    feeBps: 50,  etaSeconds: 120, routeType: 'xramp_lp' },
-        { id: 'wise',     feeBps: 80,  etaSeconds: 180, routeType: 'xramp_lp' },
+      const XRAMP_CATALOGUE: XRampProviderConfig[] = [
+        { id: 'revolut', feeBps: 40,  etaSeconds: 90,  routeType: 'xramp_lp' },
+        { id: 'venmo',   feeBps: 50,  etaSeconds: 120, routeType: 'xramp_lp' },
+        { id: 'wise',    feeBps: 80,  etaSeconds: 180, routeType: 'xramp_lp' },
       ];
 
-      // Filter to requested providers only
-      const active = PROVIDER_CATALOGUE.filter(p => enabledProviders.includes(p.id));
+      const activeXRamp = XRAMP_CATALOGUE.filter(p => enabledProviders.includes(p.id));
 
-      // Build quote objects
-      const quotes = active.map(p => {
+      const xrampQuotes = activeXRamp.map(p => {
         const feeAmount = fiatAmount * (p.feeBps / 10000);
         const outputAmount = fiatAmount - feeAmount;
         return {
@@ -133,23 +131,54 @@ export default {
           feeBps: p.feeBps,
           etaSeconds: p.etaSeconds,
           routeType: p.routeType,
+          source: 'xramp_lp' as const,
           isBest: false,
           destination: destination ?? null,
           fiatCurrency,
         };
       });
 
-      // Rank: highest outputAmount first, then lowest etaSeconds
-      quotes.sort((a, b) => {
+      // ── Peer LP quotes (live, best-effort) ────────────────────────────
+      // If Peer API is unreachable or returns no quotes, we continue with
+      // XRamp quotes only. Peer quotes are tagged source:'peer_lp'.
+      const peerReq = buildPeerQuoteRequest({
+        fiatAmount: String(fiatAmount),
+        fiatCurrency,
+        paymentPlatforms: enabledProviders,
+        destination: destination ?? null,
+      });
+      const peerQuotes = await fetchPeerQuotes(
+        peerReq,
+        fiatAmount,
+        destination ?? null,
+      );
+
+      // ── Aggregate + rank all sources together ─────────────────────────
+      // Deduplicate by provider+routeType: if Peer returns a quote for the
+      // same provider as an XRamp quote, keep both (they have different
+      // liquidity/pricing). Users can see source in the quote object.
+      const allQuotes = [...xrampQuotes, ...peerQuotes];
+
+      // Rank: highest outputAmount first, ETA as tiebreaker
+      allQuotes.sort((a, b) => {
         const diff = parseFloat(b.outputAmount) - parseFloat(a.outputAmount);
         if (Math.abs(diff) > 0.000001) return diff;
         return a.etaSeconds - b.etaSeconds;
       });
 
-      if (quotes.length > 0) quotes[0].isBest = true;
-      const bestQuoteId = quotes[0]?.id ?? null;
+      if (allQuotes.length > 0) allQuotes[0].isBest = true;
+      const bestQuoteId = allQuotes[0]?.id ?? null;
 
-      return cors(json({ quotes, bestQuoteId, fiatAmount, fiatCurrency }), origin);
+      return cors(json({
+        quotes: allQuotes,
+        bestQuoteId,
+        fiatAmount,
+        fiatCurrency,
+        sources: {
+          xramp_lp: xrampQuotes.length,
+          peer_lp: peerQuotes.length,
+        },
+      }), origin);
     }
 
     // ── Auth ──────────────────────────────────────────────────────────────
