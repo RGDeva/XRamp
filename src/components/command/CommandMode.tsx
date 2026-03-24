@@ -1,29 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Send, X, Zap, CheckCircle2, Clock, TrendingUp, Wifi, Minus } from 'lucide-react';
+import { Send, X, Zap, CheckCircle2, Clock, TrendingUp, Wifi, Minus, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { orchestratorApi } from '@/lib/orchestratorApi';
+import { createCommandEngine, formatCompletionMessage, type CommandPreview } from '@/lib/xrampCommandEngine';
+import { parseCommand } from '@/lib/xrampCommandParser';
+import { createXRampSdk } from '@/lib/xrampSdk';
 
-// ─── XRamp LP (single provider for demo) ────────────────────────────────────
+// ─── XRamp LP stats (static, demo) ──────────────────────────────────────────
 
-interface LP {
-  id: string;
-  name: string;
-  reliability: number;
-  avgTime: string;
-  avgSeconds: number;
-  fillRate: number;
-}
-
-const XRAMP_LP: LP = {
-  id: 'xramp_lp',
-  name: 'XRamp LP',
-  reliability: 99,
-  avgTime: '~2 min',
-  avgSeconds: 120,
-  fillRate: 100,
-};
+const XRAMP_LP = { reliability: 99, avgTime: '~2 min', fillRate: 100 };
 
 // ─── Message Types ───────────────────────────────────────────────────────────
 
@@ -40,30 +26,23 @@ function uid() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-// ─── Quick Commands ──────────────────────────────────────────────────────────
+// ─── Quick Actions ────────────────────────────────────────────────────────────
+// Each chip either sets a template in the input box or fires directly.
 
-const QUICK_COMMANDS = [
-  'Buy $1 USDC with Venmo',
-  'Sell $5 USDC to Venmo',
-  'Buy $10 USDC with CashApp',
+interface QuickAction {
+  label: string;
+  command: string;
+  fire?: boolean; // if true, execute immediately; else just populate input
+}
+
+const QUICK_ACTIONS: QuickAction[] = [
+  { label: 'Fund LFJ $50',        command: 'fund lfj with $50',          fire: true },
+  { label: 'Fund wallet $100',    command: 'fund wallet with $100',      fire: true },
+  { label: 'Send $25 to address', command: 'send $25 to ',               fire: false },
+  { label: 'Cash out $100',       command: 'cash out $100',              fire: true },
+  { label: 'Buy $50',             command: 'buy $50 with revolut',       fire: true },
+  { label: 'Fund agent $50',      command: 'fund agent wallet with $50', fire: true },
 ];
-
-// ─── Parse intent from command string ────────────────────────────────────────
-
-interface Intent {
-  action: 'buy' | 'sell' | 'onramp';
-  amount: number;
-  rail: string;
-}
-
-function parseIntent(text: string): Intent {
-  const lower = text.toLowerCase();
-  const amtMatch = text.match(/\$?([\d,]+)/);
-  const amount = amtMatch ? parseFloat(amtMatch[1].replace(',', '')) : 100;
-  const action: Intent['action'] = lower.includes('sell') ? 'sell' : lower.includes('on-ramp') || lower.includes('onramp') ? 'onramp' : 'buy';
-  const rail = lower.includes('venmo') ? 'Venmo' : lower.includes('cashapp') || lower.includes('cash app') ? 'CashApp' : lower.includes('zelle') ? 'Zelle' : 'CashApp';
-  return { action, amount, rail };
-}
 
 // ─── SLA Countdown Component ──────────────────────────────────────────────────
 
@@ -94,26 +73,26 @@ function SLATimer({ seconds, onComplete }: { seconds: number; onComplete: () => 
 
 export function CommandMode() {
   const { user } = useAuth();
-  // Keep userId in a ref so runSimulation always reads the latest value
-  const userIdRef = useRef<string>('guest');
-  useEffect(() => {
-    userIdRef.current = user?.email || user?.walletAddress || user?.embeddedWalletAddress || 'guest';
-  }, [user]);
 
+  // ── SDK + command engine ───────────────────────────────────────────────────
+  const sdkRef = useRef(createXRampSdk({ window }));
+  const engineRef = useRef(createCommandEngine({ sdk: sdkRef.current }));
+
+  // ── State ──────────────────────────────────────────────────────────────────
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
     {
       id: uid(),
       role: 'system',
-      text: 'XRamp Command Mode active. Settlement on Avalanche Fuji via XRamp LP. Tap a quick command or type below.',
+      text: 'XRamp Command ready. Type a command or tap a quick action to fund on-chain.',
       ts: Date.now(),
     },
   ]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
-  const [slaActive, setSlaActive] = useState(false);
   const [showLP, setShowLP] = useState(false);
+  const [pendingPreview, setPendingPreview] = useState<CommandPreview | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const push = useCallback((role: MsgRole, text: string) => {
@@ -122,73 +101,92 @@ export function CommandMode() {
 
   useEffect(() => {
     if (!minimized) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, slaActive, minimized]);
+  }, [messages, pendingPreview, minimized]);
 
-  const runSimulation = useCallback(async (text: string) => {
+  // ── Listen for extension completion ───────────────────────────────────────
+  useEffect(() => {
+    const sdk = sdkRef.current;
+    const unsub = sdk.onIntentFulfilled((data) => {
+      setOpen(true);
+      setMinimized(false);
+      setPendingPreview(null);
+      setBusy(false);
+      push('success', formatCompletionMessage({
+        amount: data.amount,
+        provider: data.rail,
+        destination: data.destination,
+      }));
+      if (data.destination?.app === 'lfj') {
+        push('info', 'Open LFJ to continue: https://lfj.gg');
+      }
+    });
+    return () => { unsub(); sdk.destroy(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [push]);
+
+  // ── Parse → preview flow ───────────────────────────────────────────────────
+  const runCommand = useCallback(async (text: string) => {
     if (busy) return;
     setBusy(true);
     setMinimized(false);
-
-    const parsed = parseIntent(text);
-    setShowLP(true);
+    setPendingPreview(null);
 
     push('user', text);
-    await delay(400);
+    await delay(200);
 
-    push('info', `Creating ${parsed.action} intent for $${parsed.amount} USDC via ${parsed.rail}…`);
-    await delay(400);
-
-    // ── Real orchestrator intent creation ─────────────────────────────────────
-    let createdIntentId: string | null = null;
-    try {
-      const payload = {
-        userId: userIdRef.current,
-        amount: String(parsed.amount),
-        sourceAsset: parsed.action === 'sell' ? 'USDC' : 'USD',
-        targetAsset: parsed.action === 'sell' ? 'USD' : 'USDC',
-        rail: parsed.rail,
-      };
-      const { intent: created } = parsed.action === 'sell'
-        ? await orchestratorApi.createOfframpIntent(payload)
-        : await orchestratorApi.createOnrampIntent(payload);
-      createdIntentId = created.id;
-      push('info', `Intent created: ${created.id.slice(0, 12)}… [${created.state}]`);
-    } catch {
-      push('info', '⚠ Orchestrator unreachable — intent not created');
+    const parsed = parseCommand(text);
+    if (!parsed.ok) {
+      push('info', `⚠ ${parsed.reason}`);
+      setBusy(false);
+      return;
     }
-    await delay(300);
 
-    if (createdIntentId) {
-      // ── Real intent — guide user to next steps ──────────────────────────
-      push('info', 'Next: go to Buy or Sell page → Review → Confirm to fund escrow on Fuji.');
-      await delay(400);
-      const rail = parsed.rail.toLowerCase();
-      if (rail === 'venmo') {
-        push('info', `After escrow is funded, pay $${parsed.amount} via Venmo, then use the XRamp extension → "Verify with Venmo (Beta)" to submit proof.`);
-      } else {
-        push('info', `After escrow is funded, pay $${parsed.amount} via ${parsed.rail}, then ask admin to verify and release escrow.`);
+    push('info', `Fetching best route for "${parsed.label}"…`);
+    setShowLP(true);
+
+    try {
+      const preview = await engineRef.current.prepareCommand(parsed.command);
+      if (!preview.recommended) {
+        push('info', '⚠ No route available right now. Try again shortly.');
+        setBusy(false);
+        return;
       }
-      await delay(400);
-      push('system', 'Track this intent on the Activity tab. Admin will release escrow after proof verification.');
-    } else {
-      // ── API unreachable — inform user ──────────────────────────────────
-      push('system', 'Log in and use the Buy or Sell page to create a real intent with on-chain escrow.');
+      setPendingPreview(preview);
+    } catch {
+      push('info', '⚠ Could not fetch quotes — check connection.');
     }
     setBusy(false);
   }, [busy, push]);
+
+  // ── Confirm execution ──────────────────────────────────────────────────────
+  const confirmExecution = useCallback(async () => {
+    if (!pendingPreview || busy) return;
+    setBusy(true);
+    const cmd = pendingPreview.command;
+    const route = pendingPreview.recommended!;
+    const providerLabel = route.provider.charAt(0).toUpperCase() + route.provider.slice(1);
+    push('info', `Launching ${providerLabel} flow for $${cmd.amount}…`);
+    setPendingPreview(null);
+    try {
+      await engineRef.current.executeCommand(cmd);
+      push('info', 'Extension opened — complete the payment to finish.');
+    } catch (e) {
+      push('info', `⚠ ${e instanceof Error ? e.message : 'Extension not available. Install XRamp extension.'}`);
+    }
+    setBusy(false);
+  }, [pendingPreview, busy, push]);
 
   const handleSend = () => {
     const trimmed = input.trim();
     if (!trimmed || busy) return;
     setInput('');
-    runSimulation(trimmed);
+    runCommand(trimmed);
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  // Unread badge: count messages since last open
   const unreadCount = !open ? messages.filter(m => m.role !== 'system' || messages.indexOf(m) > 0).length : 0;
 
   return (
@@ -245,33 +243,83 @@ export function CommandMode() {
                   {messages.map((msg) => (
                     <ChatBubble key={msg.id} msg={msg} />
                   ))}
-                  {slaActive && (
-                    <div className="flex">
-                      <div className="max-w-[88%] rounded-2xl rounded-tl-sm px-3 py-2 bg-amber-500/10 border border-amber-500/20 text-sm">
-                        <SLATimer seconds={299} onComplete={() => setSlaActive(false)} />
+
+                  {/* Route preview confirm card */}
+                  {pendingPreview && pendingPreview.recommended && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2.5"
+                    >
+                      <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Best Route Found</p>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Provider</span>
+                          <span className="font-semibold text-foreground capitalize">{pendingPreview.recommended.provider}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">You receive</span>
+                          <span className="font-bold text-success">{parseFloat(pendingPreview.recommended.outputAmount).toFixed(2)} {pendingPreview.command.destination.token}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Fee</span>
+                          <span className="text-foreground">{(pendingPreview.recommended.feeBps / 100).toFixed(2)}% · −${parseFloat(pendingPreview.recommended.feeAmount).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">ETA</span>
+                          <span className="text-foreground">~{Math.round(pendingPreview.recommended.etaSeconds / 60)}m</span>
+                        </div>
+                        {pendingPreview.command.destination.app && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Destination</span>
+                            <span className="font-semibold text-primary uppercase">{pendingPreview.command.destination.app}</span>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                      <div className="flex gap-2 pt-0.5">
+                        <button
+                          onClick={confirmExecution}
+                          disabled={busy}
+                          className="flex-1 h-8 rounded-lg bg-primary text-primary-foreground text-xs font-bold transition-opacity disabled:opacity-50"
+                        >
+                          {busy ? 'Launching…' : 'Confirm & Fund'}
+                        </button>
+                        <button
+                          onClick={() => setPendingPreview(null)}
+                          disabled={busy}
+                          className="h-8 w-8 rounded-lg bg-secondary border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </motion.div>
                   )}
+
                   <div ref={bottomRef} />
                 </div>
 
-                {/* Quick commands */}
+                {/* Quick actions */}
                 <div className="px-3 py-2 border-t border-border/30 flex-shrink-0">
                   <div className="flex flex-wrap gap-1.5">
-                    {QUICK_COMMANDS.map((cmd) => (
+                    {QUICK_ACTIONS.map((qa) => (
                       <button
-                        key={cmd}
-                        onClick={() => { if (!busy) runSimulation(cmd); }}
+                        key={qa.label}
+                        onClick={() => {
+                          if (busy) return;
+                          if (qa.fire) {
+                            runCommand(qa.command);
+                          } else {
+                            setInput(qa.command);
+                          }
+                        }}
                         disabled={busy}
                         className={cn(
                           'text-[10px] px-2 py-1 rounded-full border transition-all',
-                          cmd.toLowerCase().includes('express')
-                            ? 'border-amber-500/50 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20'
-                            : 'border-primary/30 text-primary bg-primary/10 hover:bg-primary/20',
+                          'border-primary/30 text-primary bg-primary/10 hover:bg-primary/20',
                           busy && 'opacity-40 cursor-not-allowed'
                         )}
                       >
-                        {cmd}
+                        {qa.label}
                       </button>
                     ))}
                   </div>
