@@ -46,9 +46,18 @@ export default function BuyComplete() {
   const paymentMethodId: string = state.paymentMethod || 'venmo';
   const intentId: string | undefined = state.intentId;
   const depositTxHash: string | undefined = state.depositTxHash;
+  const quoteSource: string = state.quoteSource || 'xramp_lp';
+  const settlementHandle: string | null = state.settlementHandle ?? null;
+  const partnerName: string | null = state.partnerName ?? null;
+  const isPartnerLp = quoteSource === 'partner_lp';
 
   const provider = getProvider(paymentMethodId);
-  const lpHandle = provider.lpHandle;
+
+  // Resolve the correct LP handle for this route.
+  // partner_lp: must use settlementHandle from nav state — never fall back silently.
+  // xramp_lp: use provider.lpHandle (XRamp default).
+  const missingPartnerHandle = isPartnerLp && !settlementHandle;
+  const lpHandle = isPartnerLp ? (settlementHandle ?? '') : provider.lpHandle;
 
   // Memo the user must include in payment so proof can be verified
   const memo = intentId ? `XRAMP-${intentId.slice(0, 8)}` : 'XRAMP-payment';
@@ -87,7 +96,24 @@ export default function BuyComplete() {
         )}
       </div>
 
+      {/* Hard error: partner route but no handle — do not proceed */}
+      {missingPartnerHandle && (
+        <div className="relative bg-card border border-destructive/40 rounded-2xl p-5 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm text-destructive">Settlement routing error</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                This order was routed to a partner LP but no settlement handle was received.
+                Do not send payment — go back and try again.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Payment instructions */}
+      {!missingPartnerHandle && (
       <div className="relative bg-card border border-border rounded-2xl p-5 space-y-5 animate-fade-in">
         <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
 
@@ -96,17 +122,31 @@ export default function BuyComplete() {
           <RailIcon rail={paymentMethodId} size={28} />
           <div>
             <p className="font-semibold text-sm">Complete your {provider.label} payment</p>
-            <p className="text-xs text-muted-foreground">Copy the details below and send payment via {provider.label}</p>
+            <p className="text-xs text-muted-foreground">
+              {isPartnerLp
+                ? <>Send via {provider.label} to <span className="text-amber-400 font-medium">{partnerName ?? 'Partner LP'}</span></>
+                : <>Copy the details below and send payment via {provider.label}</>
+              }
+            </p>
           </div>
         </div>
 
-        {/* Fallback notice */}
-        <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
-          <AlertTriangle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-500/90">
-            Copy the amount, handle, and memo below and complete the payment manually in {provider.label}.
-          </p>
-        </div>
+        {/* Source notice */}
+        {isPartnerLp ? (
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-500/90">
+              This order is fulfilled by <strong>{partnerName ?? 'a partner LP'}</strong>. Send payment to the handle below and include the exact memo.
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-500/90">
+              Copy the amount, handle, and memo below and complete the payment manually in {provider.label}.
+            </p>
+          </div>
+        )}
 
         {/* Steps */}
         <ol className="space-y-4">
@@ -184,6 +224,7 @@ export default function BuyComplete() {
           </div>
         )}
       </div>
+      )}
 
       {/* Step 4: Verify */}
       <div className="relative bg-card border border-border rounded-2xl p-5 animate-fade-in">

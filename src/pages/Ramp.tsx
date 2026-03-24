@@ -277,6 +277,12 @@ export default function Ramp() {
         payAmount: buyAmount, receiveAmount: buyReceive,
         paymentMethod: buyMethod, paymentHandle: buyHandle.trim(), currency: 'USD',
         crypto: buyToken.symbol, intentId: intent.id,
+        quoteSource: selectedQuote?.source ?? 'xramp_lp',
+        settlementHandle: selectedQuote?.source === 'partner_lp'
+          ? (selectedQuote?.settlementHandle ?? null)
+          : null,
+        partnerName: selectedQuote?.partnerName ?? null,
+        partnerId: selectedQuote?.partnerId ?? null,
       }});
     } catch (e) {
       setBuyError(e instanceof Error ? e.message : 'Failed');

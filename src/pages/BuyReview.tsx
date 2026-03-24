@@ -26,6 +26,10 @@ export default function BuyReview() {
   const currency = state.currency || 'USD';
   const crypto = state.crypto || 'USDC';
   const intentId: string | undefined = state.intentId;
+  const quoteSource: string = state.quoteSource || 'xramp_lp';
+  const settlementHandle: string | null = state.settlementHandle ?? null;
+  const partnerName: string | null = state.partnerName ?? null;
+  const isPartnerLp = quoteSource === 'partner_lp' && !!settlementHandle;
   
   const paymentMethod = getPaymentMethodById(paymentMethodId);
   const deliveryAddress = getDeliveryAddress(user);
@@ -55,6 +59,9 @@ export default function BuyReview() {
           paymentMethod: paymentMethodId,
           escrowId,
           depositTxHash,
+          quoteSource,
+          settlementHandle,
+          partnerName,
         }
       });
     } catch (e) {
@@ -139,7 +146,11 @@ export default function BuyReview() {
         <div className="flex items-center gap-2 p-3 bg-secondary/50 border border-border rounded-xl">
           <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <p className="text-xs text-muted-foreground">
-            <span className="text-foreground font-medium">XRamp LP funds escrow</span> — USDC is locked by the liquidity provider on Avalanche Fuji testnet. No wallet signature required from you.
+            {isPartnerLp ? (
+              <><span className="text-amber-400 font-medium">{partnerName ?? 'Partner LP'} funds escrow</span> — USDC locked by partner liquidity provider on Avalanche Fuji testnet.</>
+            ) : (
+              <><span className="text-foreground font-medium">XRamp LP funds escrow</span> — USDC is locked by the liquidity provider on Avalanche Fuji testnet. No wallet signature required from you.</>
+            )}
           </p>
         </div>
       </div>

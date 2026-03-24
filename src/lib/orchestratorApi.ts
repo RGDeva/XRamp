@@ -109,6 +109,8 @@ export interface OrchestratorQuote {
   partnerId?: string;
   /** Partner LP display name (only present on partner_lp quotes) */
   partnerName?: string;
+  /** Settlement handle for the selected rail (only present on partner_lp quotes) */
+  settlementHandle?: string;
   /** Peer LP depositor address (only present on peer_lp quotes) */
   depositor?: string;
 }

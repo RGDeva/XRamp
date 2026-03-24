@@ -17,7 +17,7 @@
 import { verifyAuth, isAdmin } from './auth';
 import { ALLOWED_TRANSITIONS, type IntentState } from './state';
 import { fetchPeerQuotes, buildPeerQuoteRequest, PEER_QUOTES_ENABLED_DEFAULT } from './peerLiquiditySource';
-import { getPartnerQuotes } from './partnerLiquiditySource';
+import { getPartnerQuotes, PARTNER_CATALOGUE } from './partnerLiquiditySource';
 
 export interface Env {
   DB: D1Database;
@@ -235,8 +235,12 @@ export default {
       const id = uid();
       const now = iso();
 
-      // LP receiver handle — looked up by rail
-      const LP_HANDLES: Record<string, string> = {
+      // ── Resolve settlement handle ───────────────────────────────────
+      // For partner_lp: use the settlement handle from the partner catalogue.
+      // If the partner or rail is missing from catalogue, return a clear error
+      // instead of silently misrouting to XRamp handles.
+      // For xramp_lp (or unspecified): use XRamp fallback handles.
+      const XRAMP_LP_HANDLES: Record<string, string> = {
         venmo: '@primeaj',
         wise: 'primeaj@xramp.xyz',
         revolut: '@primeaj',
@@ -245,15 +249,47 @@ export default {
         zelle: 'primeaj@xramp.xyz',
         chime: '@primeaj',
       };
-      const lpHandle = LP_HANDLES[rail] || '';
+
+      let lpHandle: string;
+      let resolvedSource: string = quoteSource || 'xramp_lp';
+
+      if (quoteSource === 'partner_lp' && quotePartnerId) {
+        const partner = PARTNER_CATALOGUE.find(p => p.id === quotePartnerId && p.enabled);
+        if (!partner) {
+          return cors(err(
+            `Partner LP '${quotePartnerId}' not found or disabled — cannot route intent`,
+            422,
+          ), origin);
+        }
+        const railCfg = partner.rails.find(r => r.rail === rail);
+        if (!railCfg) {
+          return cors(err(
+            `Partner LP '${quotePartnerId}' does not support rail '${rail}'`,
+            422,
+          ), origin);
+        }
+        lpHandle = partner.settlementHandles?.[rail] || '';
+        if (!lpHandle) {
+          return cors(err(
+            `Partner LP '${quotePartnerId}' has no settlement handle configured for '${rail}'`,
+            422,
+          ), origin);
+        }
+      } else {
+        // xramp_lp or unspecified — safe default
+        lpHandle = XRAMP_LP_HANDLES[rail] || '';
+        resolvedSource = 'xramp_lp';
+      }
+
       const initMeta = JSON.stringify({
         lpHandle: lpHandle || undefined,
         ...(destination ? { destination } : {}),
         ...(quoteId ? { quoteId } : {}),
         ...(quoteSnapshot ? { quoteSnapshot } : {}),
-        ...(quoteSource ? { quoteSource } : {}),
+        quoteSource: resolvedSource,
         ...(quotePartnerId ? { quotePartnerId } : {}),
         ...(quotePartnerName ? { quotePartnerName } : {}),
+        provider: rail,
       });
 
       await env.DB.prepare(
