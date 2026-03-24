@@ -16,6 +16,7 @@ import { SendSheet } from '@/components/deposits/SendSheet';
 import { orchestratorApi } from '@/lib/orchestratorApi';
 import { getProvider } from '@/lib/providers';
 import { createXRampSdk, type XRampSdk, type XRampState, type IntentFulfilledData } from '@/lib/xrampSdk';
+import { createCommandEngine, formatCompletionMessage, type CommandEngine } from '@/lib/xrampCommandEngine';
 import { cn } from '@/lib/utils';
 
 type RampTab = 'Buy' | 'Sell' | 'Send';
@@ -159,6 +160,7 @@ export default function Ramp() {
 
   const [savedHandles, setSavedHandles] = useState<Record<string, string>>({});
   const [xrampSdk, setXrampSdk] = useState<XRampSdk | null>(null);
+  const [commandEngine, setCommandEngine] = useState<CommandEngine | null>(null);
   const [extensionState, setExtensionState] = useState<XRampState>('needs_install');
   const [sdkFulfilled, setSdkFulfilled] = useState<IntentFulfilledData | null>(null);
   const [selectedQuote, setSelectedQuote] = useState<OrchestratorQuote | null>(null);
@@ -167,6 +169,7 @@ export default function Ramp() {
   useEffect(() => {
     const sdk = createXRampSdk({ window });
     setXrampSdk(sdk);
+    setCommandEngine(createCommandEngine({ sdk }));
     sdk.getState().then(setExtensionState);
     const unsub = sdk.onIntentFulfilled((data) => {
       setSdkFulfilled(data);
@@ -313,9 +316,11 @@ export default function Ramp() {
                 <span className="text-sm font-semibold text-green-400">Funds Delivered</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                {sdkFulfilled.destination?.recipientAddress
-                  ? <>Sent <span className="text-foreground font-medium">${sdkFulfilled.amount}</span> to <code className="text-xs bg-secondary px-1.5 py-0.5 rounded">{sdkFulfilled.destination.recipientAddress.slice(0, 6)}…{sdkFulfilled.destination.recipientAddress.slice(-4)}</code>{sdkFulfilled.destination.app ? ` for ${sdkFulfilled.destination.app.toUpperCase()}` : ''}</>
-                  : <>Intent <span className="text-foreground font-medium">{sdkFulfilled.intentId.slice(0, 8)}</span> complete via {sdkFulfilled.rail}</>}
+                {formatCompletionMessage({
+                  amount: sdkFulfilled.amount,
+                  provider: sdkFulfilled.rail,
+                  destination: sdkFulfilled.destination,
+                })}
               </p>
               <div className="flex gap-2">
                 {sdkFulfilled.destination?.app === 'lfj' && (
@@ -461,24 +466,23 @@ export default function Ramp() {
               />
               {extensionState === 'ready' && buyCanContinue && (
                 <button
-                  onClick={() => xrampSdk?.onramp({
+                  onClick={() => commandEngine?.executeCommand({
+                    action: 'fund_destination',
                     amount: buyAmount,
-                    provider: selectedQuote?.provider ?? buyMethod ?? 'venmo',
+                    provider: selectedQuote?.provider as 'revolut' | 'venmo' | 'wise' | undefined,
                     destination: {
                       chainId: 43113,
                       token: buyToken.symbol,
                       recipientAddress: user?.walletAddress || user?.embeddedWalletAddress || '',
                     },
-                    asset: buyToken.symbol,
-                    quoteId: selectedQuote?.id,
-                  })}
+                  }).catch(e => setBuyError(e instanceof Error ? e.message : 'Extension error'))}
                   className="w-full h-11 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary text-sm font-semibold transition-all flex items-center justify-center gap-2"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                     <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
                   </svg>
-                  Fund with XRamp Extension
+                  {selectedQuote ? `Fund via ${selectedQuote.provider.charAt(0).toUpperCase() + selectedQuote.provider.slice(1)} · ${parseFloat(selectedQuote.outputAmount).toFixed(2)} ${buyToken.symbol}` : 'Fund with XRamp Extension'}
                 </button>
               )}
             </div>
