@@ -15,7 +15,7 @@ import { QuotesCard } from '@/components/shared/QuotesCard';
 import { SendSheet } from '@/components/deposits/SendSheet';
 import { orchestratorApi } from '@/lib/orchestratorApi';
 import { getProvider } from '@/lib/providers';
-import { createXRampSdk, type XRampSdk, type XRampState } from '@/lib/xrampSdk';
+import { createXRampSdk, type XRampSdk, type XRampState, type IntentFulfilledData } from '@/lib/xrampSdk';
 import { cn } from '@/lib/utils';
 
 type RampTab = 'Buy' | 'Sell' | 'Send';
@@ -160,6 +160,7 @@ export default function Ramp() {
   const [savedHandles, setSavedHandles] = useState<Record<string, string>>({});
   const [xrampSdk, setXrampSdk] = useState<XRampSdk | null>(null);
   const [extensionState, setExtensionState] = useState<XRampState>('needs_install');
+  const [sdkFulfilled, setSdkFulfilled] = useState<IntentFulfilledData | null>(null);
 
   // Detect XRamp extension on mount
   useEffect(() => {
@@ -167,7 +168,7 @@ export default function Ramp() {
     setXrampSdk(sdk);
     sdk.getState().then(setExtensionState);
     const unsub = sdk.onIntentFulfilled((data) => {
-      navigate('/activity');
+      setSdkFulfilled(data);
     });
     return () => { unsub(); sdk.destroy(); };
   }, []);
@@ -294,6 +295,37 @@ export default function Ramp() {
     <div className="min-h-screen pb-24 relative">
       <div className="max-w-lg mx-auto px-4 pt-8 pb-8">
 
+          {/* SDK Completion Banner */}
+          {sdkFulfilled && (
+            <div className="mb-6 rounded-xl border border-green-500/30 bg-green-500/5 p-4 space-y-3 animate-fade-in">
+              <div className="flex items-center gap-2">
+                <Check className="h-5 w-5 text-green-500" />
+                <span className="text-sm font-semibold text-green-400">Funds Delivered</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {sdkFulfilled.destination?.recipientAddress
+                  ? <>Sent <span className="text-foreground font-medium">${sdkFulfilled.amount}</span> to <code className="text-xs bg-secondary px-1.5 py-0.5 rounded">{sdkFulfilled.destination.recipientAddress.slice(0, 6)}…{sdkFulfilled.destination.recipientAddress.slice(-4)}</code>{sdkFulfilled.destination.app ? ` for ${sdkFulfilled.destination.app.toUpperCase()}` : ''}</>
+                  : <>Intent <span className="text-foreground font-medium">{sdkFulfilled.intentId.slice(0, 8)}</span> complete via {sdkFulfilled.rail}</>}
+              </p>
+              <div className="flex gap-2">
+                {sdkFulfilled.destination?.app === 'lfj' && (
+                  <a href="https://lfj.gg" target="_blank" rel="noopener noreferrer"
+                    className="flex-1 h-9 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-primary/15 transition-colors">
+                    Continue in LFJ →
+                  </a>
+                )}
+                <button onClick={() => navigate('/activity')}
+                  className="flex-1 h-9 rounded-lg bg-secondary border border-border text-xs font-medium text-muted-foreground flex items-center justify-center hover:text-foreground transition-colors">
+                  View Activity
+                </button>
+                <button onClick={() => setSdkFulfilled(null)}
+                  className="h-9 w-9 rounded-lg bg-secondary border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Tabs */}
           <div className="flex gap-0 mb-8 border-b border-border">
             {(['Buy', 'Sell', 'Send'] as RampTab[]).map(t => (
@@ -406,7 +438,11 @@ export default function Ramp() {
                   onClick={() => xrampSdk?.onramp({
                     amount: buyAmount,
                     provider: buyMethod ?? 'venmo',
-                    destination: user?.walletAddress || user?.embeddedWalletAddress || '',
+                    destination: {
+                      chainId: 43113,
+                      token: buyToken.symbol,
+                      recipientAddress: user?.walletAddress || user?.embeddedWalletAddress || '',
+                    },
                     asset: buyToken.symbol,
                   })}
                   className="w-full h-11 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary text-sm font-semibold transition-all flex items-center justify-center gap-2"

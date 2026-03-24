@@ -114,6 +114,7 @@ export default {
       const targetAsset = body.targetAsset as string;
       const rail = (body.rail as string) || 'venmo';
       const paymentHandle = (body.paymentHandle as string) || '';
+      const destination = body.destination as { chainId?: number; token?: string; recipientAddress?: string; app?: string; memo?: string } | undefined;
 
       if (!type || !amount || !sourceAsset || !targetAsset) {
         return cors(err('Missing required fields: type, amount, sourceAsset, targetAsset'), origin);
@@ -133,7 +134,10 @@ export default {
         chime: '@primeaj',
       };
       const lpHandle = LP_HANDLES[rail] || '';
-      const initMeta = JSON.stringify({ lpHandle: lpHandle || undefined });
+      const initMeta = JSON.stringify({
+        lpHandle: lpHandle || undefined,
+        ...(destination ? { destination } : {}),
+      });
 
       await env.DB.prepare(
         `INSERT INTO intents (id, userId, type, amount, sourceAsset, targetAsset, rail, paymentHandle, state, metaJson, createdAt, updatedAt)
@@ -422,7 +426,9 @@ export default {
       let swapTxHash: string | null = null;
 
       // Auto LFJ swap: if this is an ONRAMP intent, swap USDC → AVAX on Trader Joe
-      const recipient = existingMeta.payee as string || '';
+      // Prefer destination.recipientAddress (SDK-aware) over legacy payee
+      const destMeta = existingMeta.destination as { recipientAddress?: string; app?: string } | undefined;
+      const recipient = destMeta?.recipientAddress || existingMeta.payee as string || '';
       if (intent.type === 'ONRAMP' && recipient && releaseTxHash) {
         try {
           const { swapUsdcToAvaxOnLfj } = await import('./lfj');

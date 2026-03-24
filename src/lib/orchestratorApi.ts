@@ -101,6 +101,13 @@ export const orchestratorApi = {
     targetAsset: string;
     rail?: string;
     paymentHandle?: string;
+    destination?: {
+      chainId: number;
+      token: string;
+      recipientAddress: string;
+      app?: string;
+      memo?: string;
+    };
   }): Promise<{ intent: OrchestratorIntent }> {
     return apiFetch('/intents', {
       method: 'POST',
@@ -116,6 +123,13 @@ export const orchestratorApi = {
     targetAsset: string;
     rail?: string;
     paymentHandle?: string;
+    destination?: {
+      chainId: number;
+      token: string;
+      recipientAddress: string;
+      app?: string;
+      memo?: string;
+    };
   }): Promise<{ intent: OrchestratorIntent }> {
     return this.createIntent({ ...payload, type: 'ONRAMP' });
   },
