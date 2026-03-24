@@ -23,6 +23,7 @@ export interface OnrampConfig {
   provider: string;
   destination: OnrampDestination;
   asset?: string;
+  quoteId?: string;
 }
 
 export interface IntentFulfilledData {
@@ -103,6 +104,7 @@ export function createXRampSdk(opts: { window: Window }): XRampSdk {
           provider: config.provider,
           destination: config.destination,
           asset: config.asset || 'USDC',
+          quoteId: config.quoteId,
         },
       }, '*');
     },

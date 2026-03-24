@@ -2,6 +2,7 @@
  * XRamp Orchestrator — Cloudflare Worker with D1
  *
  * Endpoints:
+ *   POST   /quotes                  get ranked provider quotes (no auth)
  *   POST   /intents                 create intent
  *   GET    /intents?userId=...      list intents
  *   GET    /intents/:id             single intent + timeline
@@ -89,6 +90,68 @@ export default {
       return cors(json({ ok: true, service: 'xramp-orchestrator', time: iso() }), origin);
     }
 
+    // ── POST /quotes (no auth required) ──────────────────────────────────
+    if (url.pathname === '/quotes' && request.method === 'POST') {
+      const body = await request.json<Record<string, unknown>>();
+      const fiatAmount = parseFloat((body.fiatAmount as string) || '0');
+      const fiatCurrency = (body.fiatCurrency as string) || 'USD';
+      const enabledProviders = (body.enabledProviders as string[] | undefined) || ['revolut', 'venmo', 'wise'];
+      const destination = body.destination as Record<string, unknown> | undefined;
+
+      if (!fiatAmount || fiatAmount <= 0) {
+        return cors(err('fiatAmount must be a positive number'), origin);
+      }
+
+      // ── Deterministic provider catalogue ─────────────────────────────
+      // Each entry: { id, feeBps, etaSeconds, routeType }
+      // Ranking: highest output (lowest fee) first; ETA breaks ties.
+      // All LP addresses are the XRamp demo LP (primeaj).
+      type ProviderConfig = {
+        id: string;
+        feeBps: number;
+        etaSeconds: number;
+        routeType: 'xramp_lp' | 'external_lp' | 'peer_lp';
+      };
+      const PROVIDER_CATALOGUE: ProviderConfig[] = [
+        { id: 'revolut',  feeBps: 40,  etaSeconds: 90,  routeType: 'xramp_lp' },
+        { id: 'venmo',    feeBps: 50,  etaSeconds: 120, routeType: 'xramp_lp' },
+        { id: 'wise',     feeBps: 80,  etaSeconds: 180, routeType: 'xramp_lp' },
+      ];
+
+      // Filter to requested providers only
+      const active = PROVIDER_CATALOGUE.filter(p => enabledProviders.includes(p.id));
+
+      // Build quote objects
+      const quotes = active.map(p => {
+        const feeAmount = fiatAmount * (p.feeBps / 10000);
+        const outputAmount = fiatAmount - feeAmount;
+        return {
+          id: `${p.id}-${Date.now()}`,
+          provider: p.id,
+          outputAmount: outputAmount.toFixed(6),
+          feeAmount: feeAmount.toFixed(6),
+          feeBps: p.feeBps,
+          etaSeconds: p.etaSeconds,
+          routeType: p.routeType,
+          isBest: false,
+          destination: destination ?? null,
+          fiatCurrency,
+        };
+      });
+
+      // Rank: highest outputAmount first, then lowest etaSeconds
+      quotes.sort((a, b) => {
+        const diff = parseFloat(b.outputAmount) - parseFloat(a.outputAmount);
+        if (Math.abs(diff) > 0.000001) return diff;
+        return a.etaSeconds - b.etaSeconds;
+      });
+
+      if (quotes.length > 0) quotes[0].isBest = true;
+      const bestQuoteId = quotes[0]?.id ?? null;
+
+      return cors(json({ quotes, bestQuoteId, fiatAmount, fiatCurrency }), origin);
+    }
+
     // ── Auth ──────────────────────────────────────────────────────────────
     let userId: string | null = null;
     let userEmail: string | null = null;
@@ -115,6 +178,8 @@ export default {
       const rail = (body.rail as string) || 'venmo';
       const paymentHandle = (body.paymentHandle as string) || '';
       const destination = body.destination as { chainId?: number; token?: string; recipientAddress?: string; app?: string; memo?: string } | undefined;
+      const quoteId = (body.quoteId as string) || undefined;
+      const quoteSnapshot = body.quoteSnapshot as Record<string, unknown> | undefined;
 
       if (!type || !amount || !sourceAsset || !targetAsset) {
         return cors(err('Missing required fields: type, amount, sourceAsset, targetAsset'), origin);
@@ -137,6 +202,8 @@ export default {
       const initMeta = JSON.stringify({
         lpHandle: lpHandle || undefined,
         ...(destination ? { destination } : {}),
+        ...(quoteId ? { quoteId } : {}),
+        ...(quoteSnapshot ? { quoteSnapshot } : {}),
       });
 
       await env.DB.prepare(

@@ -11,7 +11,7 @@ import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button
 import { CryptoIcon, TOKENS, type Token } from '@/components/shared/CryptoIcon';
 import { RailIcon } from '@/components/shared/RailIcon';
 import { PaymentMethodPicker, getPaymentMethodById } from '@/components/shared/PaymentMethodPicker';
-import { QuotesCard } from '@/components/shared/QuotesCard';
+import { QuotesCard, type OrchestratorQuote } from '@/components/shared/QuotesCard';
 import { SendSheet } from '@/components/deposits/SendSheet';
 import { orchestratorApi } from '@/lib/orchestratorApi';
 import { getProvider } from '@/lib/providers';
@@ -161,6 +161,7 @@ export default function Ramp() {
   const [xrampSdk, setXrampSdk] = useState<XRampSdk | null>(null);
   const [extensionState, setExtensionState] = useState<XRampState>('needs_install');
   const [sdkFulfilled, setSdkFulfilled] = useState<IntentFulfilledData | null>(null);
+  const [selectedQuote, setSelectedQuote] = useState<OrchestratorQuote | null>(null);
 
   // Detect XRamp extension on mount
   useEffect(() => {
@@ -253,8 +254,17 @@ export default function Ramp() {
       const { intent } = await orchestratorApi.createOnrampIntent({
         userId: getUserId(), amount: buyAmount,
         sourceAsset: 'USD', targetAsset: buyToken.symbol,
-        rail: buyMethod ?? undefined,
+        rail: selectedQuote?.provider ?? buyMethod ?? undefined,
         paymentHandle: buyHandle.trim() || undefined,
+        quoteId: selectedQuote?.id,
+        quoteSnapshot: selectedQuote ? {
+          provider: selectedQuote.provider,
+          outputAmount: selectedQuote.outputAmount,
+          feeAmount: selectedQuote.feeAmount,
+          feeBps: selectedQuote.feeBps,
+          etaSeconds: selectedQuote.etaSeconds,
+          routeType: selectedQuote.routeType,
+        } : undefined,
       });
       navigate('/buy/review', { state: {
         payAmount: buyAmount, receiveAmount: buyReceive,
@@ -376,7 +386,23 @@ export default function Ramp() {
                     <p className="text-xs text-muted-foreground mt-1.5">1 USD = 1 USDC · Fee: ${buyFee}</p>
                   )}
                 </div>
-                {buyNum > 0 && <QuotesCard payAmount={buyAmount} payCurrency="USD" receiveCrypto={buyToken.symbol} rail={buySelectedMethod?.name ?? 'Venmo'} />}
+                {buyNum > 0 && (
+                  <QuotesCard
+                    payAmount={buyAmount}
+                    payCurrency="USD"
+                    receiveCrypto={buyToken.symbol}
+                    destination={isAuthenticated ? {
+                      chainId: 43113,
+                      token: buyToken.symbol,
+                      recipientAddress: user?.walletAddress || user?.embeddedWalletAddress || '',
+                    } : undefined}
+                    selectedQuoteId={selectedQuote?.id}
+                    onSelect={(q) => {
+                      setSelectedQuote(q);
+                      setBuyMethod(q.provider);
+                    }}
+                  />
+                )}
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">Payment method</p>
                   <button onClick={() => setShowBuyMethodPicker(true)}
@@ -437,13 +463,14 @@ export default function Ramp() {
                 <button
                   onClick={() => xrampSdk?.onramp({
                     amount: buyAmount,
-                    provider: buyMethod ?? 'venmo',
+                    provider: selectedQuote?.provider ?? buyMethod ?? 'venmo',
                     destination: {
                       chainId: 43113,
                       token: buyToken.symbol,
                       recipientAddress: user?.walletAddress || user?.embeddedWalletAddress || '',
                     },
                     asset: buyToken.symbol,
+                    quoteId: selectedQuote?.id,
                   })}
                   className="w-full h-11 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary text-sm font-semibold transition-all flex items-center justify-center gap-2"
                 >

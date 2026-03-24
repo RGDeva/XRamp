@@ -90,9 +90,50 @@ export interface EventLogEntry {
   metaJson: string;
 }
 
+// ─── Quote types ─────────────────────────────────────────────────────────────
+
+export interface OrchestratorQuote {
+  id: string;
+  provider: string;
+  outputAmount: string;
+  feeAmount: string;
+  feeBps: number;
+  etaSeconds: number;
+  routeType: 'xramp_lp' | 'external_lp' | 'peer_lp';
+  isBest: boolean;
+  fiatCurrency: string;
+  destination?: Record<string, unknown> | null;
+}
+
+export interface GetQuotesResponse {
+  quotes: OrchestratorQuote[];
+  bestQuoteId: string | null;
+  fiatAmount: number;
+  fiatCurrency: string;
+}
+
 // ─── API surface ──────────────────────────────────────────────────────────────
 
 export const orchestratorApi = {
+  /** Fetch ranked provider quotes. No auth required. */
+  async getQuotes(params: {
+    fiatAmount: string;
+    fiatCurrency?: string;
+    destination?: {
+      chainId: number;
+      token: string;
+      recipientAddress: string;
+      app?: string;
+      memo?: string;
+    };
+    enabledProviders?: string[];
+  }): Promise<GetQuotesResponse> {
+    return apiFetch('/quotes', {
+      method: 'POST',
+      body: JSON.stringify({ fiatCurrency: 'USD', ...params }),
+    });
+  },
+
   /** Create a new intent (BUY = ONRAMP, SELL = OFFRAMP, etc.) */
   async createIntent(payload: {
     type: string;
@@ -108,6 +149,8 @@ export const orchestratorApi = {
       app?: string;
       memo?: string;
     };
+    quoteId?: string;
+    quoteSnapshot?: Record<string, unknown>;
   }): Promise<{ intent: OrchestratorIntent }> {
     return apiFetch('/intents', {
       method: 'POST',
@@ -130,6 +173,8 @@ export const orchestratorApi = {
       app?: string;
       memo?: string;
     };
+    quoteId?: string;
+    quoteSnapshot?: Record<string, unknown>;
   }): Promise<{ intent: OrchestratorIntent }> {
     return this.createIntent({ ...payload, type: 'ONRAMP' });
   },
