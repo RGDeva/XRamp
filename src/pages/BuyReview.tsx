@@ -45,12 +45,31 @@ export default function BuyReview() {
         setConfirmStep('transitioning');
         await orchestratorApi.transitionIntent(intentId, 'FUNDING');
 
-        // Step 2: backend arbiter mints test USDC + creates + funds escrow
+        // Step 2: fund escrow — path depends on quoteSource
         setConfirmStep('funding_escrow');
         const payee = deliveryAddress || '0x0000000000000000000000000000000000000000';
         const result = await orchestratorApi.fundEscrow(intentId, payee);
-        escrowId = result.escrowId;
-        depositTxHash = result.depositTxHash;
+
+        if (result.requiresSelfFunding) {
+          // Partner Mode B: partner must self-fund — navigate to complete with notice
+          navigate('/buy/complete', {
+            state: {
+              ...state,
+              paymentMethod: paymentMethodId,
+              quoteSource,
+              settlementHandle,
+              partnerName,
+              requiresSelfFunding: true,
+              fundingWalletAddress: result.fundingWalletAddress,
+            }
+          });
+          return;
+        }
+
+        // TypeScript narrowing: requiresSelfFunding=true path returned early above
+        const funded = result as { requiresSelfFunding: false; escrowId: string; depositTxHash: string };
+        escrowId = funded.escrowId;
+        depositTxHash = funded.depositTxHash;
       }
 
       navigate('/buy/complete', {

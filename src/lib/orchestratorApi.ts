@@ -248,18 +248,40 @@ export const orchestratorApi = {
   },
 
   /**
-   * Backend: arbiter mints test USDC, creates + funds escrow on Fuji.
-   * Transitions intent FUNDING → FUNDED. payee = user delivery address.
+   * Backend: funds escrow on Fuji.
+   * - xramp_lp: arbiter mints test USDC, creates + funds escrow. Returns 200 + escrowId.
+   * - partner_lp (Mode A): partner wallet funds escrow. Returns 200 + escrowId.
+   * - partner_lp (Mode B): partner has no key registered. Returns 202 requiresSelfFunding.
    */
-  async fundEscrow(intentId: string, payee: string): Promise<{
-    intent: OrchestratorIntent;
-    escrowId: string;
-    depositTxHash: string;
-  }> {
-    return apiFetch(`/intents/${intentId}/fund-escrow`, {
+  async fundEscrow(intentId: string, payee: string): Promise<
+    | { requiresSelfFunding: false; intent: OrchestratorIntent; escrowId: string; depositTxHash: string }
+    | { requiresSelfFunding: true; intent: OrchestratorIntent; fundingWalletAddress: string; message: string }
+  > {
+    // Use raw fetch (not apiFetch) so we can inspect status code (200 vs 202)
+    const res = await fetch(`${BASE_URL}/intents/${intentId}/fund-escrow`, {
       method: 'POST',
+      headers: headers() as Record<string, string>,
       body: JSON.stringify({ payee }),
     });
+    if (!res.ok) {
+      const body = await res.text().catch(() => res.statusText);
+      throw new Error(`Orchestrator ${res.status}: ${body}`);
+    }
+    const data = await res.json() as Record<string, unknown>;
+    if (res.status === 202 || data.requiresSelfFunding) {
+      return {
+        requiresSelfFunding: true,
+        intent: data.intent as OrchestratorIntent,
+        fundingWalletAddress: data.fundingWalletAddress as string,
+        message: data.message as string,
+      };
+    }
+    return {
+      requiresSelfFunding: false,
+      intent: data.intent as OrchestratorIntent,
+      escrowId: data.escrowId as string,
+      depositTxHash: data.depositTxHash as string,
+    };
   },
 
   /**

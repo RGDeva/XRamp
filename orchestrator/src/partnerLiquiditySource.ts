@@ -28,6 +28,29 @@ export interface PartnerRailConfig {
   maxFiatAmount: number;
 }
 
+/** Capital / escrow funding metadata for a partner LP. */
+export interface PartnerCapitalConfig {
+  /**
+   * The on-chain address this partner's capital comes from.
+   * Used as `payer` in escrow creation for attribution.
+   * Required for partner_lp intents — no silent fallback to XRamp arbiter.
+   */
+  fundingWalletAddress: string;
+  /**
+   * Name of the Cloudflare Worker env var that holds the partner's private key.
+   * If set AND the env var is present at runtime → partner wallet signs escrow.
+   * If NOT set (or env var missing) → intent must be funded via /report-funding
+   *   (partner self-funds by signing on their side and reporting the tx).
+   * XRamp arbiter NEVER silently substitutes for a missing partner key.
+   */
+  partnerPrivateKeyEnvVar?: string;
+  /**
+   * Optional per-partner escrow contract override.
+   * Defaults to env.ESCROW_CONTRACT_ADDRESS if not set.
+   */
+  escrowContractAddress?: string;
+}
+
 /** Full config entry for a partner LP. */
 export interface PartnerLPConfig {
   /** Unique identifier, used in quote IDs and analytics */
@@ -40,6 +63,8 @@ export interface PartnerLPConfig {
   rails: PartnerRailConfig[];
   /** Optional settlement handle metadata (for routing payment to partner) */
   settlementHandles?: Partial<Record<string, string>>;
+  /** Capital / escrow funding metadata — required for partner_lp execution */
+  capital?: PartnerCapitalConfig;
 }
 
 // ─── Partner catalogue ────────────────────────────────────────────────────────
@@ -60,6 +85,13 @@ export const PARTNER_CATALOGUE: PartnerLPConfig[] = [
       revolut: '@alphamarkets',
       wise:    'payments@alphamarkets.xyz',
     },
+    capital: {
+      // Alpha Markets registers their Fuji wallet address for on-chain attribution.
+      // env var ALPHA_LP_PRIVATE_KEY must be present for arbiter-assisted funding;
+      // if absent the intent requires partner self-funding via /report-funding.
+      fundingWalletAddress: '0x0000000000000000000000000000000000000001', // replace with real address
+      partnerPrivateKeyEnvVar: 'ALPHA_LP_PRIVATE_KEY',
+    },
   },
   {
     id: 'beta_lp',
@@ -72,6 +104,12 @@ export const PARTNER_CATALOGUE: PartnerLPConfig[] = [
     settlementHandles: {
       venmo:   '@betaliquidity',
       revolut: '@betaliquidity',
+    },
+    capital: {
+      // Beta Liquidity self-funds via /report-funding (no private key registered).
+      // fundingWalletAddress is required for attribution; signing is done by partner.
+      fundingWalletAddress: '0x0000000000000000000000000000000000000002', // replace with real address
+      // partnerPrivateKeyEnvVar not set — partner must call /report-funding themselves
     },
   },
 ];

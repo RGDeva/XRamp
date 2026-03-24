@@ -50,6 +50,8 @@ export default function BuyComplete() {
   const settlementHandle: string | null = state.settlementHandle ?? null;
   const partnerName: string | null = state.partnerName ?? null;
   const isPartnerLp = quoteSource === 'partner_lp';
+  const requiresSelfFunding: boolean = state.requiresSelfFunding ?? false;
+  const fundingWalletAddress: string | null = state.fundingWalletAddress ?? null;
 
   const provider = getProvider(paymentMethodId);
 
@@ -71,16 +73,38 @@ export default function BuyComplete() {
   return (
     <div className="max-w-md mx-auto px-4 py-8 pb-32 md:pb-8 space-y-4">
 
-      {/* Escrow confirmed badge */}
+      {/* Escrow / funding badge */}
       <div className="relative bg-card border border-border rounded-2xl p-5 animate-fade-in overflow-hidden">
         <GlowingEffect spread={40} glow disabled={false} proximity={64} inactiveZone={0.01} borderWidth={2} />
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <ShieldCheck className="h-5 w-5 text-primary" />
+          <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+            requiresSelfFunding ? 'bg-amber-500/10' : 'bg-primary/10'
+          }`}>
+            <ShieldCheck className={`h-5 w-5 ${requiresSelfFunding ? 'text-amber-400' : 'text-primary'}`} />
           </div>
           <div>
-            <p className="font-semibold text-sm">Escrow locked on Avalanche Fuji</p>
-            <p className="text-xs text-muted-foreground mt-0.5">USDC is held in escrow — released when payment is verified.</p>
+            {requiresSelfFunding ? (
+              <>
+                <p className="font-semibold text-sm">Awaiting partner escrow</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  <span className="text-amber-400 font-medium">{partnerName ?? 'Partner LP'}</span> will fund the escrow from their wallet.
+                  Your payment is being processed.
+                </p>
+                {fundingWalletAddress && (
+                  <p className="text-[10px] font-mono text-muted-foreground mt-1">Funding wallet: {fundingWalletAddress.slice(0, 10)}…{fundingWalletAddress.slice(-6)}</p>
+                )}
+              </>
+            ) : isPartnerLp ? (
+              <>
+                <p className="font-semibold text-sm">Escrow locked · <span className="text-amber-400">{partnerName ?? 'Partner LP'}</span></p>
+                <p className="text-xs text-muted-foreground mt-0.5">USDC funded by partner capital — released when payment is verified.</p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold text-sm">Escrow locked on Avalanche Fuji</p>
+                <p className="text-xs text-muted-foreground mt-0.5">USDC is held in escrow — released when payment is verified.</p>
+              </>
+            )}
           </div>
         </div>
         {depositTxHash && (

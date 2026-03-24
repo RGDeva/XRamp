@@ -18,6 +18,7 @@ import { verifyAuth, isAdmin } from './auth';
 import { ALLOWED_TRANSITIONS, type IntentState } from './state';
 import { fetchPeerQuotes, buildPeerQuoteRequest, PEER_QUOTES_ENABLED_DEFAULT } from './peerLiquiditySource';
 import { getPartnerQuotes, PARTNER_CATALOGUE } from './partnerLiquiditySource';
+import { fundEscrowForPartner } from './escrow';
 
 export interface Env {
   DB: D1Database;
@@ -417,7 +418,7 @@ export default {
       return cors(json({ intent: updated }), origin);
     }
 
-    // ── POST /intents/:id/fund-escrow ────────────────────────────────────
+    // ── POST /intents/:id/fund-escrow ──────────────────────────────────
     if (fundEscrowMatch && request.method === 'POST') {
       const intentId = fundEscrowMatch[1];
       const body = await request.json<Record<string, unknown>>();
@@ -433,6 +434,108 @@ export default {
         return cors(json({ intent }), origin);
       }
 
+      // Read capital source from persisted metaJson
+      const intentMeta = JSON.parse((intent.metaJson as string) || '{}') as Record<string, unknown>;
+      const intentQuoteSource = (intentMeta.quoteSource as string) || 'xramp_lp';
+      const intentPartnerId = intentMeta.quotePartnerId as string | undefined;
+
+      // ── Partner LP funding path ───────────────────────────────
+      if (intentQuoteSource === 'partner_lp') {
+        if (!intentPartnerId) {
+          return cors(err('partner_lp intent is missing quotePartnerId — cannot route escrow funding', 422), origin);
+        }
+
+        const partner = PARTNER_CATALOGUE.find(p => p.id === intentPartnerId && p.enabled);
+        if (!partner) {
+          return cors(err(`Partner LP '${intentPartnerId}' not found or disabled`, 422), origin);
+        }
+        if (!partner.capital) {
+          return cors(err(`Partner LP '${intentPartnerId}' has no capital config — cannot fund escrow`, 422), origin);
+        }
+
+        // Resolve partner private key from env (optional — if absent, Mode B kicks in)
+        const envRecord = env as unknown as Record<string, string>;
+        const partnerPrivateKey = partner.capital.partnerPrivateKeyEnvVar
+          ? (envRecord[partner.capital.partnerPrivateKeyEnvVar] || undefined)
+          : undefined;
+
+        try {
+          const result = await fundEscrowForPartner(
+            env,
+            intent.amount as string,
+            payee,
+            partnerPrivateKey,
+            partner.capital.fundingWalletAddress,
+            partner.capital.escrowContractAddress,
+          );
+
+          const now = iso();
+
+          if (result.requiresSelfFunding) {
+            // Mode B: partner has no registered key — they must call /report-funding
+            const updatedMeta = JSON.stringify({
+              ...intentMeta,
+              payee,
+              fundedBy: 'partner_self_funding_required',
+              fundingWalletAddress: result.fundingWalletAddress,
+              quoteSource: 'partner_lp',
+              quotePartnerId: intentPartnerId,
+              quotePartnerName: intentMeta.quotePartnerName,
+            });
+            await env.DB.prepare(
+              `UPDATE intents SET metaJson = ?, updatedAt = ? WHERE id = ?`
+            ).bind(updatedMeta, now, intentId).run();
+
+            await env.DB.prepare(
+              `INSERT INTO event_log (id, intentId, ts, actor, fromState, toState, metaJson)
+               VALUES (?, ?, ?, 'system', ?, ?, ?)`
+            ).bind(uid(), intentId, now, currentState, currentState,
+              JSON.stringify({ note: 'partner_self_funding_required', fundingWalletAddress: result.fundingWalletAddress })
+            ).run();
+
+            const updated = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first();
+            return cors(json({
+              intent: updated,
+              requiresSelfFunding: true,
+              fundingWalletAddress: result.fundingWalletAddress,
+              message: `Partner LP '${partner.name}' must self-fund this escrow. Call POST /intents/${intentId}/report-funding with the escrow transaction details.`,
+            }, 202), origin);
+          }
+
+          // Mode A: partner key present — escrow funded from partner wallet
+          const updatedMeta = JSON.stringify({
+            ...intentMeta,
+            payer: result.payer,
+            payee,
+            token: env.MOCK_USDC_ADDRESS,
+            fundedBy: 'partner_lp',
+            fundingWalletAddress: partner.capital.fundingWalletAddress,
+            quoteSource: 'partner_lp',
+            quotePartnerId: intentPartnerId,
+            quotePartnerName: intentMeta.quotePartnerName,
+          });
+
+          await env.DB.prepare(
+            `UPDATE intents SET state = 'FUNDED', escrowId = ?, depositTxHash = ?, metaJson = ?, updatedAt = ? WHERE id = ?`
+          ).bind(result.escrowId, result.depositTxHash, updatedMeta, now, intentId).run();
+
+          await env.DB.prepare(
+            `INSERT INTO event_log (id, intentId, ts, actor, fromState, toState, metaJson)
+             VALUES (?, ?, ?, 'partner', ?, 'FUNDED', ?)`
+          ).bind(uid(), intentId, now, currentState,
+            JSON.stringify({ escrowId: result.escrowId, depositTxHash: result.depositTxHash, fundedBy: 'partner_lp', partnerId: intentPartnerId })
+          ).run();
+
+          const updated = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first();
+          return cors(json({ intent: updated, escrowId: result.escrowId, depositTxHash: result.depositTxHash }, 200), origin);
+
+        } catch (e) {
+          console.error('partner fundEscrow failed:', e);
+          return cors(err(`Partner escrow funding failed: ${(e as Error).message}`, 500), origin);
+        }
+      }
+
+      // ── XRamp LP funding path (safe default) ───────────────────────
       try {
         const { fundEscrowForIntent } = await import('./escrow');
         const { escrowId, depositTxHash, payer } = await fundEscrowForIntent(
@@ -442,8 +545,13 @@ export default {
         );
 
         const now = iso();
-        const existingMeta = JSON.parse((intent.metaJson as string) || '{}');
-        const updatedMeta = JSON.stringify({ ...existingMeta, payer, payee, token: env.MOCK_USDC_ADDRESS });
+        const updatedMeta = JSON.stringify({
+          ...intentMeta,
+          payer,
+          payee,
+          token: env.MOCK_USDC_ADDRESS,
+          fundedBy: 'xramp_lp',
+        });
 
         await env.DB.prepare(
           `UPDATE intents SET state = 'FUNDED', escrowId = ?, depositTxHash = ?, metaJson = ?, updatedAt = ? WHERE id = ?`
@@ -452,7 +560,7 @@ export default {
         await env.DB.prepare(
           `INSERT INTO event_log (id, intentId, ts, actor, fromState, toState, metaJson)
            VALUES (?, ?, ?, 'system', ?, 'FUNDED', ?)`
-        ).bind(uid(), intentId, now, currentState, JSON.stringify({ escrowId, depositTxHash })).run();
+        ).bind(uid(), intentId, now, currentState, JSON.stringify({ escrowId, depositTxHash, fundedBy: 'xramp_lp' })).run();
 
         const updated = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first();
         return cors(json({ intent: updated, escrowId, depositTxHash }, 200), origin);

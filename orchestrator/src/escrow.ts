@@ -88,6 +88,100 @@ export async function fundEscrowForIntent(
   };
 }
 
+/**
+ * Fund escrow on behalf of a partner LP.
+ *
+ * Two modes depending on whether the partner has registered a private key:
+ *
+ * Mode A — partnerPrivateKey present:
+ *   Partner wallet mints test USDC and creates + funds escrow directly.
+ *   payer = partner wallet address (real capital attribution).
+ *
+ * Mode B — partnerPrivateKey absent:
+ *   Returns { requiresSelfFunding: true, fundingWalletAddress } so the
+ *   worker can return a 202 instructing the partner to call /report-funding.
+ *   XRamp arbiter is NEVER substituted silently.
+ *
+ * Hard errors (422) are thrown for:
+ *   - missing fundingWalletAddress (required even in Mode B)
+ *   - invalid payee address
+ */
+export async function fundEscrowForPartner(
+  env: Env,
+  amountUsd: string,
+  payee: string,
+  partnerPrivateKey: string | undefined,
+  fundingWalletAddress: string,
+  escrowContractAddress?: string,
+): Promise<
+  | { requiresSelfFunding: false; escrowId: string; depositTxHash: string; payer: string }
+  | { requiresSelfFunding: true; fundingWalletAddress: string }
+> {
+  if (!fundingWalletAddress) {
+    throw new Error('Partner capital config is missing fundingWalletAddress');
+  }
+  if (!payee || !ethers.isAddress(payee)) {
+    throw new Error('Invalid payee address');
+  }
+
+  // Mode B: no partner key — partner must self-fund
+  if (!partnerPrivateKey) {
+    return { requiresSelfFunding: true, fundingWalletAddress };
+  }
+
+  // Mode A: partner key present — fund from partner wallet
+  const escrowAddr = escrowContractAddress || env.ESCROW_CONTRACT_ADDRESS;
+  if (!escrowAddr) throw new Error('ESCROW_CONTRACT_ADDRESS not configured');
+  if (!env.MOCK_USDC_ADDRESS) throw new Error('MOCK_USDC_ADDRESS not configured');
+
+  const provider = new ethers.JsonRpcProvider(env.FUJI_RPC_URL);
+  const partnerWallet = new ethers.Wallet(partnerPrivateKey, provider);
+
+  const amount = ethers.parseUnits(amountUsd, 6);
+
+  const token = new ethers.Contract(env.MOCK_USDC_ADDRESS, ERC20_ABI, partnerWallet);
+  const escrow = new ethers.Contract(escrowAddr, ESCROW_ABI, partnerWallet);
+
+  // 1. Mint test USDC to partner wallet
+  const mintTx = await token.mint(partnerWallet.address, amount);
+  await mintTx.wait();
+
+  // 2. Create escrow: payer = partner wallet, payee = user
+  const createTx = await escrow.createEscrow(
+    env.MOCK_USDC_ADDRESS,
+    amount,
+    partnerWallet.address,
+    payee,
+  );
+  const createReceipt = await createTx.wait();
+
+  const iface = escrow.interface;
+  let escrowId = '0';
+  for (const log of createReceipt.logs) {
+    try {
+      const parsed = iface.parseLog({ topics: [...log.topics], data: log.data });
+      if (parsed?.name === 'EscrowCreated') {
+        escrowId = parsed.args.escrowId.toString();
+        break;
+      }
+    } catch { /* skip non-matching logs */ }
+  }
+
+  // 3. Approve + deposit
+  const approveTx = await token.approve(escrowAddr, amount);
+  await approveTx.wait();
+
+  const depositTx = await escrow.deposit(BigInt(escrowId));
+  const depositReceipt = await depositTx.wait();
+
+  return {
+    requiresSelfFunding: false,
+    escrowId,
+    depositTxHash: depositReceipt.hash,
+    payer: partnerWallet.address,
+  };
+}
+
 export async function releaseEscrow(env: Env, escrowId: string): Promise<string> {
   const provider = new ethers.JsonRpcProvider(env.FUJI_RPC_URL);
   const signer = new ethers.Wallet(env.ARBITER_PRIVATE_KEY, provider);
