@@ -17,6 +17,13 @@ export function PrivyWrapper({ children }: PrivyWrapperProps) {
           theme: 'dark',
           accentColor: '#22d3ee',
           showWalletLoginFirst: false,
+          walletList: [
+            'detected_ethereum_wallets',
+            'metamask',
+            'coinbase_wallet',
+            'rainbow',
+            'wallet_connect',
+          ],
         },
         loginMethods: ['email', 'wallet'],
         defaultChain: avalancheFuji,
