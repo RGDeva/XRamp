@@ -1,71 +1,105 @@
 // ─── Peer/ZKP2P Liquidity Source Adapter ─────────────────────────────────────
-// Fetches live P2P quotes from the Peer protocol indexer REST API and
-// normalises them into XRamp's internal quote format.
 //
-// API target: https://api.peer.xyz/v1/quotes  (Peer indexer, V3 protocol)
-// Docs:       https://docs.peer.xyz/developer/integrate-zkp2p/integrate-redirect-onramp
-//
-// Failure mode: if the Peer API is unreachable, rate-limited, or returns no
-// usable quotes, this adapter returns [] and the caller continues with XRamp LP
-// quotes. It NEVER throws — all errors are caught and logged.
-//
-// Quote normalisation:
-//   Peer quote output is denominated in the destination token (USDC by default).
-//   We convert to the same shape as XRamp internal quotes so they can be ranked
-//   together by outputAmount / etaSeconds.
+// ┌─ INTEGRATION STATUS ──────────────────────────────────────────────────────┐
+// │ EXPERIMENTAL — disabled by default (PEER_QUOTES_ENABLED env var / flag)   │
+// │                                                                            │
+// │ What IS documented (docs.peer.xyz, @zkp2p/sdk):                           │
+// │   • Extension SDK: peerExtensionSdk.onramp() — the browser-side flow      │
+// │   • onramp() params: referrer, inputCurrency, inputAmount, paymentPlatform,│
+// │     toToken, recipientAddress, amountUsdc, intentHash                     │
+// │   • onIntentFulfilled() callback shape                                    │
+// │   • getQuote(req, opts?) is referenced in user-provided context as a      │
+// │     "Client Reference" method — but the corresponding docs page 404s and  │
+// │     the @zkp2p/sdk package is NOT published to npm or available for       │
+// │     server-side use in a Cloudflare Worker                                │
+// │                                                                            │
+// │ What is INFERRED (not documented, not verified):                          │
+// │   • REST endpoint: https://api.peer.xyz/v1/quotes                         │
+// │   • POST body shape: { paymentPlatforms, fiatCurrency, user, recipient,   │
+// │     destinationChainId, destinationToken, amount, quotesToReturn,          │
+// │     isExactFiat, includeNearbyQuotes }                                    │
+// │   • Response shape: { quotes[], nearbySuggestions[], signalIntentAmount,  │
+// │     referrerFeeAmount }                                                    │
+// │   • Per-quote fields: quoteId, paymentPlatform, outputAmount, feeAmount,  │
+// │     estimatedSettlementTime, depositor                                    │
+// │                                                                            │
+// │ These field names are plausible from protocol architecture and the         │
+// │ extension SDK's onramp param shape, but have NOT been validated against   │
+// │ a live response. The endpoint may not exist, may require authentication,  │
+// │ or may have a different shape entirely.                                   │
+// │                                                                            │
+// │ Failure mode: fetchPeerQuotes() NEVER throws. On any error (network,      │
+// │ timeout, bad shape, disabled flag) it returns [] with a diagnostic log.   │
+// │ XRamp LP quotes are always served regardless.                             │
+// └────────────────────────────────────────────────────────────────────────────┘
+
+// ─── Feature flag ─────────────────────────────────────────────────────────────
+// Set PEER_QUOTES_ENABLED=true in wrangler.toml vars or pass enabled:true to
+// fetchPeerQuotes() once the endpoint is verified. Default: false (disabled).
+export const PEER_QUOTES_ENABLED_DEFAULT = false;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/** Fields we send to the Peer indexer. */
+/**
+ * Fields sent to the Peer indexer.
+ *
+ * Source: inferred from extension SDK onramp() param shape + protocol docs.
+ * NOT verified against a live endpoint response.
+ */
 export interface PeerQuoteRequest {
-  /** Payment platforms to include, e.g. ['venmo', 'revolut', 'wise'] */
+  /** [INFERRED] Payment platforms to include, e.g. ['venmo', 'revolut'] */
   paymentPlatforms: string[];
-  /** ISO-4217 fiat currency, e.g. 'USD' */
+  /** [INFERRED] ISO-4217 fiat currency, e.g. 'USD' */
   fiatCurrency: string;
-  /** Taker (buyer) address */
+  /** [INFERRED] Taker (buyer) wallet address */
   user: string;
-  /** On-chain recipient address */
+  /** [INFERRED] On-chain recipient address */
   recipient: string;
-  /** EVM chain ID for the destination, e.g. 43113 (Avalanche Fuji) */
+  /** [INFERRED] EVM chain ID for destination */
   destinationChainId: number;
-  /** ERC-20 token address on destination chain, or zero address for native */
+  /** [INFERRED] ERC-20 token address on destination chain */
   destinationToken: string;
-  /** Fiat amount the user wants to spend, as a string (e.g. '50') */
+  /** [INFERRED] Fiat amount user wants to spend */
   amount: string;
-  /** Max number of quotes to return (default 5) */
+  /** [INFERRED] Max quotes to return */
   quotesToReturn?: number;
-  /** True = amount is exact fiat spend; false = exact crypto output */
+  /** [INFERRED] true = exact fiat spend */
   isExactFiat?: boolean;
-  /** Include nearby quotes outside strict filters */
+  /** [INFERRED] Include nearby/relaxed quotes */
   includeNearbyQuotes?: boolean;
 }
 
-/** Raw quote object returned by the Peer indexer. */
+/**
+ * Raw quote from the Peer indexer — shape is INFERRED, not verified.
+ * Fields marked optional because we cannot guarantee they exist.
+ */
 interface PeerRawQuote {
-  quoteId: string;
+  quoteId?: string;
   depositId?: string;
-  paymentPlatform: string;
-  /** Amount of destination token the taker receives (in token-native decimals) */
-  outputAmount: string;
-  /** Fiat amount required from taker */
+  paymentPlatform?: string;
+  outputAmount?: string;
   inputAmount?: string;
-  /** Fee charged (in destination token units) */
   feeAmount?: string;
-  /** Estimated settlement seconds */
   estimatedSettlementTime?: number;
-  /** Maker/depositor address */
   depositor?: string;
+  // Catch-all for unexpected fields
+  [key: string]: unknown;
 }
 
-/** Peer indexer response envelope. */
+/**
+ * Response envelope from the Peer indexer — shape is INFERRED, not verified.
+ * All fields optional to handle unexpected response shapes gracefully.
+ */
 interface PeerQuoteResponse {
   quotes?: PeerRawQuote[];
   nearbySuggestions?: PeerRawQuote[];
   signalIntentAmount?: string;
   referrerFeeAmount?: string;
+  // Catch-all
+  [key: string]: unknown;
 }
 
-/** XRamp-normalised quote ready for ranking and return from POST /quotes. */
+/** XRamp-normalised quote, ready for ranking alongside XRamp LP quotes. */
 export interface NormalisedPeerQuote {
   id: string;
   provider: string;
@@ -78,19 +112,31 @@ export interface NormalisedPeerQuote {
   isBest: boolean;
   fiatCurrency: string;
   destination: Record<string, unknown> | null;
-  /** Raw depositor address for traceability */
   depositor?: string;
+}
+
+/** Diagnostic info returned alongside quotes for internal logging. */
+export interface PeerFetchDiagnostics {
+  enabled: boolean;
+  requestedPlatforms: string[];
+  httpStatus?: number;
+  rawQuoteCount: number;
+  normalisedCount: number;
+  skippedCount: number;
+  fallbackReason?: string;
+  durationMs: number;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+// INFERRED — not verified to exist or accept this path
 const PEER_API_BASE = 'https://api.peer.xyz/v1';
-const PEER_QUOTE_TIMEOUT_MS = 4000; // hard timeout — keep /quotes fast
+const PEER_QUOTE_TIMEOUT_MS = 3000;
 
 // USDC has 6 decimals on EVM chains
 const USDC_DECIMALS = 1_000_000;
 
-// Approximate ETA per platform (seconds) — used when Peer doesn't return one
+// ETA fallback per platform (seconds) when Peer doesn't return one
 const PLATFORM_ETA_FALLBACK: Record<string, number> = {
   venmo:   60,
   revolut: 90,
@@ -102,16 +148,50 @@ const PLATFORM_ETA_FALLBACK: Record<string, number> = {
 // ─── Adapter ──────────────────────────────────────────────────────────────────
 
 /**
- * Fetch live Peer LP quotes for a funding request.
- * Returns [] on any error — callers must handle graceful degradation.
+ * Attempt to fetch live Peer LP quotes.
+ *
+ * @param req         - Peer quote request (inferred shape)
+ * @param fiatAmount  - Numeric fiat amount for feeBps calculation
+ * @param destination - XRamp destination object
+ * @param enabled     - Feature flag; defaults to PEER_QUOTES_ENABLED_DEFAULT
+ *
+ * Returns [] + diagnostics on any failure. NEVER throws.
  */
 export async function fetchPeerQuotes(
   req: PeerQuoteRequest,
   fiatAmount: number,
   destination: Record<string, unknown> | null,
-): Promise<NormalisedPeerQuote[]> {
+  enabled = PEER_QUOTES_ENABLED_DEFAULT,
+): Promise<{ quotes: NormalisedPeerQuote[]; diagnostics: PeerFetchDiagnostics }> {
+  const startMs = Date.now();
+
+  const baseDiag: Omit<PeerFetchDiagnostics, 'durationMs'> = {
+    enabled,
+    requestedPlatforms: req.paymentPlatforms,
+    rawQuoteCount: 0,
+    normalisedCount: 0,
+    skippedCount: 0,
+  };
+
+  // ── Feature flag gate ────────────────────────────────────────────────────
+  if (!enabled) {
+    console.log('[PeerLP] Peer quote ingestion disabled (feature flag off)');
+    return {
+      quotes: [],
+      diagnostics: { ...baseDiag, fallbackReason: 'feature_flag_disabled', durationMs: Date.now() - startMs },
+    };
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PEER_QUOTE_TIMEOUT_MS);
+
+  // ── Log request ──────────────────────────────────────────────────────────
+  console.log('[PeerLP] Fetching quotes — EXPERIMENTAL, endpoint not verified', {
+    endpoint: `${PEER_API_BASE}/quotes`,
+    platforms: req.paymentPlatforms,
+    fiatAmount: req.amount,
+    fiatCurrency: req.fiatCurrency,
+  });
 
   try {
     const res = await fetch(`${PEER_API_BASE}/quotes`, {
@@ -121,40 +201,82 @@ export async function fetchPeerQuotes(
       signal: controller.signal,
     });
 
+    baseDiag.httpStatus = res.status;
+
     if (!res.ok) {
-      console.warn(`[PeerLP] HTTP ${res.status} from Peer indexer — skipping`);
-      return [];
+      const reason = `http_${res.status}`;
+      console.warn(`[PeerLP] HTTP ${res.status} — endpoint may not exist or require auth. Skipping.`);
+      return {
+        quotes: [],
+        diagnostics: { ...baseDiag, fallbackReason: reason, durationMs: Date.now() - startMs },
+      };
     }
 
-    const data: PeerQuoteResponse = await res.json();
-    const raw = [...(data.quotes ?? []), ...(data.nearbySuggestions ?? [])];
+    // ── Parse + validate response shape ─────────────────────────────────
+    let data: PeerQuoteResponse;
+    try {
+      data = await res.json() as PeerQuoteResponse;
+    } catch {
+      console.warn('[PeerLP] Response is not valid JSON — response shape does not match expected');
+      return {
+        quotes: [],
+        diagnostics: { ...baseDiag, fallbackReason: 'invalid_json', durationMs: Date.now() - startMs },
+      };
+    }
 
-    if (raw.length === 0) return [];
+    // Validate that the response at minimum has a quotes array
+    if (!data || typeof data !== 'object') {
+      console.warn('[PeerLP] Unexpected response shape — not an object');
+      return {
+        quotes: [],
+        diagnostics: { ...baseDiag, fallbackReason: 'unexpected_shape', durationMs: Date.now() - startMs },
+      };
+    }
 
-    return raw.flatMap((q): NormalisedPeerQuote[] => {
-      // outputAmount from Peer is in token units (USDC = 6 decimals)
-      const outputRaw = parseFloat(q.outputAmount ?? '0');
-      if (isNaN(outputRaw) || outputRaw <= 0) return [];
+    const raw = [...(Array.isArray(data.quotes) ? data.quotes : []), ...(Array.isArray(data.nearbySuggestions) ? data.nearbySuggestions : [])];
+    baseDiag.rawQuoteCount = raw.length;
 
-      // Normalise to human-readable USDC units
+    console.log(`[PeerLP] Received ${raw.length} raw quotes (${data.quotes?.length ?? 0} primary + ${data.nearbySuggestions?.length ?? 0} nearby)`);
+
+    if (raw.length === 0) {
+      return {
+        quotes: [],
+        diagnostics: { ...baseDiag, fallbackReason: 'no_quotes_returned', durationMs: Date.now() - startMs },
+      };
+    }
+
+    // ── Normalise each raw quote ─────────────────────────────────────────
+    const normalised: NormalisedPeerQuote[] = [];
+    let skipped = 0;
+
+    for (const q of raw) {
+      const outputRaw = parseFloat(String(q.outputAmount ?? '0'));
+
+      if (isNaN(outputRaw) || outputRaw <= 0) {
+        console.warn('[PeerLP] Skipping quote — missing/invalid outputAmount', { quoteId: q.quoteId, outputAmount: q.outputAmount });
+        skipped++;
+        continue;
+      }
+
+      if (!q.paymentPlatform || typeof q.paymentPlatform !== 'string') {
+        console.warn('[PeerLP] Skipping quote — missing paymentPlatform', { quoteId: q.quoteId });
+        skipped++;
+        continue;
+      }
+
+      // Decimal normalisation: USDC on-chain units (6 decimals) → human-readable
+      // Heuristic: if value > 1000, treat as on-chain units; otherwise human-readable
       const outputUsdc = outputRaw > 1000 ? outputRaw / USDC_DECIMALS : outputRaw;
-
-      // Fee
-      const feeRaw = parseFloat(q.feeAmount ?? '0');
+      const feeRaw = parseFloat(String(q.feeAmount ?? '0'));
       const feeUsdc = feeRaw > 1000 ? feeRaw / USDC_DECIMALS : feeRaw;
+      const feeBps = fiatAmount > 0 ? Math.round((feeUsdc / fiatAmount) * 10000) : 0;
+      const eta = typeof q.estimatedSettlementTime === 'number'
+        ? q.estimatedSettlementTime
+        : (PLATFORM_ETA_FALLBACK[q.paymentPlatform.toLowerCase()] ?? 120);
 
-      // feeBps derived from fee / fiatAmount
-      const feeBps = fiatAmount > 0
-        ? Math.round((feeUsdc / fiatAmount) * 10000)
-        : 0;
-
-      const eta = q.estimatedSettlementTime ??
-        PLATFORM_ETA_FALLBACK[q.paymentPlatform?.toLowerCase()] ??
-        120;
-
-      return [{
-        id: `peer-${q.quoteId ?? q.depositId ?? Math.random().toString(36).slice(2)}`,
-        provider: q.paymentPlatform?.toLowerCase() ?? 'peer',
+      normalised.push({
+        id: `peer-${q.quoteId ?? q.depositId ?? Math.random().toString(36).slice(2, 9)}`,
+        provider: q.paymentPlatform.toLowerCase(),
         outputAmount: outputUsdc.toFixed(6),
         feeAmount: feeUsdc.toFixed(6),
         feeBps,
@@ -164,25 +286,47 @@ export async function fetchPeerQuotes(
         isBest: false,
         fiatCurrency: req.fiatCurrency,
         destination,
-        depositor: q.depositor,
-      }];
+        depositor: typeof q.depositor === 'string' ? q.depositor : undefined,
+      });
+    }
+
+    baseDiag.normalisedCount = normalised.length;
+    baseDiag.skippedCount = skipped;
+
+    console.log(`[PeerLP] Normalised ${normalised.length} quotes, skipped ${skipped}`, {
+      providers: normalised.map(q => q.provider),
+      outputAmounts: normalised.map(q => q.outputAmount),
     });
 
-  } catch (err: unknown) {
-    if (err instanceof Error && err.name === 'AbortError') {
-      console.warn('[PeerLP] Timeout fetching Peer quotes — skipping');
-    } else {
-      console.warn('[PeerLP] Error fetching Peer quotes:', err);
+    if (normalised.length === 0) {
+      return {
+        quotes: [],
+        diagnostics: { ...baseDiag, fallbackReason: 'all_quotes_failed_normalisation', durationMs: Date.now() - startMs },
+      };
     }
-    return [];
+
+    return { quotes: normalised, diagnostics: { ...baseDiag, durationMs: Date.now() - startMs } };
+
+  } catch (err: unknown) {
+    const isTimeout = err instanceof Error && err.name === 'AbortError';
+    const reason = isTimeout ? 'timeout' : 'network_error';
+    if (isTimeout) {
+      console.warn(`[PeerLP] Timeout after ${PEER_QUOTE_TIMEOUT_MS}ms — skipping`);
+    } else {
+      console.warn('[PeerLP] Network error fetching quotes — skipping', err);
+    }
+    return {
+      quotes: [],
+      diagnostics: { ...baseDiag, fallbackReason: reason, durationMs: Date.now() - startMs },
+    };
   } finally {
     clearTimeout(timer);
   }
 }
 
 /**
- * Build a PeerQuoteRequest from XRamp /quotes input parameters.
- * Uses the zero address as the user/recipient placeholder when not provided.
+ * Build a PeerQuoteRequest from XRamp /quotes input.
+ * Field names are INFERRED from protocol architecture — not verified against a live API.
  */
 export function buildPeerQuoteRequest(params: {
   fiatAmount: string;
@@ -192,16 +336,21 @@ export function buildPeerQuoteRequest(params: {
 }): PeerQuoteRequest {
   const { fiatAmount, fiatCurrency, paymentPlatforms, destination } = params;
 
-  const recipientAddress = (destination?.recipientAddress as string | undefined)
-    ?? '0x0000000000000000000000000000000000000000';
-  const chainId = (destination?.chainId as number | undefined) ?? 8453; // Base mainnet default
-  // For Peer, destinationToken = USDC address on Base; we use zero addr as placeholder
-  const destinationToken = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // USDC on Base
+  const recipientAddress =
+    (destination?.recipientAddress as string | undefined) ??
+    '0x0000000000000000000000000000000000000000';
+
+  // Peer V3 is deployed on Base mainnet; XRamp uses Avalanche Fuji for testing.
+  // destinationChainId is passed through from the XRamp request if present.
+  const chainId = (destination?.chainId as number | undefined) ?? 8453; // Base mainnet
+
+  // USDC on Base mainnet (verified contract address)
+  const destinationToken = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
   return {
     paymentPlatforms,
     fiatCurrency: fiatCurrency.toUpperCase(),
-    user: '0x0000000000000000000000000000000000000000',
+    user: '0x0000000000000000000000000000000000000000', // placeholder — no wallet required for quotes
     recipient: recipientAddress,
     destinationChainId: chainId,
     destinationToken,

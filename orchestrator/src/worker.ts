@@ -16,7 +16,7 @@
 
 import { verifyAuth, isAdmin } from './auth';
 import { ALLOWED_TRANSITIONS, type IntentState } from './state';
-import { fetchPeerQuotes, buildPeerQuoteRequest } from './peerLiquiditySource';
+import { fetchPeerQuotes, buildPeerQuoteRequest, PEER_QUOTES_ENABLED_DEFAULT } from './peerLiquiditySource';
 
 export interface Env {
   DB: D1Database;
@@ -138,25 +138,28 @@ export default {
         };
       });
 
-      // ── Peer LP quotes (live, best-effort) ────────────────────────────
-      // If Peer API is unreachable or returns no quotes, we continue with
-      // XRamp quotes only. Peer quotes are tagged source:'peer_lp'.
+      // ── Peer LP quotes (experimental, best-effort) ───────────────────
+      // PEER_QUOTES_ENABLED env var controls whether we attempt live Peer
+      // ingestion. Defaults to false until the endpoint is verified.
+      const peerEnabled = (env as unknown as Record<string, string>).PEER_QUOTES_ENABLED === 'true'
+        || PEER_QUOTES_ENABLED_DEFAULT;
+
       const peerReq = buildPeerQuoteRequest({
         fiatAmount: String(fiatAmount),
         fiatCurrency,
         paymentPlatforms: enabledProviders,
         destination: destination ?? null,
       });
-      const peerQuotes = await fetchPeerQuotes(
+      const { quotes: peerQuotes, diagnostics: peerDiag } = await fetchPeerQuotes(
         peerReq,
         fiatAmount,
         destination ?? null,
+        peerEnabled,
       );
 
       // ── Aggregate + rank all sources together ─────────────────────────
-      // Deduplicate by provider+routeType: if Peer returns a quote for the
-      // same provider as an XRamp quote, keep both (they have different
-      // liquidity/pricing). Users can see source in the quote object.
+      // Both XRamp LP and Peer LP quotes are ranked together.
+      // XRamp LP is always present; Peer LP is additive when available.
       const allQuotes = [...xrampQuotes, ...peerQuotes];
 
       // Rank: highest outputAmount first, ETA as tiebreaker
@@ -178,6 +181,8 @@ export default {
           xramp_lp: xrampQuotes.length,
           peer_lp: peerQuotes.length,
         },
+        // Internal diagnostics — strip from prod responses if needed
+        _peerDiag: peerDiag,
       }), origin);
     }
 
