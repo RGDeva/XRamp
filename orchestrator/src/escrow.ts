@@ -117,8 +117,10 @@ export async function fundEscrowForPartner(
   | { requiresSelfFunding: false; escrowId: string; depositTxHash: string; payer: string }
   | { requiresSelfFunding: true; fundingWalletAddress: string }
 > {
-  if (!fundingWalletAddress) {
-    throw new Error('Partner capital config is missing fundingWalletAddress');
+  if (!fundingWalletAddress || !ethers.isAddress(fundingWalletAddress)) {
+    throw new Error(
+      `fundEscrowForPartner: Invalid fundingWalletAddress '${fundingWalletAddress}' — must be a valid EVM address`,
+    );
   }
   if (!payee || !ethers.isAddress(payee)) {
     throw new Error('Invalid payee address');
@@ -136,6 +138,18 @@ export async function fundEscrowForPartner(
 
   const provider = new ethers.JsonRpcProvider(env.FUJI_RPC_URL);
   const partnerWallet = new ethers.Wallet(partnerPrivateKey, provider);
+
+  // Cross-check: the private key must derive the same address as fundingWalletAddress.
+  // This prevents misconfiguration where a wrong key is paired with a catalogue address.
+  const normalizedCatalogue = ethers.getAddress(fundingWalletAddress);
+  const normalizedDerived = ethers.getAddress(partnerWallet.address);
+  if (normalizedCatalogue !== normalizedDerived) {
+    throw new Error(
+      `fundEscrowForPartner: key/address mismatch — ` +
+      `catalogue fundingWalletAddress=${normalizedCatalogue} ` +
+      `but private key derives ${normalizedDerived}`,
+    );
+  }
 
   const amount = ethers.parseUnits(amountUsd, 6);
 

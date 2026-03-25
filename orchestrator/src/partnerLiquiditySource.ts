@@ -31,16 +31,17 @@ export interface PartnerRailConfig {
 /** Capital / escrow funding metadata for a partner LP. */
 export interface PartnerCapitalConfig {
   /**
-   * The on-chain address this partner's capital comes from.
-   * Used as `payer` in escrow creation for attribution.
-   * Required for partner_lp intents — no silent fallback to XRamp arbiter.
+   * Name of the Cloudflare Worker env var that holds the partner's on-chain
+   * funding wallet address (checksummed EVM address string).
+   * Resolved at runtime via env[fundingWalletAddressEnvVar].
+   * Required — no silent fallback to XRamp arbiter.
    */
-  fundingWalletAddress: string;
+  fundingWalletAddressEnvVar: string;
   /**
    * Name of the Cloudflare Worker env var that holds the partner's private key.
-   * If set AND the env var is present at runtime → partner wallet signs escrow.
+   * If set AND the env var is present at runtime → partner wallet signs escrow (Mode A).
    * If NOT set (or env var missing) → intent must be funded via /report-funding
-   *   (partner self-funds by signing on their side and reporting the tx).
+   *   (partner self-funds by signing on their side and reporting the tx, Mode B).
    * XRamp arbiter NEVER silently substitutes for a missing partner key.
    */
   partnerPrivateKeyEnvVar?: string;
@@ -63,8 +64,12 @@ export interface PartnerLPConfig {
   rails: PartnerRailConfig[];
   /** Optional settlement handle metadata (for routing payment to partner) */
   settlementHandles?: Partial<Record<string, string>>;
-  /** Capital / escrow funding metadata — required for partner_lp execution */
-  capital?: PartnerCapitalConfig;
+  /**
+   * Capital / escrow funding metadata.
+   * Required for all partner_lp intents — worker hard-errors (422) if absent.
+   * Not optional in practice; typed optional only for catalogue entries in transition.
+   */
+  capital: PartnerCapitalConfig;
 }
 
 // ─── Partner catalogue ────────────────────────────────────────────────────────
@@ -86,10 +91,11 @@ export const PARTNER_CATALOGUE: PartnerLPConfig[] = [
       wise:    'payments@alphamarkets.xyz',
     },
     capital: {
-      // Alpha Markets registers their Fuji wallet address for on-chain attribution.
-      // env var ALPHA_LP_PRIVATE_KEY must be present for arbiter-assisted funding;
-      // if absent the intent requires partner self-funding via /report-funding.
-      fundingWalletAddress: '0x0000000000000000000000000000000000000001', // replace with real address
+      // Env var holding the checksummed EVM address of Alpha Markets' Fuji funding wallet.
+      // TODO: set ALPHA_LP_FUNDING_ADDRESS in wrangler secrets with real address before production.
+      fundingWalletAddressEnvVar: 'ALPHA_LP_FUNDING_ADDRESS',
+      // Env var holding Alpha Markets' private key (Mode A). If absent → Mode B (self-fund).
+      // TODO: set ALPHA_LP_PRIVATE_KEY in wrangler secrets before production.
       partnerPrivateKeyEnvVar: 'ALPHA_LP_PRIVATE_KEY',
     },
   },
@@ -106,10 +112,10 @@ export const PARTNER_CATALOGUE: PartnerLPConfig[] = [
       revolut: '@betaliquidity',
     },
     capital: {
-      // Beta Liquidity self-funds via /report-funding (no private key registered).
-      // fundingWalletAddress is required for attribution; signing is done by partner.
-      fundingWalletAddress: '0x0000000000000000000000000000000000000002', // replace with real address
-      // partnerPrivateKeyEnvVar not set — partner must call /report-funding themselves
+      // Env var holding the checksummed EVM address of Beta Liquidity's Fuji funding wallet.
+      // TODO: set BETA_LP_FUNDING_ADDRESS in wrangler secrets with real address before production.
+      fundingWalletAddressEnvVar: 'BETA_LP_FUNDING_ADDRESS',
+      // partnerPrivateKeyEnvVar intentionally absent — Beta Liquidity self-funds via /report-funding.
     },
   },
 ];

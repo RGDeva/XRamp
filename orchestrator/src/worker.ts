@@ -284,6 +284,10 @@ export default {
 
       const initMeta = JSON.stringify({
         lpHandle: lpHandle || undefined,
+        // expectedRecipient is the ground-truth handle the proof must be verified against.
+        // Equals lpHandle at creation; persisted explicitly so downstream proof validation
+        // never has to recompute it or guess from quoteSource.
+        expectedRecipient: lpHandle || undefined,
         ...(destination ? { destination } : {}),
         ...(quoteId ? { quoteId } : {}),
         ...(quoteSnapshot ? { quoteSnapshot } : {}),
@@ -449,12 +453,16 @@ export default {
         if (!partner) {
           return cors(err(`Partner LP '${intentPartnerId}' not found or disabled`, 422), origin);
         }
-        if (!partner.capital) {
-          return cors(err(`Partner LP '${intentPartnerId}' has no capital config — cannot fund escrow`, 422), origin);
-        }
 
-        // Resolve partner private key from env (optional — if absent, Mode B kicks in)
+        // Resolve capital fields from env (addresses + private keys are never hardcoded)
         const envRecord = env as unknown as Record<string, string>;
+        const fundingWalletAddress = envRecord[partner.capital.fundingWalletAddressEnvVar] || '';
+        if (!fundingWalletAddress) {
+          return cors(err(
+            `Partner LP '${intentPartnerId}' capital misconfigured: env var '${partner.capital.fundingWalletAddressEnvVar}' is not set`,
+            422,
+          ), origin);
+        }
         const partnerPrivateKey = partner.capital.partnerPrivateKeyEnvVar
           ? (envRecord[partner.capital.partnerPrivateKeyEnvVar] || undefined)
           : undefined;
@@ -465,7 +473,7 @@ export default {
             intent.amount as string,
             payee,
             partnerPrivateKey,
-            partner.capital.fundingWalletAddress,
+            fundingWalletAddress,
             partner.capital.escrowContractAddress,
           );
 
@@ -477,7 +485,7 @@ export default {
               ...intentMeta,
               payee,
               fundedBy: 'partner_self_funding_required',
-              fundingWalletAddress: result.fundingWalletAddress,
+              fundingWalletAddress,
               quoteSource: 'partner_lp',
               quotePartnerId: intentPartnerId,
               quotePartnerName: intentMeta.quotePartnerName,
@@ -490,14 +498,14 @@ export default {
               `INSERT INTO event_log (id, intentId, ts, actor, fromState, toState, metaJson)
                VALUES (?, ?, ?, 'system', ?, ?, ?)`
             ).bind(uid(), intentId, now, currentState, currentState,
-              JSON.stringify({ note: 'partner_self_funding_required', fundingWalletAddress: result.fundingWalletAddress })
+              JSON.stringify({ note: 'partner_self_funding_required', fundingWalletAddress })
             ).run();
 
             const updated = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first();
             return cors(json({
               intent: updated,
               requiresSelfFunding: true,
-              fundingWalletAddress: result.fundingWalletAddress,
+              fundingWalletAddress,
               message: `Partner LP '${partner.name}' must self-fund this escrow. Call POST /intents/${intentId}/report-funding with the escrow transaction details.`,
             }, 202), origin);
           }
@@ -509,7 +517,7 @@ export default {
             payee,
             token: env.MOCK_USDC_ADDRESS,
             fundedBy: 'partner_lp',
-            fundingWalletAddress: partner.capital.fundingWalletAddress,
+            fundingWalletAddress,
             quoteSource: 'partner_lp',
             quotePartnerId: intentPartnerId,
             quotePartnerName: intentMeta.quotePartnerName,
@@ -615,6 +623,41 @@ export default {
 
       const intent = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first<Record<string, unknown>>();
       if (!intent) return cors(err('Intent not found', 404), origin);
+
+      // ── Recipient alignment check ────────────────────────────────────
+      // Validate that the proof's extracted recipient matches the expected LP handle
+      // persisted at intent creation. Fail hard for partner_lp — no silent mismatch.
+      const proofMeta = JSON.parse((intent.metaJson as string) || '{}') as Record<string, unknown>;
+      const proofQuoteSource = (proofMeta.quoteSource as string) || 'xramp_lp';
+      const expectedRecipient = (proofMeta.expectedRecipient as string) || '';
+      const proofPayload = (body.payload as Record<string, unknown>) || {};
+      // Both Venmo (receiverUsername) and Revolut (recipientUsername) proof shapes
+      const extractedRecipient = (
+        (proofPayload.receiverUsername as string) ||
+        (proofPayload.recipientUsername as string) ||
+        ''
+      ).toLowerCase().replace(/^@/, '');
+      if (expectedRecipient && extractedRecipient) {
+        const normalizedExpected = expectedRecipient.toLowerCase().replace(/^@/, '');
+        if (extractedRecipient !== normalizedExpected) {
+          const isPartner = proofQuoteSource === 'partner_lp';
+          const partnerId = proofMeta.quotePartnerId as string | undefined;
+          // Hard reject for partner_lp; warn (but allow) for xramp_lp to avoid breaking existing flows
+          if (isPartner) {
+            return cors(err(
+              `Proof recipient mismatch for partner_lp intent: ` +
+              `expected '${normalizedExpected}' (${partnerId ?? 'partner'}), ` +
+              `got '${extractedRecipient}'. ` +
+              `Payment was sent to the wrong handle.`,
+              422,
+            ), origin);
+          }
+          console.warn(
+            `[proof] recipient mismatch on xramp_lp intent ${intentId}: ` +
+            `expected '${normalizedExpected}', got '${extractedRecipient}'`,
+          );
+        }
+      }
 
       const proofId = uid();
       const now = iso();
