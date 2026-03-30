@@ -18,6 +18,7 @@ export function PrivyWrapper({ children }: PrivyWrapperProps) {
           accentColor: '#22d3ee',
           showWalletLoginFirst: false,
           walletList: [
+            'core_wallet',
             'detected_ethereum_wallets',
             'metamask',
             'coinbase_wallet',
@@ -26,8 +27,8 @@ export function PrivyWrapper({ children }: PrivyWrapperProps) {
           ],
         },
         loginMethods: ['email', 'wallet'],
-        defaultChain: avalancheFuji,
-        supportedChains: [avalancheFuji, avalanche],
+        defaultChain: avalanche,
+        supportedChains: [avalanche, avalancheFuji],
         embeddedWallets: {
           ethereum: {
             createOnLogin: 'users-without-wallets',
