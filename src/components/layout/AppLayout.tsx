@@ -23,6 +23,8 @@ function useProofMessageListener() {
 
   useEffect(() => {
     const handler = async (event: MessageEvent) => {
+      // Only accept messages posted by this page itself (e.g. our extension's content script)
+      if (event.source !== window || event.origin !== window.location.origin) return;
       if (event.data?.type !== 'XRAMP_PROOF_RESULT') return;
       const payload = event.data.payload;
       if (!payload?.intentId) return;
@@ -36,12 +38,9 @@ function useProofMessageListener() {
           payload: proofPayload,
         });
 
-        if (verified && isAdmin) {
-          await orchestratorApi.verifyAndRelease(intentId);
-          toast.success('Proof verified — escrow released!', {
-            description: `Intent ${intentId.slice(0, 8)}… is now COMPLETE`,
-          });
-        } else if (verified) {
+        // Release is never triggered automatically from a window message;
+        // an admin must review and verify it explicitly.
+        if (verified) {
           toast.success('Payment proof submitted', {
             description: 'Awaiting admin release. Check Activity for updates.',
           });

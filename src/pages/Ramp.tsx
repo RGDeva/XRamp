@@ -211,8 +211,10 @@ export default function Ramp() {
   // Listen for postMessage from XRamp Chrome extension to prefill state
   useEffect(() => {
     const handleExtensionMessage = (event: MessageEvent) => {
+      if (event.source !== window || event.origin !== window.location.origin) return;
       if (event.data?.type !== 'XRAMP_CONTEXT') return;
       const p = event.data.payload;
+      if (p?.amount && !/^\d{1,6}(\.\d{1,6})?$/.test(String(p.amount))) return;
       if (p?.tab && ['Buy', 'Sell', 'Send'].includes(p.tab)) setTab(p.tab as RampTab);
       if (p?.amount) setBuyAmount(p.amount);
       if (p?.rail) { setBuyMethod(p.rail); setSellMethod(p.rail); }
