@@ -56,6 +56,19 @@ function err(msg: string, status = 400): Response {
   return json({ error: msg }, status);
 }
 
+const MAX_INTENT_AMOUNT = 10000;
+
+function isEthAddress(v: unknown): v is string {
+  return typeof v === 'string' && /^0x[0-9a-fA-F]{40}$/.test(v);
+}
+
+function isValidAmount(v: string | null | undefined): boolean {
+  if (!v || !/^\d+(\.\d{1,6})?$/.test(v)) return false;
+  const n = Number(v);
+  return n > 0 && n <= MAX_INTENT_AMOUNT;
+}
+
+
 function cors(response: Response, origin: string): Response {
   const h = new Headers(response.headers);
   h.set('Access-Control-Allow-Origin', origin || '*');
@@ -212,6 +225,7 @@ export default {
       userEmail = authResult.email || null;
       userWallet = authResult.wallet || null;
     }
+    const callerIsAdmin = userId ? isAdmin(userEmail, userWallet, env, userId) : false;
 
     // ── POST /intents ────────────────────────────────────────────────────
     if (url.pathname === '/intents' && request.method === 'POST') {
@@ -231,6 +245,12 @@ export default {
 
       if (!type || !amount || !sourceAsset || !targetAsset) {
         return cors(err('Missing required fields: type, amount, sourceAsset, targetAsset'), origin);
+      }
+      if (typeof amount !== 'string' || !isValidAmount(amount)) {
+        return cors(err(`amount must be a number between 0 and ${MAX_INTENT_AMOUNT}`), origin);
+      }
+      if (destination?.recipientAddress && !isEthAddress(destination.recipientAddress)) {
+        return cors(err('destination.recipientAddress must be a valid address'), origin);
       }
 
       const id = uid();
@@ -367,6 +387,18 @@ export default {
     const reportFundingMatch = url.pathname.match(/^\/intents\/([^/]+)\/report-funding$/);
     const swapMatch = url.pathname.match(/^\/intents\/([^/]+)\/swap$/);
 
+    // ── Ownership guard for every /intents/:id route ─────────────────────
+    const idRouteMatch = intentMatch || stateMatch || proofMatch || verifyMatch
+      || fundEscrowMatch || reportFundingMatch || swapMatch;
+    if (idRouteMatch) {
+      const owner = await env.DB.prepare('SELECT userId FROM intents WHERE id = ?')
+        .bind(idRouteMatch[1]).first<{ userId: string }>();
+      if (!owner) return cors(err('Intent not found', 404), origin);
+      if (owner.userId !== userId && !callerIsAdmin) {
+        return cors(err('Intent not found', 404), origin);
+      }
+    }
+
     // ── GET /intents/:id ─────────────────────────────────────────────────
     if (intentMatch && request.method === 'GET') {
       const id = intentMatch[1];
@@ -389,10 +421,17 @@ export default {
       const id = stateMatch[1];
       const body = await request.json<Record<string, unknown>>();
       const toState = body.toState as string;
-      const actor = (body.actor as string) || 'user';
+      const actor = callerIsAdmin ? 'admin' : 'user';
       const meta = body.meta || {};
 
       if (!toState) return cors(err('Missing toState'), origin);
+
+      // Regular users may only move their own intent into non-value states.
+      // Funding, proof, verification and completion are driven by the server.
+      const USER_ALLOWED_TARGETS = ['FUNDING', 'CANCELED'];
+      if (!callerIsAdmin && !USER_ALLOWED_TARGETS.includes(toState)) {
+        return cors(err('Forbidden: this state change is not allowed', 403), origin);
+      }
 
       const intent = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(id).first<Record<string, unknown>>();
       if (!intent) return cors(err('Intent not found', 404), origin);
@@ -404,9 +443,9 @@ export default {
       }
 
       const now = iso();
-      // Update intent state + any metadata fields
-      const depositTxHash = (body.depositTxHash as string) || (intent.depositTxHash as string) || null;
-      const escrowId = (body.escrowId as string) || (intent.escrowId as string) || null;
+      // Only admins may attach on-chain identifiers
+      const depositTxHash = (callerIsAdmin ? (body.depositTxHash as string) : '') || (intent.depositTxHash as string) || null;
+      const escrowId = (callerIsAdmin ? (body.escrowId as string) : '') || (intent.escrowId as string) || null;
 
       await env.DB.prepare(
         `UPDATE intents SET state = ?, updatedAt = ?, depositTxHash = COALESCE(?, depositTxHash), escrowId = COALESCE(?, escrowId) WHERE id = ?`
@@ -426,9 +465,7 @@ export default {
     if (fundEscrowMatch && request.method === 'POST') {
       const intentId = fundEscrowMatch[1];
       const body = await request.json<Record<string, unknown>>();
-      const payee = body.payee as string;
-
-      if (!payee) return cors(err('Missing payee address'), origin);
+      const requestedPayee = (body.payee as string) || '';
 
       const intent = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first<Record<string, unknown>>();
       if (!intent) return cors(err('Intent not found', 404), origin);
@@ -437,11 +474,28 @@ export default {
       if (currentState === 'FUNDED' || currentState === 'PROOF_SUBMITTED' || currentState === 'COMPLETE') {
         return cors(json({ intent }), origin);
       }
+      if (currentState !== 'CREATED' && currentState !== 'FUNDING') {
+        return cors(err(`Cannot fund intent in state ${currentState}`, 409), origin);
+      }
 
       // Read capital source from persisted metaJson
       const intentMeta = JSON.parse((intent.metaJson as string) || '{}') as Record<string, unknown>;
       const intentQuoteSource = (intentMeta.quoteSource as string) || 'xramp_lp';
       const intentPartnerId = intentMeta.quotePartnerId as string | undefined;
+
+      // Payee is derived from the destination recorded at intent creation.
+      // A request-supplied payee is only accepted if it matches.
+      const storedDestination = (intentMeta.destination as { recipientAddress?: string } | undefined)?.recipientAddress || '';
+      const payee = storedDestination || requestedPayee;
+      if (!isEthAddress(payee)) return cors(err('Missing or invalid payee address'), origin);
+      if (storedDestination && requestedPayee && requestedPayee.toLowerCase() !== storedDestination.toLowerCase()) {
+        return cors(err('Payee does not match intent destination', 403), origin);
+      }
+
+      // Amount comes from the server-validated intent record and is re-checked here.
+      if (!isValidAmount(intent.amount as string)) {
+        return cors(err('Intent amount out of allowed range', 422), origin);
+      }
 
       // ── Partner LP funding path ───────────────────────────────
       if (intentQuoteSource === 'partner_lp') {
@@ -580,6 +634,11 @@ export default {
 
     // ── POST /intents/:id/report-funding (user-wallet-signed) ───────────
     if (reportFundingMatch && request.method === 'POST') {
+      // Funding details are only accepted from an operator; users cannot
+      // mark intents as funded with self-chosen escrow/tx identifiers.
+      if (!callerIsAdmin) {
+        return cors(err('Forbidden: admin only', 403), origin);
+      }
       const intentId = reportFundingMatch[1];
       const body = await request.json<Record<string, unknown>>();
       const escrowId = body.escrowId as string;
@@ -767,9 +826,7 @@ export default {
     if (swapMatch && request.method === 'POST') {
       const intentId = swapMatch[1];
       const body = await request.json<Record<string, unknown>>();
-      const recipient = (body.recipient as string) || '';
-
-      if (!recipient) return cors(err('Missing recipient address'), origin);
+      const requestedRecipient = (body.recipient as string) || '';
 
       const intent = await env.DB.prepare('SELECT * FROM intents WHERE id = ?').bind(intentId).first<Record<string, unknown>>();
       if (!intent) return cors(err('Intent not found', 404), origin);
@@ -783,6 +840,16 @@ export default {
       const existingMeta = JSON.parse((intent.metaJson as string) || '{}');
       if (existingMeta.swapTxHash) {
         return cors(json({ intent, swapTxHash: existingMeta.swapTxHash, message: 'Already swapped' }), origin);
+      }
+
+      // Recipient is always derived from server state (the escrow payee),
+      // never from the request body.
+      const recipient = (existingMeta.payee as string) || '';
+      if (!isEthAddress(recipient)) {
+        return cors(err('Intent has no payout address on record', 409), origin);
+      }
+      if (requestedRecipient && requestedRecipient.toLowerCase() !== recipient.toLowerCase()) {
+        return cors(err('Recipient does not match intent payout address', 403), origin);
       }
 
       try {
