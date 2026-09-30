@@ -136,7 +136,7 @@ export function CommandMode() {
 
     const parsed = parseCommand(text);
     if (!parsed.ok) {
-      push('info', `⚠ ${parsed.reason}`);
+      push('info', `⚠ ${'reason' in parsed ? parsed.reason : ''}`);
       setBusy(false);
       return;
     }

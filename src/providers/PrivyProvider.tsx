@@ -18,7 +18,6 @@ export function PrivyWrapper({ children }: PrivyWrapperProps) {
           accentColor: '#22d3ee',
           showWalletLoginFirst: false,
           walletList: [
-            'core_wallet',
             'detected_ethereum_wallets',
             'metamask',
             'coinbase_wallet',

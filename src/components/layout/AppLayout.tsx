@@ -5,24 +5,15 @@ import { WalletSidebar } from './WalletSidebar';
 import { useApp } from '@/contexts/AppContext';
 import { StarsBackground } from '@/components/animate-ui/components/backgrounds/stars';
 import { CommandMode } from '@/components/command/CommandMode';
-import { useAuth } from '@/contexts/AuthContext';
 import { orchestratorApi } from '@/lib/orchestratorApi';
 import { toast } from 'sonner';
 
-const ADMIN_EMAILS = ['rishmanx@gmail.com'];
-const ADMIN_WALLETS = ['0x01141553f506df71cb71751a30526f00269179ac'];
-const ADMIN_SUBS = ['did:privy:cmm2yw6n800460cl5cnozhi7j'];
-
 function useProofMessageListener() {
-  const { user } = useAuth();
-  const userEmail = user?.email || null;
-  const userWallet = user?.walletAddress?.toLowerCase() || user?.embeddedWalletAddress?.toLowerCase() || null;
-  const isAdmin = (userEmail ? ADMIN_EMAILS.includes(userEmail.toLowerCase()) : false)
-    || (userWallet ? ADMIN_WALLETS.includes(userWallet) : false)
-    || (user?.privySub ? ADMIN_SUBS.includes(user.privySub) : false);
 
   useEffect(() => {
     const handler = async (event: MessageEvent) => {
+      // Only accept messages posted by this page itself (e.g. our extension's content script)
+      if (event.source !== window || event.origin !== window.location.origin) return;
       if (event.data?.type !== 'XRAMP_PROOF_RESULT') return;
       const payload = event.data.payload;
       if (!payload?.intentId) return;
@@ -36,12 +27,9 @@ function useProofMessageListener() {
           payload: proofPayload,
         });
 
-        if (verified && isAdmin) {
-          await orchestratorApi.verifyAndRelease(intentId);
-          toast.success('Proof verified — escrow released!', {
-            description: `Intent ${intentId.slice(0, 8)}… is now COMPLETE`,
-          });
-        } else if (verified) {
+        // Release is never triggered automatically from a window message;
+        // an admin must review and verify it explicitly.
+        if (verified) {
           toast.success('Payment proof submitted', {
             description: 'Awaiting admin release. Check Activity for updates.',
           });
@@ -57,7 +45,7 @@ function useProofMessageListener() {
 
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [isAdmin]);
+  }, []);
 }
 
 interface AppLayoutProps {

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { TrustwareProvider, TrustwareWidget } from '@trustware/sdk';
+import { TrustwareProvider, TrustwareWidget, type TrustwareConfigOptions } from '@trustware/sdk';
 import { ChevronDown, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -157,7 +157,7 @@ export function DepositWidget({ apiKey = '', onGetStarted }: DepositWidgetProps)
 
             {/* Trustware Widget */}
             <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <TrustwareProvider config={trustwareConfig}>
+              <TrustwareProvider config={trustwareConfig as unknown as TrustwareConfigOptions}>
                 <TrustwareWidget />
               </TrustwareProvider>
             </div>
