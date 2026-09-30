@@ -5,7 +5,6 @@ import { WalletSidebar } from './WalletSidebar';
 import { useApp } from '@/contexts/AppContext';
 import { StarsBackground } from '@/components/animate-ui/components/backgrounds/stars';
 import { CommandMode } from '@/components/command/CommandMode';
-import { useAuth } from '@/contexts/AuthContext';
 import { orchestratorApi } from '@/lib/orchestratorApi';
 import { toast } from 'sonner';
 
