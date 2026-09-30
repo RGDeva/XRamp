@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { TrustwareProvider, TrustwareWidget } from '@trustware/sdk';
+import { TrustwareProvider, TrustwareWidget, type TrustwareConfigOptions } from '@trustware/sdk';
 import { ChevronDown, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
