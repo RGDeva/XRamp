@@ -34,7 +34,7 @@ export default function Home() {
 
   const loadActivity = useCallback(async () => {
     try {
-      const { intents } = await orchestratorApi.listIntents(getUserId());
+      const { intents } = await orchestratorApi.listIntents();
       setRecentItems(intents.slice(0, 3));
     } catch {
       // Silently fail — empty state is fine

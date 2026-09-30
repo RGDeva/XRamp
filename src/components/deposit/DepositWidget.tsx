@@ -157,7 +157,7 @@ export function DepositWidget({ apiKey = '', onGetStarted }: DepositWidgetProps)
 
             {/* Trustware Widget */}
             <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <TrustwareProvider config={trustwareConfig}>
+              <TrustwareProvider config={trustwareConfig as unknown as TrustwareConfigOptions}>
                 <TrustwareWidget />
               </TrustwareProvider>
             </div>

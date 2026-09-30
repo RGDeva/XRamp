@@ -41,6 +41,7 @@ export function TrustwareDepositWidget() {
 
         const api: WalletInterFaceAPI = {
           type: 'eip1193',
+          ecosystem: 'evm',
           request: (args) => provider.request(args as { method: string; params?: any[] }),
           getAddress: async () => wallet.address,
           getChainId: async () => {
@@ -89,7 +90,7 @@ export function TrustwareDepositWidget() {
       defaultSlippage: 1,
     },
     autoDetectProvider: false,
-    theme: TW_THEME,
+    theme: TW_THEME as unknown as TrustwareConfigOptions['theme'],
     messages: TW_MESSAGES,
   };
 
